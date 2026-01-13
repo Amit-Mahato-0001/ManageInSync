@@ -4,7 +4,7 @@
 //success response
 //error
 
-const signup = require('../services/auth.service')
+const {signup, login} = require('../services/auth.service')
 
 const signupHandler = async (req, res) => {
 
@@ -31,4 +31,30 @@ const signupHandler = async (req, res) => {
     }
 }
 
-module.exports = signupHandler
+const loginHandler = async (req, res) => {
+
+    try {
+        const {email, password} = req.body
+
+        if(!email || !password){
+            return res.status(400).json({
+                message: "Invalid credentials"
+            })
+        }
+
+        const result = await login({email, password})
+
+        return res.status(201).json({
+            message: "Login successful",
+            token: result.token
+        })
+
+    } catch (error) {
+        return res.status(400).json({
+            message: error.message
+        })
+    }
+}
+
+
+module.exports = {signupHandler, loginHandler}

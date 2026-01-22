@@ -22,7 +22,7 @@ const createUser = async (data) => {
     email: data.email,
     password: hashedPassword,
     tenantId: data.tenantId,
-    role: 'member',
+    role: data.role,
     status: 'active'
   })
 }

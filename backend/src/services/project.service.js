@@ -1,5 +1,6 @@
 const mongoose = require('mongoose')
 const Project = require('../models/project.model')
+const User = require('../models/user.model')
 
 //CREATE PROJECT 
 
@@ -64,8 +65,59 @@ const deleteProject = async (projectId, tenantId) => {
     return project
 }
 
+//ASSIGN CLIENT TO PROJECT
+
+//projectId url se, clientId body se, tenantId middleware se 
+//check kro teeno he ya nhi 
+//projectId, clientId check kro valid ya nhi
+//project check kro same tenant ka he ki nhi
+//client check
+//client assign 
+
+const assignClient = async ({projectId, clientId, tenantId}) => {
+
+    if(!projectId || !clientId || !tenantId){
+        throw new Error("projectId, clientId & tenantId required")
+    }
+
+    if(
+        !mongoose.Types.ObjectId.isValid(projectId) ||
+        !mongoose.Types.ObjectId.isValid(clientId)
+    ){
+        throw new Error("Invalid projectId or clientId");
+    }
+
+    const project = await Project.findOne({
+        _id: projectId,
+        tenantId,
+        deleteAt: null
+    })
+
+    if(!project){
+        throw new Error("Project not found")
+    }
+
+    const client = await User.findOne({
+        _id: clientId,
+        tenantId,
+        role: "client",
+        status: "active"
+    })
+
+    if(!client){
+        throw new Error("Client user not found")
+    }
+
+    project.clientId = client._id
+    await project.save()
+
+    return project
+
+}
+
 module.exports = {
     createProject,
     getProject,
-    deleteProject
+    deleteProject,
+    assignClient
 }

@@ -7,6 +7,7 @@ const resolveTenant = require('./middleware/tenant.middleware')
 const requireRole = require('./middleware/rbac.middleware')
 const projectRoutes = require('./routes/project.route')
 const clientRoutes = require('./routes/client.route')
+const auditRoutes = require('./routes/audit.route')
 
 const app = express()
 connectDB()
@@ -41,5 +42,6 @@ app.get("/api/member-only", requireRole(["owner", "admin", "member"]), (req, res
 
 app.use("/api/projects", projectRoutes)
 app.use("/api/clients", clientRoutes)
+app.use("/api/audit-logs", auditRoutes)
 
 module.exports = app

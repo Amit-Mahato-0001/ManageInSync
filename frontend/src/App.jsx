@@ -4,6 +4,7 @@ import Login from "./pages/Login"
 import Dashboard from './pages/Dashboard'
 import AuthLayout from './layouts/AuthLayout'
 import AppLayout from './layouts/AppLayout'
+import ProtectedRoute from './components/ProtectedRoute'
 
 const App = () => {
 
@@ -11,7 +12,7 @@ const App = () => {
     <BrowserRouter>
     <Routes>
       <Route path='/login' element={<AuthLayout><Login/></AuthLayout>}/>
-      <Route path='/' element={<AppLayout><Dashboard/></AppLayout>}/>
+      <Route path='/' element={<ProtectedRoute><AppLayout><Dashboard/></AppLayout></ProtectedRoute>}/>
     </Routes>
     </BrowserRouter>
   )

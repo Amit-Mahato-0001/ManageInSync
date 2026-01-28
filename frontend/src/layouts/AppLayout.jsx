@@ -1,12 +1,28 @@
-import React from 'react'
+import { useAuth } from "../context/AuthContext";
+import { useNavigate } from "react-router-dom";
 
-const AppLayout = ({children}) => {
+export default function AppLayout({ children }) {
+  const { logout } = useAuth();
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    logout();
+    navigate("/login");
+  };
+
   return (
-    <div>
-        <header className='text-gray-500 font-bold text-4xl shadow p-4'>i js be chillin fr...</header>
-        <main className='p-4'>{children}</main>
-    </div>
-  )
-}
+    <div className="min-h-screen">
+      <header className="shadow p-4 flex justify-between">
+        <span className="font-bold text-xl">AgencyOS</span>
+        <button
+          onClick={handleLogout}
+          className="font-bold text-xl text-red-500"
+        >
+          Logout
+        </button>
+      </header>
 
-export default AppLayout
+      <main className="p-4">{children}</main>
+    </div>
+  );
+}

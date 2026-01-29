@@ -5,6 +5,7 @@ import Dashboard from './pages/Dashboard'
 import AuthLayout from './layouts/AuthLayout'
 import AppLayout from './layouts/AppLayout'
 import ProtectedRoute from './components/ProtectedRoute'
+import Projects from './pages/Projects'
 
 const App = () => {
 
@@ -13,6 +14,7 @@ const App = () => {
     <Routes>
       <Route path='/login' element={<AuthLayout><Login/></AuthLayout>}/>
       <Route path='/' element={<ProtectedRoute><AppLayout><Dashboard/></AppLayout></ProtectedRoute>}/>
+      <Route path='/projects' element={<ProtectedRoute><AppLayout><Projects/></AppLayout></ProtectedRoute>}/>
     </Routes>
     </BrowserRouter>
   )

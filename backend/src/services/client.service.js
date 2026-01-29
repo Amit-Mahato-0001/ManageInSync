@@ -39,4 +39,19 @@ const createClient = async ({ email, name, tenantId}) => {
     return client
 }
 
-module.exports = { createClient }
+const getClients = (tenantId) => {
+
+    if(!tenantId){
+        throw new Error("tenantId required")
+    }
+
+    const clients = User.find({
+        tenantId,
+        role: "client",
+        status: "active"
+    }).select("email name")
+
+    return clients
+}
+
+module.exports = { createClient, getClients }

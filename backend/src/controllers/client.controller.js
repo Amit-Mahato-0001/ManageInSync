@@ -1,4 +1,4 @@
-const { createClient } = require('../services/client.service')
+const { createClient, getClients } = require('../services/client.service')
 
 const createClientHandler = async (req, res) => {
   try {
@@ -32,4 +32,23 @@ const createClientHandler = async (req, res) => {
   }
 }
 
-module.exports = { createClientHandler }
+const getClientsHandler = async (req, res) => {
+
+  try {
+
+    const clients = await getClients(req.tenantId)
+
+    return res.status(200).json({
+      clients
+    })
+
+  } catch (error) {
+
+    return res.status(400).json({
+      message: error.message
+    })
+    
+  }
+}
+
+module.exports = { createClientHandler, getClientsHandler}

@@ -28,6 +28,7 @@ export default function AppLayout({ children }) {
         <a href="/" className="hover:underline">Dashboard</a>
         <a href="/projects" className="hover:underline">Projects</a>
         <a href="/clients" className="hover:underline">Clients</a>
+        <a href="/audit-logs" className="hover:underline">Audit Logs</a>
       </nav>
     </div>
   );

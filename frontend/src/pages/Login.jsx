@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import loginApi from '../api/auth'
+import authApi from '../api/auth'
 import { useAuth } from '../context/AuthContext'
 import { useNavigate } from 'react-router-dom'
 
@@ -21,7 +21,7 @@ const Login = () => {
 
     try {
 
-      const res = await loginApi({ email, password })
+      const res = await authApi.loginApi({ email, password })
       login(res.data.token)
       navigate('/')
 

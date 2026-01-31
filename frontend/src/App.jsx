@@ -8,12 +8,14 @@ import ProtectedRoute from './components/ProtectedRoute'
 import Projects from './pages/Projects'
 import Clients from './pages/Clients'
 import AuditLogs from './pages/AuditLogs'
+import Signup from './pages/Signup'
 
 const App = () => {
 
   return (
     <BrowserRouter>
     <Routes>
+      <Route path='/signup' element={<AuthLayout><Signup/></AuthLayout>}/>
       <Route path='/login' element={<AuthLayout><Login/></AuthLayout>}/>
       <Route path='/' element={<ProtectedRoute><AppLayout><Dashboard/></AppLayout></ProtectedRoute>}/>
       <Route path='/projects' element={<ProtectedRoute><AppLayout><Projects/></AppLayout></ProtectedRoute>}/>

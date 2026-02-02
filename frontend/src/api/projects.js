@@ -11,3 +11,9 @@ export const createProject = (data) => {
     return api.post('/projects', data)
 
 }
+
+export const deleteProject = (projectId) => {
+
+
+    return api.delete(`/projects/${projectId}`)
+}

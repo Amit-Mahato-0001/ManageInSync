@@ -1,7 +1,10 @@
 import { useEffect, useState } from 'react'
-import {fetchProjects, createProject} from '../api/projects'
+import {fetchProjects, createProject, deleteProject} from '../api/projects'
+import { useAuth } from '../context/AuthContext'
 
 const Projects = () => {
+
+    const { user } = useAuth()
 
     const [projects, setProjects] = useState([])
     const [name, setName] = useState("")
@@ -38,6 +41,15 @@ const Projects = () => {
 
     }
 
+    const handleDelete = async (id) => {
+
+        if(!confirm("Delete this project")) return
+
+        await deleteProject(id)
+
+        setProjects((prev) => prev.filter((p) => p._id !== id))
+    }
+
     if(loading) return <p>Loading projects...</p>
 
   return (
@@ -68,9 +80,20 @@ const Projects = () => {
             {projects.map((p) => (
 
                 <div
-                className='p-4 rounded shadow'
+                className='p-4 rounded shadow flex justify-between items-center'
                 key={p._id}>
                     {p.name}
+
+                    {/* PROJECT DELETE */}
+
+                    {user?.role !== "client" && (
+
+                        <button onClick={() => handleDelete(p._id)}
+                        className='text-red-500'>
+
+                            Delete project
+                        </button>
+                    )}
                 </div>
             ))}
 

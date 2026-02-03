@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
-import {fetchProjects, createProject, deleteProject} from '../api/projects'
+import {fetchProjects, createProject, deleteProject, assignClient} from '../api/projects'
 import { useAuth } from '../context/AuthContext'
+import { fetchClients } from '../api/clients'
 
 const Projects = () => {
 
@@ -9,10 +10,13 @@ const Projects = () => {
     const [projects, setProjects] = useState([])
     const [name, setName] = useState("")
     const [loading, setLoading] = useState(true)
+    const [clients, setClients] = useState([])
 
     useEffect(() => {
         loadProjects()
     }, [])
+
+    {/* LOAD PROJECTS */}
 
     const loadProjects = async () => {
 
@@ -30,6 +34,33 @@ const Projects = () => {
         }
     }
 
+    {/* LOAD CLIENTS (onwer/admin only) */}
+
+    useEffect(() => {
+
+        if(user?.role !== "client"){
+
+            fetchClients().then(res => {
+
+                setClients(res.data.clients)
+
+            })
+        }
+    }, [user])
+
+    {/* ASSIGN CLIENT */}
+
+    const handleAssign = async (projectId, clientId) => {
+
+        if(!clientId) return
+
+        await assignClient(projectId, clientId)
+
+        loadProjects()
+    }
+
+    {/* PROJECT CREATE */}
+
     const handleCreate = async (e) => {
 
         e.preventDefault()
@@ -40,6 +71,8 @@ const Projects = () => {
         loadProjects()
 
     }
+
+    {/* DELETE PROJECT */}
 
     const handleDelete = async (id) => {
 
@@ -94,6 +127,40 @@ const Projects = () => {
                             Delete project
                         </button>
                     )}
+
+                    {/* ASSIGN CLIENT (owner/admin only) */}
+
+                    {user?.role !== "client" && (
+
+                        <select
+                        onChange={(e) => handleAssign(p._id, e.target.value)}
+                        defaultValue=""
+                        className='border text-sm ml-4'
+                        >
+
+                            <option value="" >
+                                Assign client
+                            </option>
+
+                            {clients.map(c => (
+
+                                <option value={c._id} key={c._id}>
+
+                                    {c.email}
+
+                                </option>
+                            ))}
+
+                        </select>
+                    )}
+
+                    {/* SHOW ASSIGNED CLIENT */}
+
+                    {p.clientId && (
+
+                        <p className='text-sm text-gray-500'>Client assigned</p>
+                    )}
+
                 </div>
             ))}
 
@@ -105,3 +172,4 @@ const Projects = () => {
 }
 
 export default Projects
+

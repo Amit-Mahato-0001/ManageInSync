@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import fetchClients from '../api/clients'
+import { fetchClients } from '../api/clients'
 
 const Clients = () => {
     

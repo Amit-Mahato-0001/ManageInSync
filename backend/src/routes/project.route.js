@@ -2,7 +2,6 @@ const express = require('express')
 const { createProjectHandler, getProjectHandler, deleteProjectHandler, assignClientHandler } = require('../controllers/project.controller')
 const requireRole = require('../middleware/rbac.middleware')
 const auditLogger = require('../middleware/audit.middleware')
-
 const router = express.Router()
 
 //project create

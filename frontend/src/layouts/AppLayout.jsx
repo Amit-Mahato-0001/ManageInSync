@@ -2,7 +2,7 @@ import { useAuth } from "../context/AuthContext";
 import { useNavigate } from "react-router-dom";
 
 export default function AppLayout({ children }) {
-  const { logout } = useAuth();
+  const { user, logout } = useAuth();
   const navigate = useNavigate();
 
   const handleLogout = () => {
@@ -14,6 +14,27 @@ export default function AppLayout({ children }) {
     <div className="min-h-screen">
       <header className="shadow p-4 flex justify-between">
         <span className="font-bold text-xl">AgencyOS</span>
+
+        <nav className="flex gap-4 text-sm">
+        <a href="/" className="hover:underline">Dashboard</a>
+
+        {user?.role !== "client" && (
+
+        <>
+        <a href="/projects" className="hover:underline">Projects</a>
+        <a href="/clients" className="hover:underline">Clients</a>
+        <a href="/audit-logs" className="hover:underline">Audit Logs</a>
+        </>
+
+        )}
+
+        {user?.role === "client" && (
+
+          <a href="/projects">My projects</a>
+        )}
+
+        </nav>
+
         <button
           onClick={handleLogout}
           className="font-bold text-xl text-red-500"
@@ -24,12 +45,7 @@ export default function AppLayout({ children }) {
 
       <main className="p-4">{children}</main>
 
-      <nav className="flex gap-4 text-sm">
-        <a href="/" className="hover:underline">Dashboard</a>
-        <a href="/projects" className="hover:underline">Projects</a>
-        <a href="/clients" className="hover:underline">Clients</a>
-        <a href="/audit-logs" className="hover:underline">Audit Logs</a>
-      </nav>
+
     </div>
   );
 }

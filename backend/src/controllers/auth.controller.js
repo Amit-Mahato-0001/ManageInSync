@@ -4,7 +4,7 @@
 //success response
 //error
 
-const {signup, login} = require('../services/auth.service')
+const {signup, login, acceptInvite} = require('../services/auth.service')
 
 const signupHandler = async (req, res) => {
 
@@ -56,5 +56,25 @@ const loginHandler = async (req, res) => {
     }
 }
 
+const acceptInviteHandler = async (req, res) => {
 
-module.exports = {signupHandler, loginHandler}
+    try {
+        
+        const { token, password } = req.body
+
+        const result = await acceptInvite({ token, password })
+
+        return res.status(200).json(result)
+
+    } catch (error) {
+        
+        return res.status(400).json({
+
+            message: error.message
+
+        })
+    }
+}
+
+
+module.exports = {signupHandler, loginHandler, acceptInviteHandler}

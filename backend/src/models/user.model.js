@@ -11,7 +11,6 @@ const userSchema = new mongoose.Schema({
     },
     password: {
         type: String,
-        required: true,
         minlength: 8,
         select: false
     },
@@ -28,8 +27,14 @@ const userSchema = new mongoose.Schema({
     },
     status:{
         type: String,
-        enum: ["active", "invalid"],
-        default: "active"
+        enum: ["active", "invalid", "invited"],
+        default: "invited"
+    },
+    inviteToken: {
+        type: String
+    },
+    inviteTokenExpires: {
+        type: Date
     }
 
 }, {timestamps: true}

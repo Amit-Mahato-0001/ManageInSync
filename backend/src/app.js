@@ -2,14 +2,17 @@ require('dotenv').config()
 const express = require('express')
 const connectDB = require('./config/db')
 const router = require('./routes/auth.route')
+
 const authenticate = require('./middleware/auth.middleware')
 const resolveTenant = require('./middleware/tenant.middleware')
 const requireRole = require('./middleware/rbac.middleware')
+
 const projectRoutes = require('./routes/project.route')
 const clientRoutes = require('./routes/client.route')
 const auditRoutes = require('./routes/audit.route')
 const dashboardRoutes = require('./routes/dashboard.route')
 const cors = require('cors')
+const inviteRoutes = require('./routes/invite.route')
 
 const app = express()
 connectDB()
@@ -17,9 +20,12 @@ connectDB()
 app.use(cors({
     origin: "http://localhost:5173"
 }))
-
 app.use(express.json())
+
+{/* PUBLIC ROUTES */}
 app.use("/api/auth", router)
+app.use("/api/clients-invite", inviteRoutes)
+
 app.use(authenticate)
 app.use(resolveTenant)
 

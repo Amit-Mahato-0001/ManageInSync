@@ -75,4 +75,46 @@ return { token }
 
 }
 
-module.exports = {signup, login}
+const acceptInvite = async ({ token, password }) => {
+
+    if(!token || !password){
+
+        throw new Error("Invalid token or password")
+
+    }
+
+    if(password.length < 8){
+
+        throw new Error("Password must be at least 8 characters ")
+    }
+
+    const user = await User.findOne({
+
+        inviteToken: token,
+        inviteTokenExpires: { $gt: Date.now() },
+        status: "invited"
+    })
+
+    if(!user){
+
+        throw new Error("Invalid or expired invite")
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10)
+
+    user.password = hashedPassword
+    user.status = "active"
+    user.inviteToken = undefined
+    user.inviteTokenExpires = undefined
+
+    await user.save()
+
+    return{
+
+        message: "Password set successfully. You can login now"
+
+    }
+
+}
+
+module.exports = {signup, login, acceptInvite}

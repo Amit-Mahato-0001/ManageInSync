@@ -20,26 +20,27 @@ const ClientDashboard = () => {
 
     <div>
         
-        <h1>
+        <h1 className='text-xl font-bold mb-4'>
             Your projects
         </h1>
 
         {projects.length === 0 ? (
 
-            <p>
+            <p className='text-gray-500'>
                 No projects assigned yet
             </p>
 
         ) : (
 
-            <div>
+            <div className='space-y-2'>
 
                 {projects.map(p => (
 
                     <div
-                    key={p._id}>
+                    key={p._id}
+                    className='p-4 rounded shadow'>
                         
-                        <p>{p.name}</p>
+                        <p className='font-medium'>{p.name}</p>
                     </div>
                 ))}
 

@@ -10,4 +10,9 @@ const signupApi = (data) => {
     return api.post("/auth/signup", data)
 }
 
-export default {loginApi, signupApi}
+const acceptInviteApi = (data) => {
+
+    return api.post("/auth/accept-invite", data)
+}
+
+export default {loginApi, signupApi, acceptInviteApi}

@@ -9,6 +9,7 @@ import Clients from './pages/Clients'
 import AuditLogs from './pages/AuditLogs'
 import Signup from './pages/Signup'
 import DashboardRouter from './routes/DashboardRouter'
+import AcceptInvite from './pages/AcceptInvite'
 
 const App = () => {
 
@@ -17,6 +18,7 @@ const App = () => {
     <Routes>
       <Route path='/signup' element={<AuthLayout><Signup/></AuthLayout>}/>
       <Route path='/login' element={<AuthLayout><Login/></AuthLayout>}/>
+      <Route path='/accept-invite' element={<AuthLayout><AcceptInvite/></AuthLayout>}/>
       <Route path='/' element={<ProtectedRoute><AppLayout><DashboardRouter/></AppLayout></ProtectedRoute>}/>
       <Route path='/projects' element={<ProtectedRoute><AppLayout><Projects/></AppLayout></ProtectedRoute>}/>
       <Route path='/clients' element={<ProtectedRoute><AppLayout><Clients/></AppLayout></ProtectedRoute>}/>

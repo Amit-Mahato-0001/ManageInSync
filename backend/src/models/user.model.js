@@ -27,7 +27,7 @@ const userSchema = new mongoose.Schema({
     },
     status:{
         type: String,
-        enum: ["active", "invalid", "invited"],
+        enum: ["active", "invalid", "invited", "disabled"],
         default: "invited"
     },
     inviteToken: {

@@ -57,6 +57,10 @@ const login = async ({ email, password }) => {
         throw new Error("Invalid Email")
     }
 
+    if(user.status === "disabled"){
+        throw new Error("Account disabled. Contact agency.")
+    }
+
     const isMatch = await bcrypt.compare(password, user.password)
     if(!isMatch){
         throw new Error("Invalid Password")

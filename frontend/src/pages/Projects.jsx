@@ -19,7 +19,7 @@ const Projects = () => {
   const [openDropdown, setOpenDropdown] = useState(null)
   const [selectedClients, setSelectedClients] = useState({})
 
-  // ================= LOAD PROJECTS =================
+  // LOAD PROJECTS
   useEffect(() => {
     loadProjects()
   }, [])
@@ -35,7 +35,7 @@ const Projects = () => {
     }
   }
 
-  // ================= LOAD CLIENTS =================
+  // LOAD CLIENTS
   useEffect(() => {
     if (user?.role !== "client") {
       fetchClients().then(res => {
@@ -44,7 +44,7 @@ const Projects = () => {
     }
   }, [user])
 
-  // ================= CREATE PROJECT =================
+  // CREATE PROJECT
   const handleCreate = async (e) => {
     e.preventDefault()
     if (!name.trim()) return
@@ -54,14 +54,14 @@ const Projects = () => {
     loadProjects()
   }
 
-  // ================= DELETE =================
+  // DELETE 
   const handleDelete = async (id) => {
     if (!confirm("Delete this project?")) return
     await deleteProject(id)
     setProjects(prev => prev.filter(p => p._id !== id))
   }
 
-  // ================= CHECKBOX TOGGLE =================
+  // CHECKBOX TOGGLE
   const handleCheckboxChange = (projectId, clientId) => {
     setSelectedClients(prev => {
       const current = prev[projectId] || []
@@ -80,7 +80,7 @@ const Projects = () => {
     })
   }
 
-  // ================= SAVE CLIENTS =================
+  // SAVE CLIENTS
   const handleSaveClients = async (projectId) => {
 
     const existing =
@@ -156,7 +156,10 @@ const Projects = () => {
             </div>
 
             {/* ASSIGNED CLIENT BADGES */}
-            <div className="flex gap-2 mt-3 flex-wrap">
+
+            {user?.role !== "client" && (
+
+              <div className="flex gap-2 mt-3 flex-wrap">
               {p.clients?.length > 0 ? (
                 p.clients.map((id) => {
                   const client = clients.find(c => c._id === id)
@@ -175,6 +178,8 @@ const Projects = () => {
                 </span>
               )}
             </div>
+
+            )}
 
             {/* DROPDOWN */}
             {openDropdown === p._id && (

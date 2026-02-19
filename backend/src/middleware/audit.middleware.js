@@ -10,7 +10,7 @@ const auditLogger = (action) => {
 
                 await logAction({
                     tenantId: req.tenantId,
-                    actorId: req.user.userId,
+                    actorId: req.user._id,
                     action,
                     meta: {
                         method: req.method,

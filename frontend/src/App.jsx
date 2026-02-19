@@ -21,8 +21,8 @@ const App = () => {
       <Route path='/accept-invite' element={<AuthLayout><AcceptInvite/></AuthLayout>}/>
       <Route path='/' element={<ProtectedRoute><AppLayout><DashboardRouter/></AppLayout></ProtectedRoute>}/>
       <Route path='/projects' element={<ProtectedRoute><AppLayout><Projects/></AppLayout></ProtectedRoute>}/>
-      <Route path='/clients' element={<ProtectedRoute><AppLayout><Clients/></AppLayout></ProtectedRoute>}/>
-      <Route path='/audit-logs' element={<ProtectedRoute><AppLayout><AuditLogs/></AppLayout></ProtectedRoute>}/>
+      <Route path='/clients' element={<ProtectedRoute allowedRoles={["owner", "admin"]}><AppLayout><Clients/></AppLayout></ProtectedRoute>}/>
+      <Route path='/audit-logs' element={<ProtectedRoute allowedRoles={["owner", "admin"]}><AppLayout><AuditLogs/></AppLayout></ProtectedRoute>}/>
     </Routes>
     </BrowserRouter>
   )

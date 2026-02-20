@@ -1,4 +1,4 @@
-const { createClient, getClients, toggleClientStatus } = require('../services/client.service')
+const { createClient, getClients, deleteClient } = require('../services/client.service')
 
 const createClientHandler = async (req, res) => {
   try {
@@ -51,34 +51,31 @@ const getClientsHandler = async (req, res) => {
   }
 }
 
-// ENABLE/DISABLE CLIENT  
-const toggleClientStatusHandler = async (req, res) => {
+const deleteClientHandler = async (req, res ) => {
 
   try {
     
     const { clientId } = req.params
-    const { status } = req.body
-    const tenantId = req.user.tenantId
 
-    const client = await toggleClientStatus({
+    const result = await deleteClient({
+
       clientId,
-      tenantId,
-      status
-    })
+      tenantId: req.tenantId
 
-    res.status(200).json({
-      success: true,
-      message: `Client ${status} successfully`,
-      data: client
     })
+    
+    res.json(result)
 
   } catch (error) {
     
     res.status(400).json({
-      success: false,
+
       message: error.message
     })
   }
+
 }
 
-module.exports = { createClientHandler, getClientsHandler, toggleClientStatusHandler}
+
+
+module.exports = { createClientHandler, getClientsHandler, deleteClientHandler}

@@ -1,6 +1,6 @@
 const express = require('express')
 const requireRole = require('../middleware/rbac.middleware')
-const { createClientHandler, getClientsHandler, toggleClientStatusHandler } = require('../controllers/client.controller')
+const { createClientHandler, getClientsHandler, deleteClientHandler } = require('../controllers/client.controller')
 const auditLogger = require('../middleware/audit.middleware')
 
 const router = express.Router()
@@ -17,9 +17,11 @@ router.get('/',
     getClientsHandler
 )
 
-router.patch('/:clientId/status',
+router.delete(
+    "/:clientId",
     requireRole(["owner", "admin"]),
-    toggleClientStatusHandler
+    auditLogger("CLIENT_DELETED"),
+    deleteClientHandler
 )
 
 module.exports = router

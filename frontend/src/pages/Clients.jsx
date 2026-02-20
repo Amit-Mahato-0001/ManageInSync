@@ -1,202 +1,169 @@
-import { useState, useEffect } from 'react'
-import { fetchClients, inviteClient as inviteClientAPI, toogleClient as toggleClientAPI} from '../api/clients'
+import { useState, useEffect } from "react"
+import {
+  fetchClients,
+  inviteClient as inviteClientAPI,
+  deleteClient as deleteClientAPI
+} from "../api/clients"
 
 const Clients = () => {
+
+  const [clients, setClients] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [inviteLoading, setInviteLoading] = useState(false)
+
+  const [email, setEmail] = useState("")
+  const [error, setError] = useState("")
+  const [message, setMessage] = useState("")
+
+  useEffect(() => {
+
+    loadClients()
+
+  }, [])
+
+  const loadClients = async () => {
+
+    try {
+      setLoading(true)
+      const res = await fetchClients()
+      setClients(res.data.clients)
+
+    } catch (error) {
+
+      console.error("Failed to load clients", error)
+      setError("Failed to load clients")
+
+    } finally {
+
+      setLoading(false)
+    }
+
+  }
+
+  const handleSubmit = async (e) => {
+
+    e.preventDefault()
+
+    if (!email.trim()) return
+
+    try {
+      setInviteLoading(true)
+      setError("")
+      setMessage("")
+
+      await inviteClientAPI({ email })
+
+      setMessage("Invite sent successfully")
+      setEmail("")
+      loadClients()
+
+    } catch (error) {
+
+      setError(
+        error.response?.data?.message || "Failed to send invite"
+      )
+
+    } finally {
+
+      setInviteLoading(false)
+
+    }
     
-    const [clients, setClients] = useState([])
-    const [loading, setLoading] = useState(true)
-    
-    const [email, setEmail] = useState("")
-    const [error, setError] = useState("")
-    const [message, setMessage] = useState("")
+  }
 
-    useEffect(() => {
+  const handleDelete = async (clientId) => {
 
-        loadClients()
-    }, [])
+    const confirmDelete = window.confirm(
+      "Are you sure you want to permanently delete this client?"
+    )
 
-    const loadClients = async () => {
+    if (!confirmDelete) return
 
-        try {
-            
-            setLoading(true)
-            const res = await fetchClients()
-            setClients(res.data.clients)
+    try {
 
-        } catch (error) {
+      await deleteClientAPI(clientId)
 
-            console.error("failed to load clients", error)
-            setError("failed to load clients")
+      setClients(prev =>
+        prev.filter(c => c._id !== clientId)
+      )
 
-        } finally{
-
-            setLoading(false)
-
-        }
-
+    } catch (error) {
+        
+      alert(
+        error.response?.data?.message ||
+        "Failed to delete client"
+      )
     }
+  }
 
-    const inviteClient = async () => {
-
-        try {
-            
-            await inviteClientAPI({ email })
-            setMessage("Invite sent successfully")
-            setError("")
-            setEmail("")
-            loadClients()
-
-        } catch (error) {
-
-            setError(
-                
-                error.response?.data?.message || "Failed to send invite"
-            )
-
-        } finally{
-
-            setLoading(false)
-        }
-    }
-
-    const handleSubmit = (e) => {
-
-        e.preventDefault()
-        setLoading(true)
-        setError("")
-        setLoading(true)
-        inviteClient()
-    }
-
-    const handleToggle = async (clientId, status) => {
-
-        const newStatus = status === "active" ? "disabled" : "active"
-
-        try {
-            
-            await toggleClientAPI(clientId, newStatus)
-
-            setClients((prev) => prev.map((c) => c._id === clientId ? { ...c, status: newStatus } : c))
-
-        } catch (error) {
-            
-            alert("Failed to update status")
-        }
-
-    }
+  if (loading) return <p>Loading clients...</p>
 
   return (
-
     <div>
 
-        <h1 className='text-2xl font-bold mb-4'>Clients</h1>
+      <h1 className="text-2xl font-bold mb-4">Clients</h1>
 
-        {/* INVITE CLIENT */}
-
-        <form 
+      <form
         onSubmit={handleSubmit}
-        className='flex gap-3 mb-6'
-        > 
+        className="flex gap-3 mb-6"
+      >
 
-            <input 
-            type="email"
-            placeholder='client email'
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-            className='border p-2 rounded w-60'/>
+        <input
+          type="email"
+          placeholder="Client email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          required
+          className="border p-2 rounded w-60"
+        />
+
+        <button
+          disabled={inviteLoading}
+          className="bg-black text-white px-4 rounded"
+        >
+          {inviteLoading ? "Inviting..." : "Invite Client"}
+        </button>
+
+      </form>
+
+      {message && (
+        <p className="text-green-600 mb-4">{message}</p>
+      )}
+
+      {error && (
+        <p className="text-red-500 mb-4">{error}</p>
+      )}
+
+      <div className="space-y-3">
+
+        {clients.map((c) => (
+
+          <div
+            key={c._id}
+            className="p-4 rounded shadow flex items-center justify-between bg-white"
+          >
+
+            <span className="font-medium">{c.email}</span>
 
             <button
-            disabled={loading}
-            className='bg-black text-white px-4 rounded'>
-
-                {loading ? "Inviting..." : "Invite Client"}
+              onClick={() => handleDelete(c._id)}
+              className="px-3 py-2 rounded-full bg-blue-500 hover:bg-blue-700 text-white font-medium disabled:opacity-50"
+            >
+              Remove
             </button>
 
-        </form>
+          </div>
+        ))}
 
-        {
-            message && (
-                
-                <p className='text-green-600 mb-4'>{message}</p>
-            )
-        }
+        {clients.length === 0 && (
+          <p className="text-gray-500">
+            No clients invited yet
+          </p>
+        )}
 
-        {
-            error && (
-
-                <p className='text-red-500 mb-4'>{error}</p>
-            )
-        }
-
-        {/* CLIENT LIST */}
-        <div className='space-y-2'>
-
-            {clients.map((c) => (
-
-                <div
-                key={c._id}
-                className='p-4 rounded shadow flex items-center justify-between'>
-
-                    <span>{c.email}</span>
-
-
-
-                    <span className='flex items-center gap-2 text-xs font-medium'>
-                        
-                        <span
-
-                        className={`h-2 w-2 rounded-full ${
-                            c.status === "active"
-                            ? "bg-green-500 animate-pulse"
-                            : "bg-gray-500"
-                        }`}
-
-                        />
-
-                        <span
-                        className={`px-2 py-2 rounded ${
-                            c.status === "active"
-                            ? "bg-green-100 text-green-700"
-                            : "bg-gray-100 text-gray-700"
-                        }`}>
-
-                            {c.status === "active" ? "Active" : "Inactive"}
-                        </span>
-
-                    </span>
-
-                    {/* TOGGLE BUTTON */}
-
-                    <button
-                    onClick={() => handleToggle(c._id, c.status)}
-                    className={`px-3 py-1 rounded text-sm text-white ${
-                        c.status === "active"
-                        ? "bg-red-500"
-                        : "bg-green-500"
-                    }`}>
-
-                        {c.status === "active" ? "Disable" : "Enable" }
-
-                    </button>
-
-                </div>
-            ))}
-
-            {clients.length === 0 && (
-
-                <p
-                className='text-gray-500'
-                >
-                    No clients invited yet
-                </p>
-            )}
-
-        </div>
-
+      </div>
 
     </div>
-
   )
 }
 

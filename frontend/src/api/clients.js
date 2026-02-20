@@ -10,7 +10,7 @@ export const inviteClient = (data) => {
     return api.post('/clients-invite/invite', data)
 }
 
-export const toogleClient = (clientId, status) => {
+export const deleteClient = (id) => {
 
-    return api.patch(`/clients/${clientId}/status`, {status})
+    return api.delete(`/clients/${id}`)
 }

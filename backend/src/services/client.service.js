@@ -1,12 +1,7 @@
 const mongoose = require('mongoose')
 const bcrypt = require('bcrypt')
 const User = require('../models/user.model')
-
-//email, name, tenantId body se
-//email, tenantId check valid or not?
-//tenantId valid or not??
-//same tenant me duplicate email check
-//client create
+const Project = require('../models/project.model')
 
 const createClient = async ({ email, name, tenantId}) => {
 
@@ -54,33 +49,30 @@ const getClients = (tenantId) => {
     return clients
 }
 
-// ENABLE/DISABLE CLIENT 
-const toggleClientStatus = async ({ clientId, tenantId, status }) => {
+const deleteClient = async ({ clientId, tenantId }) => {
 
-    if(!["active", "disabled"].includes(status)) {
+    if(!clientId || !tenantId){
 
-        throw new Error("Invalid status")
+        throw new Error("clientId & tenantId required")
     }
 
-    const client = await User.findOneAndUpdate(
+    if(!mongoose.Types.ObjectId.isValid(clientId)){
 
-        {
-            _id: clientId,
-            tenantId,
-            role: "client"
-        },
-        {
-            status
-        },
-        { new: true }
-    )
+        throw new Error("Invalid clientId")
+    }
+
+    const client = await User.findOneAndDelete({
+        _id: clientId,
+        tenantId,
+        role: "client"
+    })
 
     if(!client){
 
         throw new Error("Client not found")
     }
 
-    return client
+    return { message: "Client deleted successfully"}
 }
 
-module.exports = { createClient, getClients, toggleClientStatus }
+module.exports = { createClient, getClients, deleteClient }

@@ -1,4 +1,4 @@
-const { createProject, getProject, deleteProject, assignClient} = require('../services/project.service')
+const { createProject, getProject, deleteProject, assignClient, updateProjectStatus} = require('../services/project.service')
 
 const createProjectHandler = async (req, res) => {
     try {
@@ -88,9 +88,38 @@ const assignClientHandler = async (req, res) => {
     }
 }
 
+const updateProjectStatusHandler = async (req, res) => {
+
+    try{
+        
+        const { projectId } = req.params
+        const { status } = req.body
+
+        const updated = await updateProjectStatus({
+            projectId,
+            tenantId: req.tenantId,
+            user: req.user,
+            status
+        })
+
+        res.json({
+            message: "Project status updated",
+            project: updated
+        })
+
+    } catch(error){
+
+        res.status(400).json({
+
+            message: error.message
+        })
+    }
+}
+
 module.exports = {
     createProjectHandler,
     getProjectHandler,
     deleteProjectHandler,
-    assignClientHandler
+    assignClientHandler,
+    updateProjectStatusHandler
 }

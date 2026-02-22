@@ -81,13 +81,6 @@ const deleteProject = async (projectId, tenantId) => {
 
 //ASSIGN CLIENT TO PROJECT
 
-//projectId url se, clientId body se, tenantId middleware se 
-//check kro teeno he ya nhi 
-//projectId, clientId check kro valid ya nhi
-//project check kro same tenant ka he ki nhi
-//client check
-//client assign 
-
 const assignClient = async ({projectId, clientIds, tenantId}) => {
 
     if(!projectId || !clientIds || !tenantId){
@@ -135,9 +128,45 @@ const assignClient = async ({projectId, clientIds, tenantId}) => {
 
 }
 
+//UPDATE PROJECT STATUS
+
+const updateProjectStatus = async ({projectId, tenantId, user, status}) => {
+
+    const allowedStatuses = ["active", "on-hold", "completed"]
+
+    if(!allowedStatuses.includes(status)){
+        throw new Error("invalid status")
+    }
+
+    const project = await Project.findOne({
+        _id: projectId,
+        tenantId,
+        deletedAt: null
+    })
+
+    if(!project){
+        throw new Error("Project not found")
+    }
+
+    if(user.role === "member"){
+
+        if(!project.members.includes(user._id)){
+
+            throw new Error("Access denied")
+        }
+    }
+
+    project.status = status
+    await project.save()
+
+    return project
+
+}
+
 module.exports = {
     createProject,
     getProject,
     deleteProject,
-    assignClient
+    assignClient,
+    updateProjectStatus
 }

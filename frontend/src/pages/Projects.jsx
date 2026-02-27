@@ -1,125 +1,121 @@
-import { useEffect, useState } from "react"
+import { useEffect, useState } from "react";
 import {
   fetchProjects,
   createProject,
   deleteProject,
   assignClient,
-  updateProjectStatus
-} from "../api/projects"
-import { useAuth } from "../context/AuthContext"
-import { fetchClients } from "../api/clients"
+  updateProjectStatus,
+} from "../api/projects";
+import { useAuth } from "../context/AuthContext";
+import { fetchClients } from "../api/clients";
+import { Plus, User2, Trash2 } from "lucide-react";
 
 const Projects = () => {
-  const { user } = useAuth()
+  const { user } = useAuth();
 
-  const [projects, setProjects] = useState([])
-  const [clients, setClients] = useState([])
-  const [name, setName] = useState("")
-  const [loading, setLoading] = useState(true)
+  const [projects, setProjects] = useState([]);
+  const [clients, setClients] = useState([]);
+  const [name, setName] = useState("");
+  const [loading, setLoading] = useState(true);
 
-  const [openDropdown, setOpenDropdown] = useState(null)
-  const [selectedClients, setSelectedClients] = useState({})
+  const [openDropdown, setOpenDropdown] = useState(null);
+  const [selectedClients, setSelectedClients] = useState({});
 
   // LOAD PROJECTS
   useEffect(() => {
-    loadProjects()
-  }, [])
+    loadProjects();
+  }, []);
 
   const loadProjects = async () => {
     try {
-      const res = await fetchProjects()
-      setProjects(res.data.projects)
+      const res = await fetchProjects();
+      setProjects(res.data.projects);
     } catch (err) {
-      console.error("Failed to load projects")
+      console.error("Failed to load projects");
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   // LOAD CLIENTS
   useEffect(() => {
     if (user?.role !== "client") {
-      fetchClients().then(res => {
-        setClients(res.data.clients)
-      })
+      fetchClients().then((res) => {
+        setClients(res.data.clients);
+      });
     }
-  }, [user])
+  }, [user]);
 
   // CREATE PROJECT
   const handleCreate = async (e) => {
-    e.preventDefault()
-    if (!name.trim()) return
+    e.preventDefault();
+    if (!name.trim()) return;
 
-    await createProject({ name })
-    setName("")
-    loadProjects()
-  }
+    await createProject({ name });
+    setName("");
+    loadProjects();
+  };
 
-  // DELETE 
+  // DELETE
   const handleDelete = async (id) => {
-    if (!confirm("Delete this project?")) return
-    await deleteProject(id)
-    setProjects(prev => prev.filter(p => p._id !== id))
-  }
+    if (!confirm("Delete this project?")) return;
+    await deleteProject(id);
+    setProjects((prev) => prev.filter((p) => p._id !== id));
+  };
 
   // CHECKBOX TOGGLE
   const handleCheckboxChange = (projectId, clientId) => {
-    setSelectedClients(prev => {
-      const current = prev[projectId] || []
+    setSelectedClients((prev) => {
+      const current = prev[projectId] || [];
 
       if (current.includes(clientId)) {
         return {
           ...prev,
-          [projectId]: current.filter(id => id !== clientId)
-        }
+          [projectId]: current.filter((id) => id !== clientId),
+        };
       } else {
         return {
           ...prev,
-          [projectId]: [...current, clientId]
-        }
+          [projectId]: [...current, clientId],
+        };
       }
-    })
-  }
+    });
+  };
 
   // SAVE CLIENTS
   const handleSaveClients = async (projectId) => {
+    const existing = projects.find((p) => p._id === projectId)?.clients || [];
 
-    const existing =
-      projects.find(p => p._id === projectId)?.clients || []
-
-    const newSelected = selectedClients[projectId] || []
+    const newSelected = selectedClients[projectId] || [];
 
     // merge existing + newly selected
-    const finalClients = [...new Set([...existing, ...newSelected])]
+    const finalClients = [...new Set([...existing, ...newSelected])];
 
-    if (finalClients.length === 0) return
+    if (finalClients.length === 0) return;
 
-    await assignClient(projectId, finalClients)
+    await assignClient(projectId, finalClients);
 
     // reset state
-    setSelectedClients(prev => ({ ...prev, [projectId]: [] }))
-    setOpenDropdown(null)
+    setSelectedClients((prev) => ({ ...prev, [projectId]: [] }));
+    setOpenDropdown(null);
 
-    loadProjects()
-  }
+    loadProjects();
+  };
 
   // PROJECT STATUS
   const handleStatusChange = async (projectId, status) => {
-
     try {
-      
-      await updateProjectStatus(projectId, status)
+      await updateProjectStatus(projectId, status);
 
-      setProjects(prev => prev.map(p => p._id === projectId ? {...p, status } : p ))
-
+      setProjects((prev) =>
+        prev.map((p) => (p._id === projectId ? { ...p, status } : p)),
+      );
     } catch (error) {
-      
-      alert("Failed to update status")
+      alert("Failed to update status");
     }
+  };
 
-  }
-
-  if (loading) return <p>Loading projects...</p>
+  if (loading) return <p>Loading projects...</p>;
 
   return (
     <div>
@@ -129,13 +125,13 @@ const Projects = () => {
       {user?.role !== "client" && (
         <form onSubmit={handleCreate} className="flex gap-2 mb-6">
           <input
-            className="border rounded p-2 w-64"
+            className="border border-gray-300 rounded-full p-2 w-64 hover:border-green-500 focus:border-green-500 focus:outline-none"
             placeholder="New project name"
             value={name}
             onChange={(e) => setName(e.target.value)}
           />
-          <button className="bg-black text-white px-4 rounded">
-            Create
+          <button className="h-10 w-10 flex items-center justify-center rounded-full bg-green-500 text-white hover:bg-green-600 transition shadow-sm">
+            <Plus size={18} />
           </button>
         </form>
       )}
@@ -143,34 +139,32 @@ const Projects = () => {
       {/* PROJECT LIST */}
       <div className="space-y-4">
         {projects.map((p) => (
-          <div key={p._id} className="p-4 rounded shadow bg-white relative">
-
+          <div key={p._id} className="p-4 rounded-lg shadow relative">
             <div className="flex justify-between items-center">
               <h2 className="font-semibold">{p.name}</h2>
 
               {user?.role !== "client" && (
                 <div className="flex gap-3">
-
                   <button
                     onClick={() =>
-                      setOpenDropdown(
-                        openDropdown === p._id ? null : p._id
-                      )
+                      setOpenDropdown(openDropdown === p._id ? null : p._id)
                     }
-                    className="bg-gray-100 px-3 py-1 rounded text-sm"
+                    className="p-2 rounded-full bg-green-500 text-white hover:bg-green-600 transition shadow-sm text-sm"
                   >
                     Assign Clients
                   </button>
 
                   {(user.role === "owner" || user.role === "admin") && (
                     <button
-                    onClick={() => handleDelete(p._id)}
-                    className="text-red-500 text-sm"
+                      onClick={() => handleDelete(p._id)}
+                      className="text-red-500 text-sm"
                     >
-                    Delete
+                      <Trash2
+                        size={34}
+                        className="bg-red-200 p-1 text-red-500 rounded-full hover:bg-red-300 hover:text-red-600 transition shadow-sm"
+                      />
                     </button>
                   )}
-                  
                 </div>
               )}
             </div>
@@ -178,35 +172,35 @@ const Projects = () => {
             {/* ASSIGNED CLIENT BADGES */}
 
             {user?.role !== "client" && (
+              <div className="flex mt-2 flex-wrap items-center gap-2">
+                <User2
+                  size={18}
+                  className="bg-green-200 text-green-600 rounded-full"
+                />
 
-              <div className="flex gap-2 mt-3 flex-wrap">
-              {p.clients?.length > 0 ? (
-                p.clients.map((id) => {
-                  const client = clients.find(c => c._id === id)
-                  return (
-                    <span
-                      key={id}
-                      className="text-xs bg-gray-200 px-2 py-1 rounded-full"
-                    >
-                      {client?.email || "Client"}
-                    </span>
-                  )
-                })
-              ) : (
-                <span className="text-xs text-gray-400">
-                  No clients assigned
-                </span>
-              )}
-            </div>
-
+                {p.clients?.length > 0 ? (
+                  <span className="text-sm p-2 text-gray-400">
+                    {p.clients
+                      .map((id) => {
+                        const client = clients.find((c) => c._id === id);
+                        return client?.email;
+                      })
+                      .filter(Boolean)
+                      .join(", ")}
+                  </span>
+                ) : (
+                  <span className="text-sm p-2 text-gray-400">
+                    No clients assigned
+                  </span>
+                )}
+              </div>
             )}
 
             {/* ASSIGN CLIENT DROPDOWN */}
             {openDropdown === p._id && (
-              <div className="absolute mt-3 w-64 bg-white border rounded shadow p-3 z-10">
-
+              <div className="absolute mt-14 w-96 rounded text-gray-400 bg-white shadow p-3 z-10">
                 <div className="max-h-40 overflow-y-auto space-y-2">
-                  {clients.map(c => (
+                  {clients.map((c) => (
                     <label
                       key={c._id}
                       className="flex items-center gap-2 text-sm"
@@ -217,9 +211,7 @@ const Projects = () => {
                           selectedClients[p._id]?.includes(c._id) ||
                           p.clients?.includes(c._id)
                         }
-                        onChange={() =>
-                          handleCheckboxChange(p._id, c._id)
-                        }
+                        onChange={() => handleCheckboxChange(p._id, c._id)}
                       />
                       {c.email}
                     </label>
@@ -228,7 +220,7 @@ const Projects = () => {
 
                 <button
                   onClick={() => handleSaveClients(p._id)}
-                  className="mt-3 w-full bg-black text-white text-sm py-1 rounded"
+                  className="mt-3 w-full bg-green-500 text-white text-sm py-2 rounded-full hover:bg-green-600 transition shadow-sm"
                 >
                   Save
                 </button>
@@ -237,30 +229,24 @@ const Projects = () => {
 
             {/* PROJECT STATUS DPOPDOWN */}
 
-            {(
-
-              user?.role === "owner" || user?.role === "admin" || user?.role === "member"
-
-            ) && (
-
+            {(user?.role === "owner" ||
+              user?.role === "admin" ||
+              user?.role === "member") && (
               <select
-
-              value={p.status}
-              onChange={(e) => handleStatusChange(p._id, e.target.value)}
-              className="border rounded px-2 py-1 text-sm">
-
+                value={p.status}
+                onChange={(e) => handleStatusChange(p._id, e.target.value)}
+                className="border border-gray-300 rounded-full px-2 py-1 text-sm text-gray-500 hover:border-green-500 focus:border-green-500 focus:outline-none"
+              >
                 <option value="active">Active</option>
                 <option value="on-hold">On Hold</option>
                 <option value="completed">Completed</option>
               </select>
-            )
-            }
-
+            )}
           </div>
         ))}
       </div>
     </div>
-  )
-}
+  );
+};
 
-export default Projects
+export default Projects;

@@ -37,7 +37,7 @@ export default function AppLayout({ children }) {
       </div>
 
       {/* MAIN CONTENT */}
-      <div className="flex-1">
+      <div className="flex-1 pb-20">
         <div className="max-w-6xl mx-auto px-6 -mt-40 relative z-10">
 
           {/* ROLE FILTERED NAVIGATION */}

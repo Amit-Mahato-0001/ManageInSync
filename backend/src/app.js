@@ -24,7 +24,7 @@ app.use(express.json())
 
 {/* PUBLIC ROUTES */}
 app.use("/api/auth", router)
-app.use("/api/clients-invite", inviteRoutes)
+app.use("/api/user-invite", inviteRoutes)
 
 app.use(authenticate)
 app.use(resolveTenant)

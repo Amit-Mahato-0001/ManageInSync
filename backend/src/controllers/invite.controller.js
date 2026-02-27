@@ -1,21 +1,22 @@
-const { inviteClient } = require('../services/invite.service')
+const { inviteUser } = require('../services/invite.service')
 
-const inviteClientHandler = async (req, res) => {
+const inviteUserHandler = async (req, res) => {
 
   try {
 
-    const {email} = req.body;
+    const {email, role } = req.body;
 
-    const result = await inviteClient({
+    const result = await inviteUser({
 
       email,
       tenantId: req.tenantId,
+      role
 
     });
 
     res.status(200).json({
 
-      message: "Client invited",
+      message: `${role} invited successfully`,
       ...result,
 
     });
@@ -27,4 +28,4 @@ const inviteClientHandler = async (req, res) => {
 
 };
 
-module.exports = { inviteClientHandler };
+module.exports = { inviteUserHandler }

@@ -2,11 +2,17 @@ const crypto = require('crypto')
 const User = require('../models/user.model')
 const { sendInviteEmail } = require('../utils/email')
 
-const inviteClient = async ({email, tenantId}) => {
+const inviteUser = async ({email, tenantId, role}) => {
 
-    if(!email || !tenantId){
+    if(!email || !tenantId || !role){
 
-        throw new Error("Email and tenantId required")
+        throw new Error("Email, tenantId and role required")
+    }
+
+    const allowedRoles = ["client", "member", "admin"]
+
+    if(!allowedRoles.includes(role)){
+        throw new Error("Invalid role")
     }
 
     const inviteToken = crypto.randomBytes(32).toString("hex")
@@ -24,31 +30,33 @@ const inviteClient = async ({email, tenantId}) => {
         user = await User.create({
             email,
             tenantId,
-            role: "client",
+            role,
             status: "invited",
             inviteToken,
             inviteTokenExpires
         })
 
-        await sendInviteEmail({
-
-            to: email,
-            inviteToken
-        })
-
     } else{
 
+        user.role = role
         user.inviteToken = inviteToken
         user.inviteTokenExpires = inviteTokenExpires
+        user.status = "invited"
+
         await user.save()
 
     }
 
+    await sendInviteEmail({
+        to: email,
+        inviteToken
+    })
+
     return{
 
         email: user.email,
-        inviteToken
+        role: user.role
     }
 }
 
-module.exports = { inviteClient }
+module.exports = { inviteUser }

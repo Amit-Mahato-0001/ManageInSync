@@ -12,21 +12,47 @@ const dashboard = async (tenantId) => {
         throw new Error("tenantId required")
     }
 
-    const totalProjects = await Project.countDocuments({
-        tenantId
-    })
+    //projects which belong to given tenant id and are not deleted 
+    const activeProjectQuery = {
+        tenantId,
+        deletedAt: null
+    }
 
-    const activeProjects = await Project.countDocuments({
-        tenantId, deleteAt: null
-    })
+    //users which belong to given tenant id and are active 
+    const activeUserQuery = {
+        tenantId,
+        status: "active"
+    }
 
-    const totalUsers = await User.countDocuments({
-        tenantId, role: { $ne: "client"}
-    })
+    const [
+        totalProjects,
+        activeProjects,
+        totalUsers,
+        totalClients
 
-    const totalClients = await User.countDocuments({
-        tenantId, role: "client"
-    })
+    ] = await Promise.all([
+
+        //total projects
+        Project.countDocuments(activeProjectQuery),
+
+        //active projects
+        Project.countDocuments({
+            ...activeProjectQuery,
+            status: "active"
+        }),
+
+        //total users 
+        User.countDocuments({
+            ...activeUserQuery,
+            role: { $ne: "client" }
+        }),
+        
+        //total clients
+        User.countDocuments({
+            ...activeUserQuery,
+            role: "client"
+        })
+    ])
 
     return{
         totalProjects,

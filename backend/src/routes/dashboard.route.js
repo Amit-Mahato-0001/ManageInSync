@@ -6,7 +6,7 @@ const router = express.Router()
 
 router.get(
     '/',
-    requireRole(["owner", "admin"]),
+    requireRole(["owner", "admin", "member"]),
     dashboardHandler
 )
 

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react"
 import { deleteMember, fetchMembers, inviteMember } from "../api/members"
+import { triggerDashboardRefresh } from "../utils/dashboardRefresh"
 
 const Members = () => {
 
@@ -57,6 +58,7 @@ const Members = () => {
             setMessage("Invite sent successfully")
             setEmail("")
             loadMembers()
+            triggerDashboardRefresh()
 
         } catch(error){
 
@@ -85,6 +87,7 @@ const Members = () => {
             await deleteMember(memberId)
 
             setMembers(prev => prev.filter(m => m._id !== memberId))
+            triggerDashboardRefresh()
 
         } catch (error) {
             

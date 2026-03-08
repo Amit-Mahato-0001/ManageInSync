@@ -4,6 +4,7 @@ import {
   inviteClient as inviteClientAPI,
   deleteClient as deleteClientAPI
 } from "../api/clients"
+import { triggerDashboardRefresh } from "../utils/dashboardRefresh"
 
 const Clients = () => {
 
@@ -59,6 +60,7 @@ const Clients = () => {
       setMessage("Invite sent successfully")
       setEmail("")
       loadClients()
+      triggerDashboardRefresh()
 
     } catch (error) {
 
@@ -89,6 +91,7 @@ const Clients = () => {
       setClients(prev =>
         prev.filter(c => c._id !== clientId)
       )
+      triggerDashboardRefresh()
 
     } catch (error) {
         

@@ -9,6 +9,7 @@ import {
 import { useAuth } from "../context/AuthContext";
 import { fetchClients } from "../api/clients";
 import { Plus, User2, Trash2 } from "lucide-react";
+import { triggerDashboardRefresh } from "../utils/dashboardRefresh";
 
 const Projects = () => {
   const { user } = useAuth();
@@ -54,6 +55,7 @@ const Projects = () => {
     await createProject({ name });
     setName("");
     loadProjects();
+    triggerDashboardRefresh();
   };
 
   // DELETE
@@ -61,6 +63,7 @@ const Projects = () => {
     if (!confirm("Delete this project?")) return;
     await deleteProject(id);
     setProjects((prev) => prev.filter((p) => p._id !== id));
+    triggerDashboardRefresh();
   };
 
   // CHECKBOX TOGGLE
@@ -110,6 +113,7 @@ const Projects = () => {
       setProjects((prev) =>
         prev.map((p) => (p._id === projectId ? { ...p, status } : p)),
       );
+      triggerDashboardRefresh();
     } catch (error) {
       alert("Failed to update status");
     }

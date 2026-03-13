@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
-import { fetchTasks } from '../api/tasks'
+import { createTask, fetchTasks } from '../api/tasks'
+import { Plus } from "lucide-react"
 
 const statusStyles = {
     
@@ -20,6 +21,10 @@ const Tasks = () => {
     const [tasks, setTasks] = useState([])
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState("")
+    const [title, setTitle] = useState("")
+    const [status, setStatus] = useState("todo")
+    const [priority, setPriority] = useState("medium")
+    const [submitting, setSubmitting] = useState(false)
 
     useEffect(() => {
 
@@ -46,6 +51,45 @@ const Tasks = () => {
         }
     }
 
+    const handleCreateTask = async (e) => {
+
+        e.preventDefault()
+
+        if(!title.trim()){
+
+            setError("Title is required")
+            return
+        }
+
+        try{
+
+            setSubmitting(true)
+            setError("")
+
+            await createTask({
+                
+                title: title.trim(),
+                status,
+                priority
+            })
+
+            setTitle("")
+            setStatus("todo")
+            setPriority("medium")
+
+            loadTasks()
+
+        } catch {
+
+            setError("Failed to create task")
+
+        } finally {
+
+            setSubmitting(false)
+
+        }
+    }
+
     if(loading) return <p>Loading tasks...</p>
 
   return (
@@ -53,6 +97,49 @@ const Tasks = () => {
     <div>
 
         <h1 className='mb-4 text-2xl font-bold'>Tasks</h1>
+
+        <form onSubmit={handleCreateTask} className='mb-6 grid gap-3 md:grid-cols-3'>
+
+            <input 
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            placeholder='Task title'
+            className='rounded-full border border-gray-300 p-2 text-sm'
+            />
+
+            <select 
+            value={status}
+            onChange={(e) => setStatus(e.target.value)}
+            className='rounded-full border border-gray-300 px-3 py-2 text-sm'
+            >
+                <option value="todo">Todo</option>
+                <option value="in-progress">In Progress</option>
+                <option value="done">Done</option>
+
+            </select>
+
+            <div className='flex gap-2'>
+
+                <select
+                value={priority}
+                onChange={(e) => setPriority(e.target.value)}
+                className='w-full rounded-full border border-gray-300 px-3 py-2 text-sm'
+                >
+                    <option value="low">Low</option>
+                    <option value="medium">Medium</option>
+                    <option value="high">High</option>
+
+                </select>
+
+                <button
+                disabled={submitting}
+                className='flex h-10 w-12 items-center justify-center rounded-full bg-blue-500 text-white hover:bg-blue-600'>
+
+                    <Plus size={18}/>
+                </button>
+            </div>
+
+        </form>
 
         {error && <p className='mb-3 text-sm text-red-500'>{error}</p>}
 

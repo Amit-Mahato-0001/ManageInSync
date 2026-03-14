@@ -9,7 +9,8 @@ const getMembers = async (tenantId) => {
 
   return await User.find({
     tenantId,
-    role: "member"
+    role: "member",
+    status: "active"
   }).select("email role status")
 }
 
@@ -26,7 +27,9 @@ const deleteMember = async ({ memberId, tenantId }) => {
   const member = await User.findOne({
     _id: memberId,
     tenantId,
-    role: "member"
+    role: "member",
+    status: "active"
+
   })
 
   if (!member) {

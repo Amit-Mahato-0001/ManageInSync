@@ -99,9 +99,18 @@ const login = async ({ email, password }) => {
         throw new Error("Account disabled. Contact agency.")
     }
 
+    if(!user.password){
+        throw new Error("Please accept invite and set password first")
+    }
+
     const isMatch = await bcrypt.compare(password, user.password)
     if(!isMatch){
         throw new Error("Invalid Password")
+    }
+
+    if(user.status === "invited" && user.role === "member"){
+        user.status = "active"
+        await user.save()
     }
 
     const token = jwt.sign({
@@ -119,7 +128,9 @@ return { token }
 
 const acceptInvite = async ({ token, password }) => {
 
-    if(!token || !password){
+    const inviteToken = token?.trim()
+
+    if(!inviteToken || !password){
 
         throw new Error("Invalid token or password")
 
@@ -132,7 +143,7 @@ const acceptInvite = async ({ token, password }) => {
 
     const user = await User.findOne({
 
-        inviteToken: token
+        inviteToken
     })
 
     if(!user){
@@ -140,7 +151,7 @@ const acceptInvite = async ({ token, password }) => {
         throw new Error("Invalid or expired invite")
     }
 
-    if(user.inviteTokenExpires < Date.now()){
+    if(!user.inviteTokenExpires || user.inviteTokenExpires.getTime() < Date.now()){
 
         throw new Error("Invite expired")
     }
@@ -153,7 +164,9 @@ const acceptInvite = async ({ token, password }) => {
     const hashedPassword = await bcrypt.hash(password, 10)
 
     user.password = hashedPassword
-    user.status = "active"
+    if(user.role !== "member"){
+        user.status = "active"
+    }
     user.inviteToken = undefined
     user.inviteTokenExpires = undefined
 
@@ -161,7 +174,9 @@ const acceptInvite = async ({ token, password }) => {
 
     return{
 
-        message: "Password set successfully. You can login now"
+        message: user.role === "member"
+            ? "Password set. Login to activate account"
+            : "Password set successfully. You can login now"
 
     }
 

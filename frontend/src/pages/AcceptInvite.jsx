@@ -15,18 +15,32 @@ export default function AcceptInvite () {
     const handleSubmit = async(e) => {
 
         e.preventDefault()
+        const inviteToken = token?.trim()
+
+        if(!inviteToken){
+            setError("Invite link is invalid. Please request a new invite.")
+            return
+        }
+
+        if(password.length < 8){
+            setError("Password must be at least 8 characters")
+            return
+        }
+
         setLoading(true)
         setError("")
 
         try {
             
-            await authApi.acceptInviteApi({ token, password})
+            await authApi.acceptInviteApi({ token: inviteToken, password})
 
             navigate('/login')
 
         } catch (error) {
             
-            setError("Invite expired or invalid")
+            setError(
+                error.response?.data?.message || "Failed to accept invite"
+            )
 
         } finally {
 
@@ -53,6 +67,7 @@ export default function AcceptInvite () {
                 placeholder='Create password'
                 value={password}
                 className='w-full border p-2 mb-4 rounded'
+                minLength={8}
                 onChange={(e) => setPassword(e.target.value)}
                  />
 

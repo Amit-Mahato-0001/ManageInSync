@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { createTask, fetchTasks } from '../api/tasks'
 import { Plus } from "lucide-react"
+import { useAuth } from '../context/AuthContext'
 
 const statusStyles = {
     
@@ -18,6 +19,7 @@ const priorityStyles = {
 
 const Tasks = () => {
 
+    const { user } = useAuth()
     const [tasks, setTasks] = useState([])
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState("")
@@ -25,6 +27,8 @@ const Tasks = () => {
     const [status, setStatus] = useState("todo")
     const [priority, setPriority] = useState("medium")
     const [submitting, setSubmitting] = useState(false)
+    const canCreateTasks = user?.role === "owner" || user?.role === "admin"
+    const currentUserId = user?.userId
 
     useEffect(() => {
 
@@ -55,6 +59,18 @@ const Tasks = () => {
 
         e.preventDefault()
 
+        if(!canCreateTasks){
+
+            setError("Only owner/admin can create tasks")
+            return
+        }
+
+        if(!currentUserId){
+
+            setError("Session expired. Please login again")
+            return
+        }
+
         if(!title.trim()){
 
             setError("Title is required")
@@ -69,6 +85,7 @@ const Tasks = () => {
             await createTask({
                 
                 title: title.trim(),
+                assigneeId: currentUserId,
                 status,
                 priority
             })
@@ -77,11 +94,11 @@ const Tasks = () => {
             setStatus("todo")
             setPriority("medium")
 
-            loadTasks()
+            await loadTasks()
 
-        } catch {
+        } catch (error) {
 
-            setError("Failed to create task")
+            setError(error.response?.data?.message || "Failed to create task")
 
         } finally {
 
@@ -98,6 +115,7 @@ const Tasks = () => {
 
         <h1 className='mb-4 text-2xl font-bold'>Tasks</h1>
 
+        {canCreateTasks ? (
         <form onSubmit={handleCreateTask} className='mb-6 grid gap-3 md:grid-cols-3'>
 
             <input 
@@ -140,6 +158,9 @@ const Tasks = () => {
             </div>
 
         </form>
+        ) : (
+            <p className='mb-6 text-sm text-gray-500'>Members can only view tasks assigned to them.</p>
+        )}
 
         {error && <p className='mb-3 text-sm text-red-500'>{error}</p>}
 

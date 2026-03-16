@@ -1,6 +1,7 @@
 const { createClient, getClients, deleteClient } = require('../services/client.service')
 
-const createClientHandler = async (req, res) => {
+const createClientHandler = async (req, res, next) => {
+
   try {
     const { email, name } = req.body
 
@@ -26,13 +27,12 @@ const createClientHandler = async (req, res) => {
     })
 
   } catch (error) {
-    return res.status(400).json({
-      message: error.message
-    })
+    
+    next(error)
   }
 }
 
-const getClientsHandler = async (req, res) => {
+const getClientsHandler = async (req, res, next) => {
 
   try {
 
@@ -44,14 +44,12 @@ const getClientsHandler = async (req, res) => {
 
   } catch (error) {
 
-    return res.status(400).json({
-      message: error.message
-    })
+    next(error)
     
   }
 }
 
-const deleteClientHandler = async (req, res ) => {
+const deleteClientHandler = async (req, res, next) => {
 
   try {
     
@@ -68,10 +66,8 @@ const deleteClientHandler = async (req, res ) => {
 
   } catch (error) {
     
-    res.status(400).json({
-
-      message: error.message
-    })
+    next(error)
+    
   }
 
 }

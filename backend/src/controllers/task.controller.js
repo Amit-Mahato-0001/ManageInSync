@@ -1,6 +1,6 @@
 const { createTask, getTasks, deleteTask } = require("../services/task.service")
 
-const createTaskHandler = async (req, res) => {
+const createTaskHandler = async (req, res, next) => {
 
     try {
         
@@ -24,15 +24,12 @@ const createTaskHandler = async (req, res) => {
 
     } catch (error) {
 
-        return res.status(400).json({
-
-            message: error.message
-        })
+        next(error)
         
     }
 }
 
-const getTasksHandler = async (req, res) => {
+const getTasksHandler = async (req, res, next) => {
 
     try {
         
@@ -49,14 +46,12 @@ const getTasksHandler = async (req, res) => {
 
     } catch (error) {
         
-        return res.status(400).json({
+        next(error)
 
-            message: error.message
-        })
     }
 }
 
-const deleteTaskHandler = async (req, res) => {
+const deleteTaskHandler = async (req, res, next) => {
 
     try {
         
@@ -77,12 +72,8 @@ const deleteTaskHandler = async (req, res) => {
 
     } catch (error) {
 
-        console.log(error)
+        next(error)
         
-        return res.status(400).json({
-
-            message: error.message
-        })
     }
 }
 

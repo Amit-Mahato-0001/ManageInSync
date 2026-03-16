@@ -1,6 +1,7 @@
 const createUser = require('../services/user.service')
 
-const createUserHandler = async(req, res) => {
+const createUserHandler = async(req, res, next) => {
+
   try {
     const userData = {
       email: req.body.email,
@@ -14,10 +15,11 @@ const createUserHandler = async(req, res) => {
       message: 'User created',
       userId: user._id
     })
-  } catch(err) {
-    return res.status(400).json({
-      message: err.message
-    })
+
+  } catch(error) {
+
+    next(error)
+
   }
 }
 

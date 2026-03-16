@@ -29,8 +29,8 @@ const resolveTenant = async (req, res, next) => {
         next()
 
     } catch (error) {
-        console.error("TENANT RESOLUTION ERROR:", error.message)
-        res.status(500).json({ message: "Tenant resolution failed"})
+
+        next(error)
     }
 
 }

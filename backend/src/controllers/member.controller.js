@@ -1,6 +1,6 @@
 const { getMembers, deleteMember } = require("../services/member.service")
 
-const getMembersHandler = async (req, res) => {
+const getMembersHandler = async (req, res, next) => {
 
   try {
 
@@ -9,13 +9,14 @@ const getMembersHandler = async (req, res) => {
     res.status(200).json({ members })
 
   } catch (error) {
-    res.status(400).json({ message: error.message })
+    
+    next(error)
   }
   
 }
 
 
-const deleteMemberHandler = async (req, res) => {
+const deleteMemberHandler = async (req, res, next) => {
 
   try {
 
@@ -29,7 +30,9 @@ const deleteMemberHandler = async (req, res) => {
     res.status(200).json(result)
 
   } catch (error) {
-    res.status(400).json({ message: error.message })
+    
+    next(error)
+
   }
 
 }

@@ -1,6 +1,6 @@
 const createTenant = require('../services/tenant.service')
 
-const createTenantHandler = async(req, res) => {
+const createTenantHandler = async(req, res, next) => {
     try {
        const {name} = req.body
 
@@ -17,7 +17,9 @@ const createTenantHandler = async(req, res) => {
        })
 
     } catch (error) {
-        res.status(400).json({ message: error.message })
+        
+        next(error)
+        
     }
 }
 

@@ -6,7 +6,7 @@
 
 const {signup, login, acceptInvite} = require('../services/auth.service')
 
-const signupHandler = async (req, res) => {
+const signupHandler = async (req, res, next) => {
 
     try {
         const {agencyName, email, password} = req.body
@@ -25,13 +25,12 @@ const signupHandler = async (req, res) => {
         })
 
     } catch (error) {
-        return res.status(400).json({
-            message: error.message
-        })
+
+        next(error)
     }
 }
 
-const loginHandler = async (req, res) => {
+const loginHandler = async (req, res, next) => {
 
     try {
         const {email, password} = req.body
@@ -44,19 +43,18 @@ const loginHandler = async (req, res) => {
 
         const result = await login({email, password})
 
-        return res.status(201).json({
+        return res.status(200).json({
             message: "Login successful",
             token: result.token
         })
 
     } catch (error) {
-        return res.status(400).json({
-            message: error.message
-        })
+        
+        next(error)
     }
 }
 
-const acceptInviteHandler = async (req, res) => {
+const acceptInviteHandler = async (req, res, next) => {
 
     try {
         
@@ -68,11 +66,7 @@ const acceptInviteHandler = async (req, res) => {
 
     } catch (error) {
         
-        return res.status(400).json({
-
-            message: error.message
-
-        })
+        next(error)
     }
 }
 

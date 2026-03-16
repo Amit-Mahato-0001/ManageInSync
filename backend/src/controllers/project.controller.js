@@ -1,6 +1,6 @@
 const { createProject, getProject, deleteProject, assignClient, updateProjectStatus} = require('../services/project.service')
 
-const createProjectHandler = async (req, res) => {
+const createProjectHandler = async (req, res, next) => {
     try {
         
         const project = await createProject({
@@ -17,13 +17,12 @@ const createProjectHandler = async (req, res) => {
         })
 
     } catch (error) {
-        return res.status(400).json({
-            message: error.message
-        })
+        
+        next(error)
     }
 }
 
-const getProjectHandler = async(req, res) => {
+const getProjectHandler = async(req, res, next) => {
 
     try {
         
@@ -37,13 +36,12 @@ const getProjectHandler = async(req, res) => {
         })
 
     } catch (error) {
-        return res.status(400).json({
-            message: error.message
-        })
+        
+        next(error)
     }
 }
 
-const deleteProjectHandler = async(req, res) => {
+const deleteProjectHandler = async(req, res, next) => {
 
     try {
         
@@ -58,13 +56,11 @@ const deleteProjectHandler = async(req, res) => {
 
     } catch (error) {
         
-        return res.status(400).json({
-            message: error.message
-        })
+        next(error)
     }
 }
 
-const assignClientHandler = async (req, res) => {
+const assignClientHandler = async (req, res, next) => {
 
     try{
         const {projectId} = req.params
@@ -82,13 +78,12 @@ const assignClientHandler = async (req, res) => {
         })
 
     } catch (error){
-        return res.status(400).json({
-            message: error.message
-        })
+        
+        next(error)
     }
 }
 
-const updateProjectStatusHandler = async (req, res) => {
+const updateProjectStatusHandler = async (req, res, next) => {
 
     try{
         
@@ -109,10 +104,7 @@ const updateProjectStatusHandler = async (req, res) => {
 
     } catch(error){
 
-        res.status(400).json({
-
-            message: error.message
-        })
+        next(error)
     }
 }
 

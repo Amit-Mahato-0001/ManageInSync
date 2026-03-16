@@ -1,6 +1,6 @@
 const AuditLog = require('../models/audit.model')
 
-const getAuditLogs = async(req, res) => {
+const getAuditLogs = async(req, res, next) => {
 
     try {
         const logs = await AuditLog.find({
@@ -13,7 +13,8 @@ const getAuditLogs = async(req, res) => {
         res.json(logs)
 
     } catch (error) {
-        res.status(500).json({ message: "Failed to get audit logs"})
+
+        next(error)
     }
 }
 

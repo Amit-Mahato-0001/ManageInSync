@@ -1,6 +1,6 @@
 const dashboard = require('../services/dashboard.service')
 
-const dashboardHandler = async (req, res) => {
+const dashboardHandler = async (req, res, next) => {
 
     try {
         
@@ -12,9 +12,8 @@ const dashboardHandler = async (req, res) => {
         })
 
     } catch (error) {
-        res.status(400).json({
-            message: error.message
-        })
+        
+        next(error)
     }
 }
 

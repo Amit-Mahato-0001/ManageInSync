@@ -1,6 +1,6 @@
 const { inviteUser } = require('../services/invite.service')
 
-const inviteUserHandler = (targetRole) => async (req, res) => {
+const inviteUserHandler = (targetRole) => async (req, res, next) => {
 
   try {
 
@@ -22,9 +22,9 @@ const inviteUserHandler = (targetRole) => async (req, res) => {
 
     });
 
-  } catch (e) {
+  } catch (error) {
 
-    res.status(400).json({ message: e.message });
+    next(error)
   }
 
 };

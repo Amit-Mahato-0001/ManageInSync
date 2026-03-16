@@ -6,6 +6,7 @@ const router = require('./routes/auth.route')
 const authenticate = require('./middleware/auth.middleware')
 const resolveTenant = require('./middleware/tenant.middleware')
 const requireRole = require('./middleware/rbac.middleware')
+const errorHandler = require('./middleware/errorHandler.middleware')
 
 const projectRoutes = require('./routes/project.route')
 const clientRoutes = require('./routes/client.route')
@@ -60,5 +61,14 @@ app.use("/api/audit-logs", auditRoutes)
 app.use("/api/dashboard", dashboardRoutes)
 app.use("/api/members", memberRoutes)
 app.use("/api/tasks", taskRoutes)
+
+app.get("/api/test-error", (req, res, next) => {
+
+    const error = new Error("Test error working")
+
+    next(error)
+})
+
+app.use(errorHandler)
 
 module.exports = app

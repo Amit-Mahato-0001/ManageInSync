@@ -1,10 +1,13 @@
 const createTenant = require('../services/tenant.service')
 
 const createTenantHandler = async(req, res, next) => {
+
     try {
+        
        const {name} = req.body
 
        if(!name || typeof name !== 'string'){
+
         return res.status(400).json({ message: 'Tenant name is required'})
        }
 

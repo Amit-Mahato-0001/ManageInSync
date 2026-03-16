@@ -11,12 +11,6 @@ const signupHandler = async (req, res, next) => {
     try {
         const {agencyName, email, password} = req.body
 
-        if(!agencyName || !email || !password){
-            return res.status(400).json({
-                message: "Please fill all required fields"
-            })
-        }
-
         const result = await signup({ agencyName, email, password})
 
         return res.status(201).json({
@@ -34,12 +28,6 @@ const loginHandler = async (req, res, next) => {
 
     try {
         const {email, password} = req.body
-
-        if(!email || !password){
-            return res.status(400).json({
-                message: "Invalid credentials"
-            })
-        }
 
         const result = await login({email, password})
 

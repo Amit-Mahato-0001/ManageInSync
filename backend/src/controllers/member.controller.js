@@ -23,6 +23,7 @@ const deleteMemberHandler = async (req, res, next) => {
     const { memberId } = req.params
 
     const result = await deleteMember({
+      
       memberId,
       tenantId: req.tenantId
     })
@@ -32,7 +33,6 @@ const deleteMemberHandler = async (req, res, next) => {
   } catch (error) {
     
     next(error)
-
   }
 
 }

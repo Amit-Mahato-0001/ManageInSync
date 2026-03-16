@@ -5,12 +5,6 @@ const createClientHandler = async (req, res, next) => {
   try {
     const { email, name } = req.body
 
-    if (!email) {
-      return res.status(400).json({
-        message: "Email is required"
-      })
-    }
-
     const client = await createClient({
       email,
       name,
@@ -71,7 +65,5 @@ const deleteClientHandler = async (req, res, next) => {
   }
 
 }
-
-
 
 module.exports = { createClientHandler, getClientsHandler, deleteClientHandler}

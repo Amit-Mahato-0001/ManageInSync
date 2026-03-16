@@ -5,15 +5,18 @@ const Project = require('../models/project.model')
 
 const createClient = async ({ email, name, tenantId}) => {
 
-    if(!email || !tenantId){
-        throw new Error("Email and tenantId required")
+    if(!tenantId){
+
+        throw new Error("tenantId required")
     }
 
     if(!mongoose.Types.ObjectId.isValid(tenantId)){
+
         throw new Error("Invalid tenantId")
     }
 
     const existingUser = await User.findOne({ email, tenantId})
+
     if(existingUser){
         throw new Error("Client already exists")
     }
@@ -23,6 +26,7 @@ const createClient = async ({ email, name, tenantId}) => {
     const hashedPassword = await bcrypt.hash(password, 10)
 
     const client = await User.create({
+
         email,
         name,
         password: hashedPassword,
@@ -37,6 +41,7 @@ const createClient = async ({ email, name, tenantId}) => {
 const getClients = (tenantId) => {
 
     if(!tenantId){
+
         throw new Error("tenantId required")
     }
 
@@ -51,9 +56,9 @@ const getClients = (tenantId) => {
 
 const deleteClient = async ({ clientId, tenantId }) => {
 
-    if(!clientId || !tenantId){
+    if(!tenantId){
 
-        throw new Error("clientId & tenantId required")
+        throw new Error("tenantId required")
     }
 
     if(!mongoose.Types.ObjectId.isValid(clientId)){

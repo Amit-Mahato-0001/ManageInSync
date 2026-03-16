@@ -13,15 +13,6 @@ const createUser = require('../services/user.service')
 const User = require('../models/user.model')
 
 const signup = async ({agencyName, email, password}) => {
-    if(!agencyName || !email || !password){
-        throw new Error("All fields required");
-        
-    }
-
-    if(password.length < 8){
-        throw new Error("Password must be of atleast 8 characters");
-        
-    }
 
     //check duplicate email
     const existingUser = await User.findOne({ email })
@@ -56,10 +47,6 @@ const signup = async ({agencyName, email, password}) => {
             )
         })
 
-    } catch(error){
-
-        throw error
-
     } finally {
 
         await session.endSession()
@@ -92,7 +79,7 @@ const login = async ({ email, password }) => {
     const user = await User.findOne({email}).select("+password")
 
     if(!user){
-        throw new Error("Invalid Email")
+        throw new Error("Invalid Credentials")
     }
 
     if(user.status === "disabled"){
@@ -105,7 +92,7 @@ const login = async ({ email, password }) => {
 
     const isMatch = await bcrypt.compare(password, user.password)
     if(!isMatch){
-        throw new Error("Invalid Password")
+        throw new Error("Invalid Credentials")
     }
 
     if(user.status === "invited" && user.role === "member"){
@@ -129,17 +116,6 @@ return { token }
 const acceptInvite = async ({ token, password }) => {
 
     const inviteToken = token?.trim()
-
-    if(!inviteToken || !password){
-
-        throw new Error("Invalid token or password")
-
-    }
-
-    if(password.length < 8){
-
-        throw new Error("Password must be at least 8 characters ")
-    }
 
     const user = await User.findOne({
 

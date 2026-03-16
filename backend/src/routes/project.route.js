@@ -3,11 +3,20 @@ const { createProjectHandler, getProjectHandler, deleteProjectHandler, assignCli
 const requireRole = require('../middleware/rbac.middleware')
 const auditLogger = require('../middleware/audit.middleware')
 const router = express.Router()
+const validate = require("../middleware/validate.middleware")
+const {
+    createProjectSchema,
+    projectIdParamsSchema,
+    deleteProjectSchema,
+    assignProjectSchema,
+    updateProjectStatusSchema
+} = require('../validators/project.validator')
 
 //CREATE PROJECT
 router.post(
     '/',
     requireRole(["owner", "admin", "member"]),
+    validate(createProjectSchema, "body"),
     auditLogger("PROJECT_CREATED"),
     createProjectHandler
 )
@@ -23,6 +32,7 @@ router.get(
 router.delete(
     '/:projectId',
     requireRole(["owner", "admin" ]),
+    validate(deleteProjectSchema, "params"),
     auditLogger("PROJECT_DELETED"),
     deleteProjectHandler
 )
@@ -31,6 +41,8 @@ router.delete(
 router.put(
     '/:projectId/assign-client',
     requireRole(["owner", "admin"]),
+    validate(projectIdParamsSchema, "params"),
+    validate(assignProjectSchema, "body"),
     auditLogger("CLIENT_ASSIGN_TO_PROJECT"),
     assignClientHandler
 )
@@ -39,6 +51,8 @@ router.put(
 router.patch(
     "/:projectId/status",
     requireRole(["owner", "admin", "member"]),
+    validate(projectIdParamsSchema, "params"),
+    validate(updateProjectStatusSchema, "body"),
     updateProjectStatusHandler
 )
 

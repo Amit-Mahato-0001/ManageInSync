@@ -4,9 +4,9 @@ const { sendInviteEmail } = require('../utils/email')
 
 const inviteUser = async ({email, tenantId, role, invitedByRole}) => {
 
-    if(!email || !tenantId || !role || !invitedByRole){
+    if(!tenantId || !role || !invitedByRole){
 
-        throw new Error("Email, tenantId and role and inviter role required")
+        throw new Error("tenantId and role and inviter role required")
     }
 
     const allowedRoles = ["client", "member", "admin"]

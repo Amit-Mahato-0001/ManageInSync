@@ -1,10 +1,11 @@
-const mongoose = require("mongoose")
 const User = require("../models/user.model")
 
 const getMembers = async (tenantId) => {
 
   if (!tenantId) {
+
     throw new Error("tenantId required")
+
   }
 
   return await User.find({
@@ -16,15 +17,14 @@ const getMembers = async (tenantId) => {
 
 const deleteMember = async ({ memberId, tenantId }) => {
 
-  if (!memberId || !tenantId) {
-    throw new Error("memberId & tenantId required")
+  if (!tenantId) {
+
+    throw new Error("tenantId required")
+
   }
 
-  if (!mongoose.Types.ObjectId.isValid(memberId)) {
-    throw new Error("Invalid memberId")
-  }
-
-  const member = await User.findOne({
+  const member = await User.findOneAndDelete({
+    
     _id: memberId,
     tenantId,
     role: "member",
@@ -35,12 +35,6 @@ const deleteMember = async ({ memberId, tenantId }) => {
   if (!member) {
     throw new Error("Member not found")
   }
-
-  await User.deleteOne({
-    _id: memberId,
-    tenantId,
-    role: "member"
-  })
 
   return { message: "Member deleted successfully" }
 }

@@ -16,6 +16,8 @@ const cors = require('cors')
 const inviteRoutes = require('./routes/invite.route')
 const memberRoutes = require('./routes/member.route')
 const taskRoutes = require('./routes/task.route')
+const tenantRoutes = require('./routes/tenant.route')
+const userRoutes = require('./routes/user.route')
 
 const app = express()
 connectDB()
@@ -61,13 +63,8 @@ app.use("/api/audit-logs", auditRoutes)
 app.use("/api/dashboard", dashboardRoutes)
 app.use("/api/members", memberRoutes)
 app.use("/api/tasks", taskRoutes)
-
-app.get("/api/test-error", (req, res, next) => {
-
-    const error = new Error("Test error working")
-
-    next(error)
-})
+app.use("/api/tenants", tenantRoutes)
+app.use("/api/users", userRoutes)
 
 app.use(errorHandler)
 

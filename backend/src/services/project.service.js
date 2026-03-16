@@ -8,8 +8,8 @@ const createProject = async (data) => {
 
     const {name, tenantId} = data
 
-    if(!name || !tenantId){
-        throw new Error("Project name & tenantId required")
+    if(!tenantId){
+        throw new Error("tenantId required")
     }
 
     if(!mongoose.Types.ObjectId.isValid(tenantId)){
@@ -58,8 +58,8 @@ const getProject = async ({tenantId, user}) => {
 
 const deleteProject = async (projectId, tenantId) => {
 
-    if(!projectId || !tenantId){
-        throw new Error("ProjectId and tenantId required")
+    if(!tenantId){
+        throw new Error("tenantId required")
     }
 
     if(!mongoose.Types.ObjectId.isValid(projectId)){
@@ -83,8 +83,8 @@ const deleteProject = async (projectId, tenantId) => {
 
 const assignClient = async ({projectId, clientIds, tenantId}) => {
 
-    if(!projectId || !clientIds || !tenantId){
-        throw new Error("projectId, clientIds & tenantId required")
+    if(!tenantId){
+        throw new Error("tenantId required")
     }
 
     if(
@@ -131,13 +131,7 @@ const assignClient = async ({projectId, clientIds, tenantId}) => {
 //UPDATE PROJECT STATUS
 
 const updateProjectStatus = async ({projectId, tenantId, user, status}) => {
-
-    const allowedStatuses = ["active", "on-hold", "completed"]
-
-    if(!allowedStatuses.includes(status)){
-        throw new Error("invalid status")
-    }
-
+    
     const project = await Project.findOne({
         _id: projectId,
         tenantId,

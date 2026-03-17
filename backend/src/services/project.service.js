@@ -24,7 +24,7 @@ const createProject = async (data) => {
 
 //GET PROJECT
 
-const getProject = async ({tenantId, user}) => {
+const getProject = async ({tenantId, user, page, limit}) => {
 
     if(!tenantId){
         throw new Error("TenantId required")
@@ -51,7 +51,25 @@ const getProject = async ({tenantId, user}) => {
         query.members = new mongoose.Types.ObjectId(user._id)
     }
 
-    return Project.find(query).lean()
+    const skip = (page - 1) * limit
+
+    const projects = await Project.find(query)
+    .skip(skip)
+    .limit(limit)
+    .lean()
+
+    const total = await Project.countDocuments(query)
+
+    return {
+
+        data: projects,
+        pagination: {
+            total,
+            page,
+            limit,
+            totalPages: Math.ceil( total / limit)
+        }
+    }
 }
 
 //DELETE PROJECT

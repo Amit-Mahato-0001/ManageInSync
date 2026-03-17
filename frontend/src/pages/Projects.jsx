@@ -10,6 +10,7 @@ import { useAuth } from "../context/AuthContext";
 import { fetchClients } from "../api/clients";
 import { Plus, User2, Trash2 } from "lucide-react";
 import { triggerDashboardRefresh } from "../utils/dashboardRefresh";
+import Pagination from "../components/Pagination"
 
 const Projects = () => {
   const { user } = useAuth();
@@ -22,29 +23,48 @@ const Projects = () => {
   const [openDropdown, setOpenDropdown] = useState(null);
   const [selectedClients, setSelectedClients] = useState({});
 
-  // LOAD PROJECTS
-  useEffect(() => {
-    loadProjects();
-  }, []);
+  const [page, setPage] = useState(1)
+  const [pagination, setPagination] = useState({})
 
-  const loadProjects = async () => {
-    try {
-      const res = await fetchProjects();
-      setProjects(res.data.projects);
-    } catch (err) {
-      console.error("Failed to load projects");
-    } finally {
-      setLoading(false);
+  useEffect(() => {
+
+    const loadProjects = async () => {
+
+      try {
+
+        setLoading(true)
+
+        const res = await fetchProjects({page, limit : 3 })
+
+        setProjects(res.data.projects.data)
+        setPagination(res.data.projects.pagination)
+
+      } catch(error){
+
+        console.error("Failed to fetch projects", error)
+
+      } finally {
+
+        setLoading(false)
+
+      }
     }
-  };
+
+    loadProjects()
+
+  }, [page])
 
   // LOAD CLIENTS
   useEffect(() => {
+
     if (user?.role !== "client") {
+
       fetchClients().then((res) => {
+
         setClients(res.data.clients);
       });
     }
+
   }, [user]);
 
   // CREATE PROJECT
@@ -54,7 +74,7 @@ const Projects = () => {
 
     await createProject({ name });
     setName("");
-    loadProjects();
+    setPage(1)
     triggerDashboardRefresh();
   };
 
@@ -62,7 +82,7 @@ const Projects = () => {
   const handleDelete = async (id) => {
     if (!confirm("Delete this project?")) return;
     await deleteProject(id);
-    setProjects((prev) => prev.filter((p) => p._id !== id));
+    setPage(1)
     triggerDashboardRefresh();
   };
 
@@ -102,7 +122,7 @@ const Projects = () => {
     setSelectedClients((prev) => ({ ...prev, [projectId]: [] }));
     setOpenDropdown(null);
 
-    loadProjects();
+    setPage(1)
   };
 
   // PROJECT STATUS
@@ -119,7 +139,7 @@ const Projects = () => {
     }
   };
 
-  if (loading) return <p>Loading projects...</p>;
+  if (loading) return <p>Loading projects...</p>
 
   return (
     <div>
@@ -142,7 +162,9 @@ const Projects = () => {
 
       {/* PROJECT LIST */}
       <div className="space-y-4">
+
         {projects.map((p) => (
+          
           <div key={p._id} className="p-4 rounded-lg shadow relative">
             <div className="flex justify-between items-center">
               <h2 className="font-semibold">{p.name}</h2>
@@ -249,7 +271,14 @@ const Projects = () => {
           </div>
         ))}
       </div>
+
+      <Pagination
+      page={page}
+      totalPages={pagination.totalPages || 1}
+      onPageChange={setPage} />
+
     </div>
+
   );
 };
 

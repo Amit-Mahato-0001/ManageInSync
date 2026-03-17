@@ -1,8 +1,8 @@
 import api from './axios'
 
-export const fetchProjects = () => {
+export const fetchProjects = (params) => {
 
-    return api.get('/projects')
+    return api.get('/projects', {params})
 
 }
 

@@ -1,7 +1,6 @@
 import { ArrowLeft, ArrowRight } from "lucide-react"
 
-
-const Pagination = ({page, totalPages, onPageChange }) => {
+const ProjectsPagination = ({page, totalPages, onPageChange }) => {
 
     return (
 
@@ -29,4 +28,4 @@ const Pagination = ({page, totalPages, onPageChange }) => {
     )
 }
 
-export default Pagination
+export default ProjectsPagination

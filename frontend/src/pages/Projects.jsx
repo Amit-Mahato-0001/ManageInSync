@@ -10,7 +10,7 @@ import { useAuth } from "../context/AuthContext";
 import { fetchClients } from "../api/clients";
 import { Plus, User2, Trash2 } from "lucide-react";
 import { triggerDashboardRefresh } from "../utils/dashboardRefresh";
-import Pagination from "../components/Pagination"
+import ProjectsPagination from "../components/ProjectsPagination";
 
 const Projects = () => {
   const { user } = useAuth();
@@ -272,7 +272,7 @@ const Projects = () => {
         ))}
       </div>
 
-      <Pagination
+      <ProjectsPagination
       page={page}
       totalPages={pagination.totalPages || 1}
       onPageChange={setPage} />

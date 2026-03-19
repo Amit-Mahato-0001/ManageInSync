@@ -28,7 +28,7 @@ const createTask = async (data) => {
     return newTask
 }
 
-const getTasks = async ({tenantId, assigneeId, user}) => {
+const getTasks = async ({tenantId, assigneeId, user, page, limit}) => {
 
     if(!tenantId){
         
@@ -58,9 +58,29 @@ const getTasks = async ({tenantId, assigneeId, user}) => {
         query.assigneeId = new mongoose.Types.ObjectId(assigneeId)
     }
 
-    const tasks = await Task.find(query).lean()
+    const safePage = Math.max(1, Number(page) || 1)
+    const safeLimit = Math.max(1, Number(limit) || 10)
+    const skip = (safePage - 1) * safeLimit
 
-    return tasks
+    const tasks = await Task.find(query)
+    .lean()
+    .skip(skip)
+    .limit(safeLimit)
+
+    const total = await Task.countDocuments(query)
+
+    return {
+
+        data: tasks,
+
+        pagination: {
+
+            total,
+            page: safePage,
+            limit: safeLimit,
+            totalPages: Math.max(1, Math.ceil( total / safeLimit))
+        }
+    }
 }
 
 const deleteTask = async ({tenantId, taskId}) => {

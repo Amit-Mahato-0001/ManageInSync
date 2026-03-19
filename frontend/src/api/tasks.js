@@ -1,7 +1,7 @@
 import api from "./axios";
 
-export const fetchTasks = () => {
-  return api.get("/tasks");
+export const fetchTasks = (params) => {
+  return api.get("/tasks", { params });
 };
 
 export const createTask = (data) => {

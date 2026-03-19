@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { createTask, fetchTasks } from '../api/tasks'
 import { Plus } from "lucide-react"
 import { useAuth } from '../context/AuthContext'
+import TasksPagination from '../components/TasksPagination'
 
 const statusStyles = {
     
@@ -30,30 +31,33 @@ const Tasks = () => {
     const canCreateTasks = user?.role === "owner" || user?.role === "admin"
     const currentUserId = user?.userId
 
-    useEffect(() => {
+    const [page, setPage] = useState(1)
+    const [pagination, setPagination] = useState({})
 
-        loadTasks()
-
-    }, [])
-
-    const loadTasks = async () => {
+    const loadTasks = useCallback(async () => {
 
         try {
             
             setLoading(true)
-            const res = await fetchTasks()
-            setTasks(res.data.tasks || [])
-            setError("")
+
+            const res = await fetchTasks({page, limit : 3 })
+
+            setTasks(res.data.tasks.data)
+            setPagination(res.data.tasks.pagination)
 
         } catch (error) {
-            
-            setError("Failed to load tasks")
 
-        } finally{
+            console.error("Failed to fetch tasks", error)
+            
+        } finally {
 
             setLoading(false)
         }
-    }
+    }, [page])
+
+    useEffect(() => {
+        loadTasks()
+    }, [loadTasks])
 
     const handleCreateTask = async (e) => {
 
@@ -94,7 +98,11 @@ const Tasks = () => {
             setStatus("todo")
             setPriority("medium")
 
-            await loadTasks()
+            if(page === 1){
+                await loadTasks()
+            } else {
+                setPage(1)
+            }
 
         } catch (error) {
 
@@ -106,6 +114,10 @@ const Tasks = () => {
 
         }
     }
+
+    const totalPages = Number.isFinite(pagination.totalPages) && pagination.totalPages > 0
+        ? pagination.totalPages
+        : 1
 
     if(loading) return <p>Loading tasks...</p>
 
@@ -196,6 +208,13 @@ const Tasks = () => {
             ))}
 
             {tasks.length === 0 && <p>No tasks found</p>}
+
+            <TasksPagination 
+
+            page={page}
+            totalPages={totalPages}
+            onPageChange={setPage}
+            />
 
         </div>
 

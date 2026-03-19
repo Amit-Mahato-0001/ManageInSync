@@ -32,11 +32,16 @@ const createTaskHandler = async (req, res, next) => {
 const getTasksHandler = async (req, res, next) => {
 
     try {
+
+        const page = parseInt(req.query.page) || 1
+        const limit = parseInt(req.query.limit) || 10
         
         const tasks = await getTasks({
 
             tenantId: req.tenantId,
-            user: req.user
+            user: req.user,
+            page,
+            limit
         })
 
         return res.status(200).json({

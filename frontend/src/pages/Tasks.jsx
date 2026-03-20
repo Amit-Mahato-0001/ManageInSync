@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
-import { createTask, fetchTasks } from '../api/tasks'
-import { Plus } from "lucide-react"
+import { createTask, deleteTask, fetchTasks } from '../api/tasks'
+import { Plus, Trash2 } from "lucide-react"
 import { useAuth } from '../context/AuthContext'
 import TasksPagination from '../components/TasksPagination'
 
@@ -28,6 +28,7 @@ const Tasks = () => {
     const [status, setStatus] = useState("todo")
     const [priority, setPriority] = useState("medium")
     const [submitting, setSubmitting] = useState(false)
+    const [deletingTaskId, setDeletingTaskId] = useState(null)
     const canCreateTasks = user?.role === "owner" || user?.role === "admin"
     const currentUserId = user?.userId
 
@@ -112,6 +113,37 @@ const Tasks = () => {
 
             setSubmitting(false)
 
+        }
+    }
+
+    const handleDeleteTask = async (taskId) => {
+
+        if(!canCreateTasks){
+            setError("Only owner/admin can delete tasks")
+            return
+        }
+
+        if(!confirm("Delete this task?")) return
+
+        try {
+
+            setError("")
+            setDeletingTaskId(taskId)
+            await deleteTask(taskId)
+
+            if(tasks.length === 1 && page > 1){
+                setPage((prev) => prev - 1)
+            } else {
+                await loadTasks()
+            }
+
+        } catch (error) {
+
+            setError(error.response?.data?.message || "Failed to delete task")
+
+        } finally {
+
+            setDeletingTaskId(null)
         }
     }
 
@@ -203,6 +235,24 @@ const Tasks = () => {
                             </span>
                         </div>
                     </div>
+
+                    
+                  {canCreateTasks && (
+
+                    <button
+                      type='button'
+                      disabled={deletingTaskId === task._id}
+                      onClick={() => handleDeleteTask(task._id)}
+                      className="text-red-500 text-sm disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+
+                      <Trash2
+                        size={34}
+                        className="bg-red-200 p-1 text-red-500 rounded-full hover:bg-red-300 hover:text-red-600 transition shadow-sm"
+                      />
+                      
+                    </button>
+                  )}
 
                 </div>
             ))}

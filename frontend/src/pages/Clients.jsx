@@ -5,6 +5,7 @@ import {
   deleteClient as deleteClientAPI
 } from "../api/clients"
 import { triggerDashboardRefresh } from "../utils/dashboardRefresh"
+import { Plus, Trash2, User2 } from "lucide-react"
 
 const Clients = () => {
 
@@ -17,34 +18,24 @@ const Clients = () => {
   const [message, setMessage] = useState("")
 
   useEffect(() => {
-
     loadClients()
-
   }, [])
 
   const loadClients = async () => {
-
     try {
       setLoading(true)
       const res = await fetchClients()
       setClients(res.data.clients)
-
     } catch (error) {
-
       console.error("Failed to load clients", error)
       setError("Failed to load clients")
-
     } finally {
-
       setLoading(false)
     }
-
   }
 
   const handleSubmit = async (e) => {
-
     e.preventDefault()
-
     if (!email.trim()) return
 
     try {
@@ -63,17 +54,12 @@ const Clients = () => {
       triggerDashboardRefresh()
 
     } catch (error) {
-
       setError(
         error.response?.data?.message || "Failed to send invite"
       )
-
     } finally {
-
       setInviteLoading(false)
-
     }
-    
   }
 
   const handleDelete = async (clientId) => {
@@ -85,7 +71,6 @@ const Clients = () => {
     if (!confirmDelete) return
 
     try {
-
       await deleteClientAPI(clientId)
 
       setClients(prev =>
@@ -94,7 +79,6 @@ const Clients = () => {
       triggerDashboardRefresh()
 
     } catch (error) {
-        
       alert(
         error.response?.data?.message ||
         "Failed to delete client"
@@ -109,9 +93,10 @@ const Clients = () => {
 
       <h1 className="text-2xl font-bold mb-4">Clients</h1>
 
+      {/* invite form */}
       <form
         onSubmit={handleSubmit}
-        className="flex gap-3 mb-6"
+        className="flex gap-2 mb-6"
       >
 
         <input
@@ -120,14 +105,14 @@ const Clients = () => {
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           required
-          className="border p-2 rounded w-60"
+          className="border border-gray-300 rounded-full p-2 w-64 hover:border-blue-500 focus:border-blue-500 focus:outline-none"
         />
 
         <button
           disabled={inviteLoading}
-          className="bg-black text-white px-4 rounded"
+          className="h-10 w-10 flex items-center justify-center rounded-full bg-blue-500 text-white hover:bg-blue-600 transition shadow-sm disabled:opacity-50"
         >
-          {inviteLoading ? "Inviting..." : "Invite Client"}
+          <Plus size={18} />
         </button>
 
       </form>
@@ -140,23 +125,37 @@ const Clients = () => {
         <p className="text-red-500 mb-4">{error}</p>
       )}
 
-      <div className="space-y-3">
+      {/* client list */}
+      <div className="space-y-4">
 
         {clients.map((c) => (
 
           <div
             key={c._id}
-            className="p-4 rounded shadow flex items-center justify-between bg-white"
+            className="p-4 rounded-lg shadow relative"
           >
 
-            <span className="font-medium">{c.email}</span>
+            <div className="flex justify-between items-center">
 
-            <button
-              onClick={() => handleDelete(c._id)}
-              className="px-3 py-2 rounded-full bg-blue-500 hover:bg-blue-700 text-white font-medium disabled:opacity-50"
-            >
-              Remove
-            </button>
+              <div className="flex items-center gap-2">
+                <User2
+                  size={18}
+                  className="bg-blue-200 text-blue-600 rounded-full"
+                />
+                <span className="font-medium">{c.email}</span>
+              </div>
+
+              <button
+                onClick={() => handleDelete(c._id)}
+                className="text-red-500 text-sm"
+              >
+                <Trash2
+                  size={34}
+                  className="bg-red-200 p-1 text-red-500 rounded-full hover:bg-red-300 hover:text-red-600 transition shadow-sm"
+                />
+              </button>
+
+            </div>
 
           </div>
         ))}

@@ -5,16 +5,38 @@ const MemberDashboard = () => {
 
     const [projects, setProjects] = useState([])
     const [loading, setLoading] = useState(true)
+    const [error, setError] = useState("")
 
     useEffect(() => {
 
-        fetchProjects()
-        .then(res => setProjects(res.data.projects))
-        .finally(() => setLoading(false))
+        const loadProjects = async () => {
+
+            try {
+
+                const res = await fetchProjects({ page: 1, limit: 10 })
+                const projectList = res.data?.projects?.data
+
+                setProjects(Array.isArray(projectList) ? projectList : [])
+                setError("")
+
+            } catch (error) {
+
+                console.error("Failed to fetch member projects", error)
+                setError("Failed to load projects")
+
+            } finally {
+
+                setLoading(false)
+            }
+        }
+
+        loadProjects()
 
     }, [])
 
     if(loading) return <p>Loading...</p>
+
+    if(error) return <p className="text-red-500">{error}</p>
    
     return(
 
@@ -32,7 +54,7 @@ const MemberDashboard = () => {
 
                 <div className="space-y-2">
 
-                    {projects.map(p => {
+                    {projects.map((p) => (
 
                         <div
                         key={p._id}
@@ -41,7 +63,7 @@ const MemberDashboard = () => {
                             <p className="font-medium">{p.name}</p>
 
                         </div>
-                    })}
+                    ))}
                 </div>
             ) }
         </div>

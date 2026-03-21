@@ -1,30 +1,15 @@
-import { createContext, use, useContext, useEffect, useState} from "react";
+import { createContext, useContext, useMemo, useState } from "react";
 import { decodeToken } from "../utils/decodeToken";
 
 const AuthContext = createContext(null)
 
 const AuthProvider = ({ children}) => {
 
-    //check pehle se token hai kya (getItem)
-    //ager token nhi hoga matlab login nhi hai toh login feature.. newToken lo aur token me set krdo (setItem)
-    //ager token hai matlab login hai toh logout feature.. token remove kardo(removeItem)
+    const [token, setToken] = useState(() => localStorage.getItem("token"))
 
-    const [token, setToken] = useState(
-        localStorage.getItem("token")
-    )
-
-    const [user, setUser] = useState(null)
-
-    useEffect(() => {
-
-        if(token){
-
-            setUser(decodeToken(token))
-
-        } else{
-
-            setUser(null)
-        }
+    const user = useMemo(() => {
+        if(!token) return null
+        return decodeToken(token)
     }, [token])
 
     const login = (newToken) => {

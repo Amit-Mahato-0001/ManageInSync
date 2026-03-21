@@ -37,8 +37,8 @@ const AuditLogs = () => {
         
         <h1 className='text-2xl font-bold mb-4'>Audit logs</h1>
 
-        {/*SCROLL CONTAINER */}
-        <div className='max-h-[20vh] overflow-y-auto no-scrollbar space-y-2 rounded p-2'>
+        {/* contanier */}
+        <div className='max-h-[26vh] overflow-y-auto no-scrollbar space-y-2 rounded p-2'>
 
             {logs.map((log) => (
                 
@@ -46,11 +46,11 @@ const AuditLogs = () => {
                 className='p-4 shadow rounded text-sm bg-white'
                 key={log._id}>
 
-                    <p className='font-medium'>
+                    <p className='font-bold'>
                         {log.action}
                     </p>
 
-                    <p className='text-gray-500'>
+                    <p className='text-gray-400'>
                         {new Date(log.createdAt).toLocaleString()}
                     </p>
                 </div>

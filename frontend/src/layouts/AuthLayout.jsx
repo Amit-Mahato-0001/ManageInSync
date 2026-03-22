@@ -7,13 +7,9 @@ const AuthLayout = ({ children }) => {
       <div className="relative w-1/2 overflow-hidden">
 
         <img
-          src="7.webp"
+          src="a.jpeg"
           className="absolute inset-0 h-full object-cover"
         />
-
-        <div className="absolute inset-0 pr-2">
-          <div className="h-full backdrop-blur-sm border border-white/20" />
-        </div>
 
         <div className="relative z-10 p-10">
           <img

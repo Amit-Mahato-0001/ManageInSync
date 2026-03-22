@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   fetchProjects,
   createProject,
@@ -26,141 +26,209 @@ const Projects = () => {
   const [page, setPage] = useState(1)
   const [pagination, setPagination] = useState({})
 
-  useEffect(() => {
+  const loadProjects = useCallback(async () => {
 
-    const loadProjects = async () => {
+    try {
+      
+      setLoading(true)
 
-      try {
+      const res = await fetchProjects({ page, limit: 3})
 
-        setLoading(true)
+      setProjects(res.data.projects.data)
+      setPagination(res.data.projects.pagination)
 
-        const res = await fetchProjects({page, limit : 3 })
+    } catch (error) {
+      
+      console.error("Failed to fetch projects", error)
 
-        setProjects(res.data.projects.data)
-        setPagination(res.data.projects.pagination)
+    } finally {
 
-      } catch(error){
-
-        console.error("Failed to fetch projects", error)
-
-      } finally {
-
-        setLoading(false)
-
-      }
+      setLoading(false)
     }
-
-    loadProjects()
 
   }, [page])
 
-  // LOAD CLIENTS
+  useEffect(() => {
+
+    loadProjects()
+
+  },[loadProjects])
+
+  // clients load
   useEffect(() => {
 
     if (user?.role !== "client") {
 
       fetchClients().then((res) => {
 
-        setClients(res.data.clients);
-      });
+        setClients(res.data.clients)
+
+      })
+
     }
 
   }, [user]);
 
-  // CREATE PROJECT
+  // proj create
   const handleCreate = async (e) => {
-    e.preventDefault();
-    if (!name.trim()) return;
 
-    await createProject({ name });
-    setName("");
-    setPage(1)
-    triggerDashboardRefresh();
-  };
+    e.preventDefault()
+    if (!name.trim()) return
 
-  // DELETE
+    await createProject({ name })
+    setName("")
+    
+    if(page === 1){
+
+      await loadProjects()
+
+    } else {
+
+      setPage(1)
+
+    }
+
+    triggerDashboardRefresh()
+
+  }
+
+  // delete
+
   const handleDelete = async (id) => {
-    if (!confirm("Delete this project?")) return;
-    await deleteProject(id);
-    setPage(1)
-    triggerDashboardRefresh();
-  };
 
-  // CHECKBOX TOGGLE
+    if (!confirm("Delete this project?")) return
+
+    await deleteProject(id)
+
+    if(projects.length === 1 && page > 1) {
+
+      setPage((prev) => prev - 1)
+
+    } else if (page === 1) {
+
+      await loadProjects()
+
+    } else {
+
+      setPage(1)
+
+    }
+
+  }
+
+  // toggle 
+
   const handleCheckboxChange = (projectId, clientId) => {
+
     setSelectedClients((prev) => {
-      const current = prev[projectId] || [];
+
+      const current = prev[projectId] || []
       
       if (current.includes(clientId)) {
+
         return {
           ...prev,
           [projectId]: current.filter((id) => id !== clientId),
-        };
+        }
+
       } else {
+
         return {
           ...prev,
           [projectId]: [...current, clientId],
-        };
+        }
+
       }
-    });
-  };
+    })
 
-  // SAVE CLIENTS
+  }
+
+  // client save
+
   const handleSaveClients = async (projectId) => {
-    const existing = projects.find((p) => p._id === projectId)?.clients || [];
 
-    const newSelected = selectedClients[projectId] || [];
+    const existing = projects.find((p) => p._id === projectId)?.clients || []
+
+    const newSelected = selectedClients[projectId] || []
 
     // merge existing + newly selected
-    const finalClients = [...new Set([...existing, ...newSelected])];
 
-    if (finalClients.length === 0) return;
+    const finalClients = [...new Set([...existing, ...newSelected])]
 
-    await assignClient(projectId, finalClients);
+    if (finalClients.length === 0) return
+
+    await assignClient(projectId, finalClients)
 
     // reset state
-    setSelectedClients((prev) => ({ ...prev, [projectId]: [] }));
-    setOpenDropdown(null);
 
-    setPage(1)
-  };
+    setSelectedClients((prev) => ({ ...prev, [projectId]: [] }))
 
-  // PROJECT STATUS
+    setOpenDropdown(null)
+
+    if(page === 1){
+
+      await loadProjects()
+
+    } else {
+
+      setPage(1)
+    }
+
+  }
+
+  // project status
+
   const handleStatusChange = async (projectId, status) => {
+
     try {
-      await updateProjectStatus(projectId, status);
+
+      await updateProjectStatus(projectId, status)
 
       setProjects((prev) =>
         prev.map((p) => (p._id === projectId ? { ...p, status } : p)),
-      );
-      triggerDashboardRefresh();
+      )
+
+      triggerDashboardRefresh()
+
     } catch (error) {
-      alert("Failed to update status");
+
+      alert("Failed to update status")
+
     }
-  };
+
+  }
 
   if (loading) return <p>Loading projects...</p>
 
   return (
+
     <div>
+
       <h1 className="text-2xl font-bold mb-4">Projects</h1>
 
-      {/* CREATE */}
+      {/* create */}
+
       {user?.role !== "client" && (
+
         <form onSubmit={handleCreate} className="flex gap-2 mb-6">
+
           <input
             className="border border-gray-300 rounded-full p-2 w-64 hover:border-blue-500 focus:border-blue-500 focus:outline-none"
             placeholder="New project name"
             value={name}
             onChange={(e) => setName(e.target.value)}
           />
+
           <button className="h-10 w-10 flex items-center justify-center rounded-full bg-blue-500 text-white hover:bg-blue-600 transition shadow-sm">
             <Plus size={18} />
           </button>
+
         </form>
+
       )}
 
-      {/* PROJECT LIST */}
+      {/* list projs */}
+
       <div className="space-y-4">
 
         {projects.map((p) => (
@@ -170,7 +238,9 @@ const Projects = () => {
               <h2 className="font-semibold">{p.name}</h2>
 
               {user?.role !== "client" && (
+
                 <div className="flex gap-3">
+
                   <button
                     onClick={() =>
                       setOpenDropdown(openDropdown === p._id ? null : p._id)
@@ -189,15 +259,21 @@ const Projects = () => {
                         size={34}
                         className="bg-red-200 p-1 text-red-500 rounded-full hover:bg-red-300 hover:text-red-600 transition shadow-sm"
                       />
+
                     </button>
+
                   )}
+
                 </div>
+
               )}
+
             </div>
 
-            {/* ASSIGNED CLIENT BADGES */}
+            {/* assign client badge section */}
 
             {user?.role !== "client" && (
+
               <div className="flex mt-2 flex-wrap items-center gap-2">
                 <User2
                   size={18}
@@ -205,6 +281,7 @@ const Projects = () => {
                 />
 
                 {p.clients?.length > 0 ? (
+
                   <span className="text-sm p-2 text-gray-400">
                     {p.clients
                       .map((id) => {
@@ -214,18 +291,26 @@ const Projects = () => {
                       .filter(Boolean)
                       .join(", ")}
                   </span>
+
                 ) : (
+
                   <span className="text-sm p-2 text-gray-400">
                     No clients assigned
                   </span>
+
                 )}
+
               </div>
+              
             )}
 
-            {/* ASSIGN CLIENT DROPDOWN */}
+            {/* assign client dropdown */}
+
             {openDropdown === p._id && (
+
               <div className="absolute mt-14 w-96 rounded text-gray-400 bg-white shadow p-3 z-10">
                 <div className="max-h-40 overflow-y-auto space-y-2">
+
                   {clients.map((c) => (
                     <label
                       key={c._id}
@@ -237,11 +322,16 @@ const Projects = () => {
                           selectedClients[p._id]?.includes(c._id) ||
                           p.clients?.includes(c._id)
                         }
+
                         onChange={() => handleCheckboxChange(p._id, c._id)}
                       />
+
                       {c.email}
+                      
                     </label>
+
                   ))}
+
                 </div>
 
                 <button
@@ -253,11 +343,12 @@ const Projects = () => {
               </div>
             )}
 
-            {/* PROJECT STATUS DPOPDOWN */}
+            {/* proj status dropdown*/}
 
             {(user?.role === "owner" ||
               user?.role === "admin" ||
               user?.role === "member") && (
+
               <select
                 value={p.status}
                 onChange={(e) => handleStatusChange(p._id, e.target.value)}
@@ -267,9 +358,13 @@ const Projects = () => {
                 <option value="on-hold">On Hold</option>
                 <option value="completed">Completed</option>
               </select>
+
             )}
+
           </div>
+
         ))}
+
       </div>
 
       <ProjectsPagination
@@ -279,7 +374,7 @@ const Projects = () => {
 
     </div>
 
-  );
-};
+  )
+}
 
-export default Projects;
+export default Projects

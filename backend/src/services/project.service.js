@@ -175,10 +175,66 @@ const updateProjectStatus = async ({projectId, tenantId, user, status}) => {
 
 }
 
+// ASSIGN MEMBER
+
+const assignMember = async({projectId, memberIds, tenantId}) => {
+
+    if(!tenantId){
+
+        throw new Error("tenantId required")
+
+    }
+
+    if(!mongoose.Types.ObjectId.isValid(projectId)){
+
+        throw new Error("Invalid projectId or memberIds")
+    }
+
+    const project = await Project.findOne({
+
+        _id: projectId,
+        tenantId,
+        deletedAt: null
+
+    })
+
+    if(!project){
+
+        throw new Error("Project not found")
+
+    }
+
+    const validMembers = await User.find({
+
+        _id: { $in: memberIds },
+        tenantId,
+        role: "member",
+        status: "active"
+
+    })
+
+    if(validMembers.length !== memberIds.length){
+
+        throw new Error("Some memberIds are invalid")
+
+    }
+
+    const validMemberIds = validMembers.map(m => m._id)
+
+    await Project.updateOne(
+
+        {_id : projectId},
+        { $addToSet: {members: {$each: validMemberIds}}}
+    )
+
+    return await Project.findById(projectId)
+}
+
 module.exports = {
     createProject,
     getProject,
     deleteProject,
     assignClient,
-    updateProjectStatus
+    updateProjectStatus,
+    assignMember
 }

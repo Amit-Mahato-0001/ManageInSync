@@ -1,5 +1,5 @@
 const express = require('express')
-const { createProjectHandler, getProjectHandler, deleteProjectHandler, assignClientHandler, updateProjectStatusHandler } = require('../controllers/project.controller')
+const { createProjectHandler, getProjectHandler, deleteProjectHandler, assignClientHandler, updateProjectStatusHandler, assignMemberHandler } = require('../controllers/project.controller')
 const requireRole = require('../middleware/rbac.middleware')
 const auditLogger = require('../middleware/audit.middleware')
 const router = express.Router()
@@ -9,7 +9,8 @@ const {
     projectIdParamsSchema,
     deleteProjectSchema,
     assignProjectSchema,
-    updateProjectStatusSchema
+    updateProjectStatusSchema,
+    assignMemberSchema
 } = require('../validators/project.validator')
 
 //CREATE PROJECT
@@ -54,6 +55,17 @@ router.patch(
     validate(projectIdParamsSchema, "params"),
     validate(updateProjectStatusSchema, "body"),
     updateProjectStatusHandler
+)
+
+//ASSIGN MEMBER
+
+router.put(
+    '/:projectId/assign-member',
+    requireRole(["owner", "admin"]),
+    validate(projectIdParamsSchema, "params"),
+    validate(assignMemberSchema, "body"),
+    auditLogger("MEMBER_ASSIGN_TO_PROJECT"),
+    assignMemberHandler
 )
 
 module.exports = router

@@ -16,7 +16,7 @@ const createProjectSchema = z.object({
     .max(500, "Description too long")
     .optional(),
 
-    members: z
+    memberIds: z
     .array(objectId("memberId"))
     .optional(),
 
@@ -36,7 +36,8 @@ const assignProjectSchema = z.object({
 
     clientIds: z
     .array(objectId("clientId"))
-    .min(1, "Atleast one client required")
+    .min(1, "Atleast one client required"),
+
 })
 
 const updateProjectStatusSchema = z.object({
@@ -44,10 +45,19 @@ const updateProjectStatusSchema = z.object({
     status: z.enum(["active", "completed", "on-hold"])
 })
 
+const assignMemberSchema = z.object({
+
+    memberIds: z
+    .array(objectId("memberId"))
+    .min(1, "At least one member required")
+
+})
+
 module.exports = {
     createProjectSchema,
     projectIdParamsSchema,
     deleteProjectSchema,
     assignProjectSchema,
-    updateProjectStatusSchema
+    updateProjectStatusSchema,
+    assignMemberSchema
 }

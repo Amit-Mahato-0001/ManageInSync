@@ -1,4 +1,4 @@
-const { createProject, getProject, deleteProject, assignClient, updateProjectStatus} = require('../services/project.service')
+const { createProject, getProject, deleteProject, assignClient, updateProjectStatus, assignMember} = require('../services/project.service')
 
 const createProjectHandler = async (req, res, next) => {
     try {
@@ -6,7 +6,7 @@ const createProjectHandler = async (req, res, next) => {
         const project = await createProject({
             name: req.body.name,
             description: req.body.description,
-            members: req.body.members,
+            members: req.body.memberIds,
             clients: req.body.clientIds,
             tenantId: req.tenantId
         })
@@ -117,10 +117,40 @@ const updateProjectStatusHandler = async (req, res, next) => {
     }
 }
 
+const assignMemberHandler = async (req, res, next) => {
+
+    try{
+
+        const {projectId} = req.params
+        const {memberIds} = req.body
+
+        const project = await assignMember({
+
+            projectId,
+            memberIds,
+            tenantId: req.tenantId
+
+        })
+
+        return res.status(200).json({
+
+            message: "Member assigned successfully",
+            project
+
+        })
+
+    } catch(error) {
+
+        next(error)
+
+    }
+}
+
 module.exports = {
     createProjectHandler,
     getProjectHandler,
     deleteProjectHandler,
     assignClientHandler,
-    updateProjectStatusHandler
+    updateProjectStatusHandler,
+    assignMemberHandler
 }

@@ -1,0 +1,168 @@
+import { useCallback, useEffect, useState } from "react"
+import {
+  fetchProjects,
+  createProject,
+  deleteProject,
+  assignClient,
+  assignMember,
+  updateProjectStatus,
+} from "../../api/projects"
+import { useAuth } from "../../context/AuthContext"
+import { fetchClients } from "../../api/clients"
+import { fetchMembers } from "../../api/members"
+import { triggerDashboardRefresh } from "../../utils/dashboardRefresh"
+import ProjectsPagination from "../../components/ProjectsPagination"
+
+import CreateProjectForm from "./CreateProjectForm"
+import ProjectCard from "./ProjectCard"
+
+const Projects = () => {
+  const { user } = useAuth()
+
+  const [projects, setProjects] = useState([])
+  const [clients, setClients] = useState([])
+  const [members, setMembers] = useState([])
+  const [name, setName] = useState("")
+  const [loading, setLoading] = useState(true)
+
+  const [openClientDropdown, setOpenClientDropdown] = useState(null)
+  const [openMemberDropdown, setOpenMemberDropdown] = useState(null)
+  const [selectedClients, setSelectedClients] = useState({})
+  const [selectedMembers, setSelectedMembers] = useState({})
+
+  const [page, setPage] = useState(1)
+  const [pagination, setPagination] = useState({})
+  const canAssign = user?.role === "owner" || user?.role === "admin"
+
+  const loadProjects = useCallback(async () => {
+
+    try {
+
+      setLoading(true);
+      const res = await fetchProjects({ page, limit: 3 })
+      setProjects(res.data.projects.data);
+      setPagination(res.data.projects.pagination)
+
+    } finally {
+      setLoading(false);
+    }
+
+  }, [page])
+
+  useEffect(() => {
+
+    loadProjects()
+
+  }, [loadProjects])
+
+  useEffect(() => {
+
+    if (!canAssign) return
+
+    fetchClients().then((res) => setClients(res.data.clients))
+    fetchMembers().then((res) => setMembers(res.data.members))
+
+  }, [canAssign])
+
+  const handleCreate = async (e) => {
+
+    e.preventDefault()
+    if (!name.trim()) return
+
+    await createProject({ name })
+    setName("")
+
+    page === 1 ? await loadProjects() : setPage(1)
+    triggerDashboardRefresh()
+
+  }
+
+  const handleDelete = async (id) => {
+
+    if (!confirm("Delete this project?")) return
+
+    await deleteProject(id)
+
+    if (projects.length === 1 && page > 1) {
+
+      setPage((p) => p - 1)
+
+    } else {
+
+      setPage(1)
+    }
+
+  }
+
+  const handleStatusChange = async (id, status) => {
+
+    await updateProjectStatus(id, status);
+
+    setProjects((prev) =>
+      prev.map((p) => (p._id === id ? { ...p, status } : p))
+    )
+
+    triggerDashboardRefresh()
+
+  }
+
+  return (
+
+    <div>
+
+      <h1 className="text-2xl font-bold mb-4">Projects</h1>
+
+      {user?.role !== "client" && (
+
+        <CreateProjectForm
+          name={name}
+          setName={setName}
+          onSubmit={handleCreate}
+        />
+
+      )}
+
+      <div className="space-y-4">
+
+        {projects.map((p) => (
+
+          <ProjectCard
+            key={p._id}
+            p={p}
+            user={user}
+            canAssign={canAssign}
+            clients={clients}
+            members={members}
+            openClientDropdown={openClientDropdown}
+            setOpenClientDropdown={setOpenClientDropdown}
+            openMemberDropdown={openMemberDropdown}
+            setOpenMemberDropdown={setOpenMemberDropdown}
+            selectedClients={selectedClients}
+            setSelectedClients={setSelectedClients}
+            selectedMembers={selectedMembers}
+            setSelectedMembers={setSelectedMembers}
+            handleDelete={handleDelete}
+            handleStatusChange={handleStatusChange}
+            assignClient={assignClient}
+            assignMember={assignMember}
+            loadProjects={loadProjects}
+            page={page}
+            setPage={setPage}
+          />
+
+        ))}
+
+      </div>
+
+      <ProjectsPagination
+        page={page}
+        totalPages={pagination.totalPages || 1}
+        onPageChange={setPage}
+      />
+
+    </div>
+
+  )
+}
+
+export default Projects;

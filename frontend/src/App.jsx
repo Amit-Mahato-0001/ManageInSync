@@ -4,7 +4,7 @@ import Login from "./pages/Login"
 import AuthLayout from './layouts/AuthLayout'
 import AppLayout from './layouts/AppLayout'
 import ProtectedRoute from './components/ProtectedRoute'
-import Projects from './pages/Projects'
+import Projects from './pages/projects/index'
 import Clients from './pages/Clients'
 import AuditLogs from './pages/AuditLogs'
 import Signup from './pages/Signup'

@@ -27,3 +27,8 @@ export const updateProjectStatus = (projectId, status) => {
 
     return api.patch(`/projects/${projectId}/status`, {status})
 }
+
+export const assignMember = (projectId, memberIds) => {
+
+    return api.put(`/projects/${projectId}/assign-member`, {memberIds})
+}

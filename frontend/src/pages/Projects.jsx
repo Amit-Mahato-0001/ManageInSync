@@ -4,11 +4,13 @@ import {
   createProject,
   deleteProject,
   assignClient,
+  assignMember,
   updateProjectStatus,
 } from "../api/projects";
 import { useAuth } from "../context/AuthContext";
 import { fetchClients } from "../api/clients";
-import { Plus, User2, Trash2 } from "lucide-react";
+import { fetchMembers } from "../api/members";
+import { Plus, User2, Users, Trash2 } from "lucide-react";
 import { triggerDashboardRefresh } from "../utils/dashboardRefresh";
 import ProjectsPagination from "../components/ProjectsPagination";
 
@@ -17,14 +19,18 @@ const Projects = () => {
 
   const [projects, setProjects] = useState([]);
   const [clients, setClients] = useState([]);
+  const [members, setMembers] = useState([]);
   const [name, setName] = useState("");
   const [loading, setLoading] = useState(true);
 
-  const [openDropdown, setOpenDropdown] = useState(null);
+  const [openClientDropdown, setOpenClientDropdown] = useState(null);
+  const [openMemberDropdown, setOpenMemberDropdown] = useState(null);
   const [selectedClients, setSelectedClients] = useState({});
+  const [selectedMembers, setSelectedMembers] = useState({});
 
   const [page, setPage] = useState(1)
   const [pagination, setPagination] = useState({})
+  const canAssign = user?.role === "owner" || user?.role === "admin"
 
   const loadProjects = useCallback(async () => {
 
@@ -54,20 +60,32 @@ const Projects = () => {
 
   },[loadProjects])
 
-  // clients load
+  // clients + members load
   useEffect(() => {
 
-    if (user?.role !== "client") {
+    if (!canAssign) return
 
-      fetchClients().then((res) => {
+    fetchClients()
+      .then((res) => {
 
         setClients(res.data.clients)
 
       })
+      .catch((error) => {
+        console.error("Failed to fetch clients", error)
+      })
 
-    }
+    fetchMembers()
+      .then((res) => {
 
-  }, [user]);
+        setMembers(res.data.members)
+
+      })
+      .catch((error) => {
+        console.error("Failed to fetch members", error)
+      })
+
+  }, [canAssign]);
 
   // proj create
   const handleCreate = async (e) => {
@@ -118,7 +136,7 @@ const Projects = () => {
 
   // toggle 
 
-  const handleCheckboxChange = (projectId, clientId) => {
+  const handleClientCheckboxChange = (projectId, clientId) => {
 
     setSelectedClients((prev) => {
 
@@ -136,6 +154,31 @@ const Projects = () => {
         return {
           ...prev,
           [projectId]: [...current, clientId],
+        }
+
+      }
+    })
+
+  }
+
+  const handleMemberCheckboxChange = (projectId, memberId) => {
+
+    setSelectedMembers((prev) => {
+
+      const current = prev[projectId] || []
+
+      if (current.includes(memberId)) {
+
+        return {
+          ...prev,
+          [projectId]: current.filter((id) => id !== memberId),
+        }
+
+      } else {
+
+        return {
+          ...prev,
+          [projectId]: [...current, memberId],
         }
 
       }
@@ -163,7 +206,7 @@ const Projects = () => {
 
     setSelectedClients((prev) => ({ ...prev, [projectId]: [] }))
 
-    setOpenDropdown(null)
+    setOpenClientDropdown(null)
 
     if(page === 1){
 
@@ -174,6 +217,31 @@ const Projects = () => {
       setPage(1)
     }
 
+  }
+
+  const handleSaveMembers = async (projectId) => {
+
+    const existing = projects.find((p) => p._id === projectId)?.members || []
+
+    const newSelected = selectedMembers[projectId] || []
+
+    const finalMembers = [...new Set([...existing, ...newSelected])]
+
+    if (finalMembers.length === 0) return
+
+    await assignMember(projectId, finalMembers)
+
+    setSelectedMembers((prev) => ({ ...prev, [projectId]: [] }))
+    setOpenMemberDropdown(null)
+
+    if(page === 1){
+
+      await loadProjects()
+
+    } else {
+
+      setPage(1)
+    }
   }
 
   // project status
@@ -237,17 +305,32 @@ const Projects = () => {
             <div className="flex justify-between items-center">
               <h2 className="font-semibold">{p.name}</h2>
 
-              {user?.role !== "client" && (
+              {canAssign && (
 
                 <div className="flex gap-3">
 
                   <button
-                    onClick={() =>
-                      setOpenDropdown(openDropdown === p._id ? null : p._id)
-                    }
+                    onClick={() => {
+                      setOpenClientDropdown(
+                        openClientDropdown === p._id ? null : p._id,
+                      )
+                      setOpenMemberDropdown(null)
+                    }}
                     className="p-2 rounded-full bg-blue-500 text-white hover:bg-blue-600 transition shadow-sm text-sm"
                   >
                     Assign Clients
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      setOpenMemberDropdown(
+                        openMemberDropdown === p._id ? null : p._id,
+                      )
+                      setOpenClientDropdown(null)
+                    }}
+                    className="p-2 rounded-full bg-blue-500 text-white hover:bg-blue-600 transition shadow-sm text-sm"
+                  >
+                    Assign Members
                   </button>
 
                   {(user.role === "owner" || user.role === "admin") && (
@@ -272,7 +355,7 @@ const Projects = () => {
 
             {/* assign client badge section */}
 
-            {user?.role !== "client" && (
+            {canAssign && (
 
               <div className="flex mt-2 flex-wrap items-center gap-2">
                 <User2
@@ -283,6 +366,7 @@ const Projects = () => {
                 {p.clients?.length > 0 ? (
 
                   <span className="text-sm p-2 text-gray-400">
+
                     {p.clients
                       .map((id) => {
                         const client = clients.find((c) => c._id === id);
@@ -290,11 +374,13 @@ const Projects = () => {
                       })
                       .filter(Boolean)
                       .join(", ")}
+
                   </span>
 
                 ) : (
 
                   <span className="text-sm p-2 text-gray-400">
+
                     No clients assigned
                   </span>
 
@@ -304,9 +390,46 @@ const Projects = () => {
               
             )}
 
+            {canAssign && (
+
+              <div className="flex mt-2 flex-wrap items-center gap-2">
+
+                <Users
+                  size={18}
+                  className="bg-blue-200 text-blue-600 rounded-full"
+                />
+
+                {p.members?.length > 0 ? (
+
+                  <span className="text-sm p-2 text-gray-400">
+
+                    {p.members
+                      .map((id) => {
+                        const member = members.find((m) => m._id === id);
+                        return member?.email;
+                      })
+                      .filter(Boolean)
+                      .join(", ")}
+
+                  </span>
+
+                ) : (
+
+                  <span className="text-sm p-2 text-gray-400">
+
+                    No members assigned
+                    
+                  </span>
+
+                )}
+
+              </div>
+
+            )}
+
             {/* assign client dropdown */}
 
-            {openDropdown === p._id && (
+            {openClientDropdown === p._id && (
 
               <div className="absolute mt-14 w-96 rounded text-gray-400 bg-white shadow p-3 z-10">
                 <div className="max-h-40 overflow-y-auto space-y-2">
@@ -323,7 +446,9 @@ const Projects = () => {
                           p.clients?.includes(c._id)
                         }
 
-                        onChange={() => handleCheckboxChange(p._id, c._id)}
+                        onChange={() =>
+                          handleClientCheckboxChange(p._id, c._id)
+                        }
                       />
 
                       {c.email}
@@ -336,6 +461,41 @@ const Projects = () => {
 
                 <button
                   onClick={() => handleSaveClients(p._id)}
+                  className="mt-3 w-full bg-blue-500 text-white text-sm py-2 rounded-full hover:bg-blue-600 transition shadow-sm"
+                >
+                  Save
+                </button>
+              </div>
+            )}
+
+            {openMemberDropdown === p._id && (
+
+              <div className="absolute mt-14 w-96 rounded text-gray-400 bg-white shadow p-3 z-10">
+                <div className="max-h-40 overflow-y-auto space-y-2">
+
+                  {members.map((m) => (
+                    <label
+                      key={m._id}
+                      className="flex items-center gap-2 text-sm"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={
+                          selectedMembers[p._id]?.includes(m._id) ||
+                          p.members?.includes(m._id)
+                        }
+                        onChange={() =>
+                          handleMemberCheckboxChange(p._id, m._id)
+                        }
+                      />
+                      {m.email}
+                    </label>
+                  ))}
+
+                </div>
+
+                <button
+                  onClick={() => handleSaveMembers(p._id)}
                   className="mt-3 w-full bg-blue-500 text-white text-sm py-2 rounded-full hover:bg-blue-600 transition shadow-sm"
                 >
                   Save

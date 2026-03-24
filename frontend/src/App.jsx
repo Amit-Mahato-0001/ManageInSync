@@ -11,7 +11,7 @@ import Signup from './pages/Signup'
 import DashboardRouter from './routes/DashboardRouter'
 import AcceptInvite from './pages/AcceptInvite'
 import Members from './pages/Members'
-import Tasks from './pages/Tasks'
+import ProjectTasks from './pages/projects/ProjectTasks'
 
 const App = () => {
 
@@ -23,7 +23,7 @@ const App = () => {
       <Route path='/accept-invite' element={<AuthLayout><AcceptInvite/></AuthLayout>}/>
       <Route path='/' element={<ProtectedRoute><AppLayout><DashboardRouter/></AppLayout></ProtectedRoute>}/>
       <Route path='/projects' element={<ProtectedRoute><AppLayout><Projects/></AppLayout></ProtectedRoute>}/>
-      <Route path='/tasks' element={<ProtectedRoute allowedRoles={["owner", "admin", "member"]}><AppLayout><Tasks/></AppLayout></ProtectedRoute>}/>
+      <Route path='/projects/:projectId/tasks' element={<ProtectedRoute allowedRoles={["owner", "admin", "member"]}><AppLayout><ProjectTasks/></AppLayout></ProtectedRoute>}/>
       <Route path='/clients' element={<ProtectedRoute allowedRoles={["owner", "admin"]}><AppLayout><Clients/></AppLayout></ProtectedRoute>}/>
       <Route path='/members' element={<ProtectedRoute allowedRoles={["owner", "admin"]}><AppLayout><Members/></AppLayout></ProtectedRoute>}/>
       <Route path='/audit-logs' element={<ProtectedRoute allowedRoles={["owner", "admin"]}><AppLayout><AuditLogs/></AppLayout></ProtectedRoute>}/>

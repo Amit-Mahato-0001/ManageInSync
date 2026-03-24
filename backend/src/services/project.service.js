@@ -1,5 +1,6 @@
 const mongoose = require('mongoose')
 const Project = require('../models/project.model')
+const Task = require('../models/task.model')
 const User = require('../models/user.model')
 
 //CREATE PROJECT 
@@ -93,6 +94,17 @@ const deleteProject = async (projectId, tenantId) => {
     if(!project){
         throw new Error("Project not found")
     }
+
+    await Task.updateMany(
+        {
+            tenantId: new mongoose.Types.ObjectId(tenantId),
+            projectId: new mongoose.Types.ObjectId(projectId),
+            deletedAt: null
+        },
+        {
+            $set: { deletedAt: new Date() }
+        }
+    )
 
     return project
 }

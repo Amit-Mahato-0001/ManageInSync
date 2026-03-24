@@ -3,7 +3,6 @@ import { useNavigate, useLocation, Link } from "react-router-dom";
 import {
   LayoutDashboard,
   FolderKanban,
-  CheckSquare,
   Users,
   User,
   FileText,
@@ -22,7 +21,6 @@ export default function AppLayout({ children }) {
   const navItems = [
     { name: "Dashboard", to: "/", icon: LayoutDashboard, roles: ["owner", "admin", "member", "client"] },
     { name: "Projects", to: "/projects", icon: FolderKanban, roles: ["owner", "admin", "member", "client"] },
-    { name: "Tasks", to: "/tasks", icon: CheckSquare, roles: ["owner", "admin", "member"] },
     { name: "Clients", to: "/clients", icon: User, roles: ["owner", "admin"] },
     { name: "Members", to: "/members", icon: Users, roles: ["owner", "admin"] },
     { name: "Audit Logs", to: "/audit-logs", icon: FileText, roles: ["owner", "admin"] },

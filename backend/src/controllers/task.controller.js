@@ -3,24 +3,25 @@ const { createTask, getTasks, deleteTask } = require("../services/task.service")
 const createTaskHandler = async (req, res, next) => {
 
     try {
+        const { projectId } = req.params
         
         const task = await createTask({
+            title: req.body.title,
+            assigneeId: req.body.assigneeId,
+            tenantId: req.tenantId,
+            projectId,
+            status: req.body.status,
+            priority: req.body.priority,
+            createdBy: req.user._id,
+            user: req.user
+        })
 
-        title: req.body.title,
-        assigneeId: req.body.assigneeId,
-        tenantId: req.tenantId,
-        status: req.body.status,
-        priority: req.body.priority,
-        createdBy: req.user._id
-
-    })
-
-    return res.status(200).json(
-        {
-            message: "Task created successfully",
-            task
-        }
-    )
+        return res.status(200).json(
+            {
+                message: "Task created successfully",
+                task
+            }
+        )
 
     } catch (error) {
 
@@ -32,16 +33,20 @@ const createTaskHandler = async (req, res, next) => {
 const getTasksHandler = async (req, res, next) => {
 
     try {
+        const { projectId } = req.params
 
         const page = parseInt(req.query.page) || 1
         const limit = parseInt(req.query.limit) || 10
         
         const tasks = await getTasks({
-
             tenantId: req.tenantId,
+            projectId,
             user: req.user,
             page,
-            limit
+            limit,
+            assigneeId: req.query.assigneeId,
+            status: req.query.status,
+            priority: req.query.priority
         })
 
         return res.status(200).json({
@@ -60,12 +65,14 @@ const deleteTaskHandler = async (req, res, next) => {
 
     try {
         
-        const {taskId} = req.params
+        const { projectId, taskId } = req.params
 
         const task = await deleteTask({
             
             tenantId: req.tenantId,
-            taskId
+            projectId,
+            taskId,
+            user: req.user
         })
 
         return res.status(200).json({

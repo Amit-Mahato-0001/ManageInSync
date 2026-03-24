@@ -3,6 +3,12 @@ const mongoose = require("mongoose")
 const taskSchema = new mongoose.Schema(
 
     {
+        projectId: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "Project",
+            required: true
+        },
+
         title: {
             type: String,
             required: true,
@@ -49,5 +55,8 @@ const taskSchema = new mongoose.Schema(
     {timestamps: true}
 
 )
+
+taskSchema.index({ tenantId: 1, projectId: 1, deletedAt: 1 })
+taskSchema.index({ tenantId: 1, assigneeId: 1, status: 1, deletedAt: 1 })
 
 module.exports = mongoose.model("Task", taskSchema)

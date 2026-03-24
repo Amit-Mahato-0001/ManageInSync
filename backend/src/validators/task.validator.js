@@ -20,12 +20,21 @@ const createTaskSchema = z.object({
     .default("medium")
 })
 
-const deleteTaskSchema = z.object({
+const projectTaskParamsSchema = z.object({
+
+    projectId: objectId("projectId")
     
+})
+
+const deleteTaskSchema = z.object({
+
+    projectId: objectId("projectId"),
     taskId: objectId("taskId")
+
 })
 
 module.exports = {
     createTaskSchema,
+    projectTaskParamsSchema,
     deleteTaskSchema
 }

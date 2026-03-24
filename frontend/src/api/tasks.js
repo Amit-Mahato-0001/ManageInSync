@@ -1,13 +1,13 @@
 import api from "./axios";
 
-export const fetchTasks = (params) => {
-  return api.get("/tasks", { params });
+export const fetchTasks = (projectId, params) => {
+  return api.get(`/projects/${projectId}/tasks`, { params });
 };
 
-export const createTask = (data) => {
-  return api.post("/tasks", data);
+export const createTask = (projectId, data) => {
+  return api.post(`/projects/${projectId}/tasks`, data);
 };
 
-export const deleteTask = (taskId) => {
-  return api.delete(`/tasks/${taskId}`);
+export const deleteTask = (projectId, taskId) => {
+  return api.delete(`/projects/${projectId}/tasks/${taskId}`);
 };

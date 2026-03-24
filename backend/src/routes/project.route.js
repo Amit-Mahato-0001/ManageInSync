@@ -1,5 +1,6 @@
 const express = require('express')
 const { createProjectHandler, getProjectHandler, deleteProjectHandler, assignClientHandler, updateProjectStatusHandler, assignMemberHandler } = require('../controllers/project.controller')
+const { createTaskHandler, getTasksHandler, deleteTaskHandler } = require("../controllers/task.controller")
 const requireRole = require('../middleware/rbac.middleware')
 const auditLogger = require('../middleware/audit.middleware')
 const router = express.Router()
@@ -12,6 +13,12 @@ const {
     updateProjectStatusSchema,
     assignMemberSchema
 } = require('../validators/project.validator')
+
+const {
+    createTaskSchema,
+    projectTaskParamsSchema,
+    deleteTaskSchema
+} = require("../validators/task.validator")
 
 //CREATE PROJECT
 router.post(
@@ -66,6 +73,33 @@ router.put(
     validate(assignMemberSchema, "body"),
     auditLogger("MEMBER_ASSIGN_TO_PROJECT"),
     assignMemberHandler
+)
+
+// CREATE TASK 
+router.post(
+    "/:projectId/tasks",
+    requireRole(["owner", "admin"]),
+    validate(projectTaskParamsSchema, "params"),
+    validate(createTaskSchema, "body"),
+    auditLogger("TASK_CREATED"),
+    createTaskHandler
+)
+
+// GET PROJECT TASKS
+router.get(
+    "/:projectId/tasks",
+    requireRole(["owner", "admin", "member"]),
+    validate(projectTaskParamsSchema, "params"),
+    getTasksHandler
+)
+
+// DELETE TASK
+router.delete(
+    "/:projectId/tasks/:taskId",
+    requireRole(["owner", "admin"]),
+    validate(deleteTaskSchema, "params"),
+    auditLogger("TASK_DELETED"),
+    deleteTaskHandler
 )
 
 module.exports = router

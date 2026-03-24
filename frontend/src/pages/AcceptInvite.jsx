@@ -12,17 +12,18 @@ export default function AcceptInvite () {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
 
-  const handleSubmit = async(e) => {
+  const handleSubmit = async (e) => {
 
     e.preventDefault()
+
     const inviteToken = token?.trim()
 
-    if(!inviteToken){
-      setError("Invite link is invalid. Please request a new invite.")
+    if (!inviteToken) {
+      setError("Invite link is invalid")
       return
     }
 
-    if(password.length < 8){
+    if (password.length < 8) {
       setError("Password must be at least 8 characters")
       return
     }
@@ -31,58 +32,76 @@ export default function AcceptInvite () {
     setError("")
 
     try {
-      await authApi.acceptInviteApi({ token: inviteToken, password})
+
+      await authApi.acceptInviteApi({
+        token: inviteToken,
+        password
+      })
+
       navigate('/login')
-    } catch (error) {
+
+    } catch (err) {
+
       setError(
-        error.response?.data?.message || "Failed to accept invite"
+        err.response?.data?.message || "Failed to accept invite"
       )
+
     } finally {
+
       setLoading(false)
     }
   }
 
-  return(
+  return (
 
-    <div className="w-full max-w-md">
+    <div className="min-h-screen flex items-center justify-center bg-[#09090B] px-4">
 
-      <p className="text-xs font-semibold text-blue-500 tracking-wide mb-2">
-        AGENCY OS
-      </p>
+      {/* CARD */}
+      <div className="w-full max-w-md bg-[#18181B] border border-white/10 rounded-xl p-6 space-y-6">
 
-      <h1 className="text-4xl font-bold text-gray-900 mb-4">
-        Set your password
-      </h1>
+        {/* HEADER */}
+        <div className="space-y-2">
 
-      <p className="text-gray-500 text-sm mb-8">
-        Create a secure password to activate your account.
-      </p>
+          <p className="text-xs font-medium text-blue-400 tracking-wide">
+            AGENCY OS
+          </p>
 
-      <form onSubmit={handleSubmit} className="space-y-4">
+          <h1 className="text-2xl font-semibold">
+            Set your password
+          </h1>
 
-        {error && (
-          <p className="text-red-500 text-sm">{error}</p>
-        )}
+          <p className="text-sm text-white/60">
+            Create a secure password to activate your account
+          </p>
 
-        <input
-          type="password"
-          placeholder='Create password'
-          value={password}
-          minLength={8}
-          onChange={(e) => setPassword(e.target.value)}
-          className="w-full rounded-lg border border-gray-300 px-4 py-3 hover:outline-none hover:ring-2 hover:ring-blue-500"
-        />
+        </div>
 
-        <div className="flex items-center justify-between pt-2">
+        {/* FORM */}
+        <form onSubmit={handleSubmit} className="space-y-4">
+
+          {error && (
+            <p className="text-red-500 text-sm">{error}</p>
+          )}
+
+          <input
+            type="password"
+            placeholder="Create password"
+            value={password}
+            minLength={8}
+            onChange={(e) => setPassword(e.target.value)}
+            className="w-full bg-[#0B0F19] border border-white/10 px-4 py-3 rounded-md text-sm outline-none"
+          />
+
           <button
             disabled={loading}
-            className="px-14 py-2 rounded-full bg-blue-500 hover:bg-blue-700 text-white font-medium disabled:opacity-50"
+            className="w-full py-2 rounded-md bg-blue-600 text-sm font-medium disabled:opacity-50"
           >
             {loading ? "Setting..." : "Set password"}
           </button>
-        </div>
 
-      </form>
+        </form>
+
+      </div>
 
     </div>
   )

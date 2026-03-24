@@ -35,97 +35,77 @@ const Projects = () => {
   const canAssign = user?.role === "owner" || user?.role === "admin"
 
   const loadProjects = useCallback(async () => {
-
     try {
-
-      setLoading(true);
+      setLoading(true)
       const res = await fetchProjects({ page, limit: 3 })
-      setProjects(res.data.projects.data);
+      setProjects(res.data.projects.data)
       setPagination(res.data.projects.pagination)
-
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-
   }, [page])
 
   useEffect(() => {
-
     loadProjects()
-
   }, [loadProjects])
 
   useEffect(() => {
-
     if (!canAssign) return
-
     fetchClients().then((res) => setClients(res.data.clients))
     fetchMembers().then((res) => setMembers(res.data.members))
-
   }, [canAssign])
 
   const handleCreate = async (e) => {
-
     e.preventDefault()
     if (!name.trim()) return
 
     await createProject({ name })
     setName("")
-
     page === 1 ? await loadProjects() : setPage(1)
     triggerDashboardRefresh()
-
   }
 
   const handleDelete = async (id) => {
-
     if (!confirm("Delete this project?")) return
-
     await deleteProject(id)
 
     if (projects.length === 1 && page > 1) {
-
       setPage((p) => p - 1)
-
     } else {
-
       setPage(1)
     }
-
   }
 
   const handleStatusChange = async (id, status) => {
-
-    await updateProjectStatus(id, status);
+    await updateProjectStatus(id, status)
 
     setProjects((prev) =>
       prev.map((p) => (p._id === id ? { ...p, status } : p))
     )
 
     triggerDashboardRefresh()
-
   }
 
   return (
+    <div className="space-y-6">
 
-    <div>
-
-      <h1 className="text-2xl font-bold mb-4">Projects</h1>
+      <div>
+        <h1 className="text-2xl font-semibold">Projects</h1>
+        <p className="text-sm text-white/60">
+          Manage and track your projects
+        </p>
+      </div>
 
       {user?.role !== "client" && (
-
         <CreateProjectForm
           name={name}
           setName={setName}
           onSubmit={handleCreate}
         />
-
       )}
 
-      <div className="space-y-4">
-
+      <div className="grid md:grid-cols-2 gap-4">
         {projects.map((p) => (
-
           <ProjectCard
             key={p._id}
             p={p}
@@ -149,9 +129,7 @@ const Projects = () => {
             page={page}
             setPage={setPage}
           />
-
         ))}
-
       </div>
 
       <ProjectsPagination
@@ -159,10 +137,8 @@ const Projects = () => {
         totalPages={pagination.totalPages || 1}
         onPageChange={setPage}
       />
-
     </div>
-
   )
 }
 
-export default Projects;
+export default Projects

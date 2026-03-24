@@ -3,75 +3,98 @@ import { fetchProjects } from '../api/projects'
 
 const ClientDashboard = () => {
 
-    const [projects, setProjects] = useState([])
-    const [loading, setLoading] = useState(true)
-    const [error, setError] = useState("")
+  const [projects, setProjects] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState("")
 
-    useEffect(() => {
+  useEffect(() => {
 
-        const loadProjects = async () => {
+    const loadProjects = async () => {
 
-            try {
+      try {
 
-                const res = await fetchProjects({ page: 1, limit: 10 })
-                const projectList = res.data?.projects?.data
+        const res = await fetchProjects({ page: 1, limit: 10 })
+        const projectList = res.data?.projects?.data
 
-                setProjects(Array.isArray(projectList) ? projectList : [])
-                setError("")
+        setProjects(Array.isArray(projectList) ? projectList : [])
+        setError("")
 
-            } catch (error) {
+      } catch (err) {
 
-                console.error("Failed to fetch client projects", error)
-                setError("Failed to load projects")
+        console.error(err)
+        setError("Failed to load projects")
 
-            } finally {
+      } finally {
 
-                setLoading(false)
-            }
-        }
+        setLoading(false)
+      }
+    }
 
-        loadProjects()
+    loadProjects()
 
-    }, [])
+  }, [])
 
-    if(loading) return <p>Loading...</p>
-
-    if(error) return <p className='text-red-500'>{error}</p>
+  if (loading) return <p>Loading...</p>
+  if (error) return <p className="text-red-500">{error}</p>
 
   return (
+    <div className="space-y-6">
 
-    <div>
-        
-        <h1 className='text-xl font-bold mb-4'>
-            Your projects
+      {/* HEADER */}
+      <div>
+        <h1 className="text-2xl font-semibold">
+          Your Projects
         </h1>
 
-        {projects.length === 0 ? (
+        <p className="text-sm text-white/60">
+          View all projects assigned to you
+        </p>
+      </div>
 
-            <p className='text-gray-500'>
-                No projects assigned yet
-            </p>
+      {/* PROJECT LIST */}
+      {projects.length === 0 ? (
 
-        ) : (
+        <p className="text-sm text-white/40">
+          No projects assigned yet
+        </p>
 
-            <div className='space-y-2'>
+      ) : (
 
-                {projects.map((p) => (
+        <div className="grid md:grid-cols-2 gap-4">
 
-                    <div
-                    key={p._id}
-                    className='p-4 rounded shadow'>
-                        
-                        <p className='font-medium'>{p.name}</p>
-                    </div>
-                ))}
+          {projects.map((p) => (
+
+            <div
+              key={p._id}
+              className="rounded-xl p-5 border border-white/10 bg-gradient-to-br from-[#18181B] to-[#09090B] space-y-2"
+            >
+
+              {/* NAME */}
+              <p className="font-medium">
+                {p.name}
+              </p>
+
+              {/* STATUS */}
+              <span className={`text-xs px-2 py-1 rounded-md ${
+                p.status === "active"
+                  ? "bg-green-500/10 text-green-400"
+                  : p.status === "on-hold"
+                  ? "bg-yellow-500/10 text-yellow-400"
+                  : "bg-gray-500/10 text-gray-400"
+              }`}>
+                {p.status || "unknown"}
+              </span>
 
             </div>
-        )}
+
+          ))}
+
+        </div>
+
+      )}
+
     </div>
-
   )
-
 }
 
 export default ClientDashboard

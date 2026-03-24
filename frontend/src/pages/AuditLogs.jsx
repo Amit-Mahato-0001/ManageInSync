@@ -2,61 +2,69 @@ import { useEffect, useState } from 'react'
 import fetchAuditLogs from '../api/audit'
 
 const AuditLogs = () => {
-    const [logs, setLogs] = useState([])
-    const [loading, setLoading] = useState(true)
 
-    useEffect(() => {
+  const [logs, setLogs] = useState([])
+  const [loading, setLoading] = useState(true)
 
-        loadLogs()
+  useEffect(() => {
+    loadLogs()
+  }, [])
 
-    }, [])
-
-    const loadLogs = async () => {
-
-        try {
-
-            const res = await fetchAuditLogs()
-            setLogs(res.data)
-
-        } catch (error) {
-            
-            console.error("Failed to fetch audit logs")
-
-        } finally{
-
-            setLoading(false)
-
-        }
+  const loadLogs = async () => {
+    try {
+      const res = await fetchAuditLogs()
+      setLogs(res.data)
+    } catch (error) {
+      console.error("Failed to fetch audit logs")
+    } finally {
+      setLoading(false)
     }
+  }
 
-    if(loading) return <p>Loading audit logs...</p>
+  if (loading) return <p>Loading audit logs...</p>
 
   return (
+    <div className="space-y-6">
 
-    <div>
-        
-        <h1 className='text-2xl font-bold mb-4'>Audit logs</h1>
+      {/* HEADER */}
+      <div>
+        <h1 className="text-2xl font-semibold">Audit Logs</h1>
+        <p className="text-sm text-white/60">
+          Track all system activities
+        </p>
+      </div>
 
-        {/* contanier */}
-        <div className='max-h-[26vh] overflow-y-auto no-scrollbar space-y-2 rounded p-2'>
+      {/* LOG LIST */}
+      <div className="max-h-[60vh] overflow-y-auto no-scrollbar space-y-3">
 
-            {logs.map((log) => (
-                
-                <div
-                className='p-4 shadow rounded text-sm bg-white'
-                key={log._id}>
+        {logs.map((log) => (
 
-                    <p className='font-bold'>
-                        {log.action}
-                    </p>
+          <div
+            key={log._id}
+            className="rounded-xl p-5 border border-white/10 bg-gradient-to-br from-[#18181B] to-[#09090B] space-y-1"
+          >
 
-                    <p className='text-gray-400'>
-                        {new Date(log.createdAt).toLocaleString()}
-                    </p>
-                </div>
-                
-            ))}
-        </div>
+            {/* ACTION */}
+            <p className="text-sm font-medium">
+              {log.action}
+            </p>
+
+            {/* TIME */}
+            <p className="text-xs text-white/40">
+              {new Date(log.createdAt).toLocaleString()}
+            </p>
+
+          </div>
+
+        ))}
+
+        {logs.length === 0 && (
+          <p className="text-sm text-white/40">
+            No logs found
+          </p>
+        )}
+
+      </div>
 
     </div>
   )

@@ -26,8 +26,8 @@ const Clients = () => {
       setLoading(true)
       const res = await fetchClients()
       setClients(res.data.clients)
-    } catch (error) {
-      console.error("Failed to load clients", error)
+    } catch (err) {
+      console.error(err)
       setError("Failed to load clients")
     } finally {
       setLoading(false)
@@ -53,10 +53,8 @@ const Clients = () => {
       loadClients()
       triggerDashboardRefresh()
 
-    } catch (error) {
-      setError(
-        error.response?.data?.message || "Failed to send invite"
-      )
+    } catch (err) {
+      setError(err.response?.data?.message || "Failed to send invite")
     } finally {
       setInviteLoading(false)
     }
@@ -64,11 +62,7 @@ const Clients = () => {
 
   const handleDelete = async (clientId) => {
 
-    const confirmDelete = window.confirm(
-      "Are you sure you want to permanently delete this client?"
-    )
-
-    if (!confirmDelete) return
+    if (!confirm("Delete this client?")) return
 
     try {
       await deleteClientAPI(clientId)
@@ -76,92 +70,81 @@ const Clients = () => {
       setClients(prev =>
         prev.filter(c => c._id !== clientId)
       )
+
       triggerDashboardRefresh()
 
-    } catch (error) {
-      alert(
-        error.response?.data?.message ||
-        "Failed to delete client"
-      )
+    } catch (err) {
+      alert("Failed to delete client")
     }
   }
 
   if (loading) return <p>Loading clients...</p>
 
   return (
-    <div>
+    <div className="space-y-6">
 
-      <h1 className="text-2xl font-bold mb-4">Clients</h1>
+      {/* HEADER */}
+      <div>
+        <h1 className="text-2xl font-semibold">Clients</h1>
+        <p className="text-sm text-white/60">
+          Manage and invite your clients
+        </p>
+      </div>
 
-      {/* invite form */}
-      <form
-        onSubmit={handleSubmit}
-        className="flex gap-2 mb-6"
-      >
+      {/* INVITE FORM */}
+      <form onSubmit={handleSubmit} className="flex gap-3">
 
         <input
           type="email"
-          placeholder="Client email"
+          placeholder="Client email..."
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           required
-          className="border border-gray-300 rounded-full p-2 w-64 hover:border-blue-500 focus:border-blue-500 focus:outline-none"
+          className="border border-white/10 px-4 py-2 rounded-md text-sm w-72 outline-none"
         />
 
         <button
           disabled={inviteLoading}
-          className="h-10 w-10 flex items-center justify-center rounded-full bg-blue-500 text-white hover:bg-blue-600 transition shadow-sm disabled:opacity-50"
+          className="h-10 w-10 flex items-center justify-center rounded-md bg-blue-600 disabled:opacity-50"
         >
-          <Plus size={18} />
+          <Plus size={16} />
         </button>
 
       </form>
 
-      {message && (
-        <p className="text-green-600 mb-4">{message}</p>
-      )}
+      {message && <p className="text-green-400 text-sm">{message}</p>}
+      {error && <p className="text-red-500 text-sm">{error}</p>}
 
-      {error && (
-        <p className="text-red-500 mb-4">{error}</p>
-      )}
-
-      {/* client list */}
-      <div className="space-y-4">
+      {/* CLIENT LIST */}
+      <div className="space-y-3">
 
         {clients.map((c) => (
 
           <div
             key={c._id}
-            className="p-4 rounded-lg shadow relative"
+            className="flex items-center justify-between rounded-xl p-5 border border-white/10 bg-gradient-to-br from-[#18181B] to-[#09090B]"
           >
 
-            <div className="flex justify-between items-center">
+            {/* LEFT */}
+            <div className="flex items-center gap-2 text-sm">
 
-              <div className="flex items-center gap-2">
-                <User2
-                  size={18}
-                  className="bg-blue-200 text-blue-600 rounded-full"
-                />
-                <span className="font-medium">{c.email}</span>
-              </div>
+              <User2 className="w-4 h-4 text-blue-400" />
 
-              <button
-                onClick={() => handleDelete(c._id)}
-                className="text-red-500 text-sm"
-              >
-                <Trash2
-                  size={34}
-                  className="bg-red-200 p-1 text-red-500 rounded-full hover:bg-red-300 hover:text-red-600 transition shadow-sm"
-                />
-              </button>
+              <span>{c.email}</span>
 
             </div>
 
+            {/* DELETE */}
+            <button onClick={() => handleDelete(c._id)}>
+              <Trash2 className="w-4 h-4 text-red-400" />
+            </button>
+
           </div>
+
         ))}
 
         {clients.length === 0 && (
-          <p className="text-gray-500">
+          <p className="text-sm text-white/40">
             No clients invited yet
           </p>
         )}

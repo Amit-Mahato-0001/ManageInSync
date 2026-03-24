@@ -1,30 +1,34 @@
 import { ArrowLeft, ArrowRight } from "lucide-react"
 
-
-const TasksPagination = ({page, totalPages, onPageChange}) => {
+const TasksPagination = ({ page, totalPages, onPageChange }) => {
 
   return (
 
-    <div className="flex items-center justify-center gap-4 mt-4">
+    <div className="flex items-center justify-center gap-3 mt-6">
 
-        <button 
-        onClick={() => onPageChange(page - 1)} disabled={page === 1}
-        className="bg-blue-500 rounded-full w-10 h-10 flex items-center justify-center justify-center text-white">
+      {/* PREV */}
+      <button
+        onClick={() => onPageChange(page - 1)}
+        disabled={page === 1}
+        className="flex items-center justify-center w-9 h-9 rounded-md bg-[#18181B] border border-white/10 disabled:opacity-40"
+      >
+        <ArrowLeft size={16} />
+      </button>
 
-            <ArrowLeft size={18}/>
+      {/* PAGE INFO */}
+      <div className="px-3 py-1 rounded-md bg-[#18181B] border border-white/10 text-sm text-white/70">
+        {page} / {totalPages}
+      </div>
 
-        </button>
+      {/* NEXT */}
+      <button
+        onClick={() => onPageChange(page + 1)}
+        disabled={page === totalPages}
+        className="flex items-center justify-center w-9 h-9 rounded-md bg-[#18181B] border border-white/10 disabled:opacity-40"
+      >
+        <ArrowRight size={16} />
+      </button>
 
-        <span className="text-white bg-blue-500 rounded-full p-2">Page{page}</span>
-
-        <button
-
-        onClick={() => onPageChange(page + 1)} disabled={page === totalPages}
-        className="bg-blue-500 rounded-full w-10 h-10 flex items-center justify-center text-white">
-
-            <ArrowRight size={18}/>
-
-        </button>
     </div>
 
   )

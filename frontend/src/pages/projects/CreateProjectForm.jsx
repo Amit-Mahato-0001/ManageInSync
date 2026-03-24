@@ -3,23 +3,21 @@ import { Plus } from "lucide-react"
 const CreateProjectForm = ({ name, setName, onSubmit }) => {
 
   return (
-
-    <form onSubmit={onSubmit} className="flex gap-2 mb-6">
+    <form onSubmit={onSubmit} className="flex gap-2">
 
       <input
-        className="border border-gray-300 rounded-full p-2 w-64 hover:border-blue-500 focus:border-blue-500 focus:outline-none"
-        placeholder="New project name"
+        className="border border-white/10 px-4 py-2 rounded-md text-sm w-72 outline-none"
+        placeholder="New project name..."
         value={name}
         onChange={(e) => setName(e.target.value)}
       />
 
-      <button className="h-10 w-10 flex items-center justify-center rounded-full bg-blue-500 text-white hover:bg-blue-600 transition shadow-sm">
-        <Plus size={18} />
+      <button className="h-10 w-10 flex items-center justify-center rounded-md bg-blue-600">
+        <Plus size={16} />
       </button>
 
     </form>
-
   )
 }
 
-export default CreateProjectForm;
+export default CreateProjectForm

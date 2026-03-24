@@ -1,5 +1,13 @@
 import { useAuth } from "../context/AuthContext";
 import { useNavigate, useLocation, Link } from "react-router-dom";
+import {
+  LayoutDashboard,
+  FolderKanban,
+  CheckSquare,
+  Users,
+  User,
+  FileText,
+} from "lucide-react";
 
 export default function AppLayout({ children }) {
   const { user, logout } = useAuth();
@@ -12,52 +20,38 @@ export default function AppLayout({ children }) {
   };
 
   const navItems = [
-    { name: "Dashboard", to: "/", roles: ["owner", "admin", "member", "client"] },
-    { name: "Projects", to: "/projects", roles: ["owner", "admin", "member", "client"] },
-    { name: "Tasks", to: "/tasks", roles: ["owner", "admin", "member"] },
-    { name: "Clients", to: "/clients", roles: ["owner", "admin"] },
-    { name: "Members", to: "/members", roles: ["owner", "admin"] },
-    { name: "Audit Logs", to: "/audit-logs", roles: ["owner", "admin"] },
+    { name: "Dashboard", to: "/", icon: LayoutDashboard, roles: ["owner", "admin", "member", "client"] },
+    { name: "Projects", to: "/projects", icon: FolderKanban, roles: ["owner", "admin", "member", "client"] },
+    { name: "Tasks", to: "/tasks", icon: CheckSquare, roles: ["owner", "admin", "member"] },
+    { name: "Clients", to: "/clients", icon: User, roles: ["owner", "admin"] },
+    { name: "Members", to: "/members", icon: Users, roles: ["owner", "admin"] },
+    { name: "Audit Logs", to: "/audit-logs", icon: FileText, roles: ["owner", "admin"] },
   ];
 
   return (
+    <div className="h-screen flex flex-col bg-[#0B0F19] text-white">
 
-    <div className="relative min-h-screen flex flex-col overflow-hidden">
-
-      {/* bg */}
-      <div className="absolute inset-0 -z-10">
-
-        <div className="w-full h-full bg-[url('/a.jpeg')] bg-cover bg-center" />
-        <div className="absolute inset-0 bg-black/30" />
-
-      </div>
-
-      {/* header*/}
-      <header className="w-full">
-
-        <div className="max-w-6xl mx-auto px-6 py-6 flex justify-between items-center text-white">
-
-          <img src="/Union.png" className="max-h-20 max-w-40" />
-
-          <button
-            onClick={handleLogout}
-            className="bg-white/20 border border-white/10 text-white px-4 py-2 text-sm rounded-full"
-          >
-            Logout
-          </button>
-
+      {/* NAVBAR */}
+      <header className="h-14 flex items-center justify-between px-6 border-b border-white/10 bg-[#18181B]">
+        <div className="flex items-center gap-3">
+          <img src="/Union.png" className="h-6" />
         </div>
 
+        <button
+          onClick={handleLogout}
+          className="text-sm px-3 py-1.5 rounded-md bg-white/10"
+        >
+          Logout
+        </button>
       </header>
 
-      {/* main */}
-      <main className="flex-1 flex items-center justify-center">
-        
-        <div className="w-full max-w-6xl flex flex-col gap-6">
+      {/* BODY */}
+      <div className="flex flex-1 overflow-hidden">
 
-          {/* tabs */}
+        {/* SIDEBAR */}
+        <aside className="w-60 border-r border-white/10 p-4 bg-[#18181B]">
 
-          <div className="flex gap-3 flex-wrap justify-center">
+          <nav className="flex flex-col gap-2">
             {navItems
               .filter(item => item.roles.includes(user?.role))
               .map((item) => {
@@ -66,70 +60,41 @@ export default function AppLayout({ children }) {
                     ? location.pathname === "/"
                     : location.pathname.startsWith(item.to);
 
-                return (
+                const Icon = item.icon;
 
+                return (
                   <Link
                     key={item.name}
                     to={item.to}
                     className={`
-                      px-4 py-2 text-sm font-medium rounded-full transition
+                      px-3 py-2 text-sm rounded-md flex items-center gap-3
+                      transition-colors
                       ${
                         isActive
-                          ? "bg-white/20 text-white border border-white/10"
-                          : "text-white hover:bg-white/20 border border-transparent hover:border-white/10"
+                          ? "bg-white/10"
+                          : "hover:bg-white/10"
                       }
                     `}
                   >
+                    <Icon className="w-4 h-4" />
                     {item.name}
                   </Link>
-
-                )
-
+                );
               })}
-          </div>
+          </nav>
 
-          {/* content card */}
-          
-          <div className="relative">
+        </aside>
 
-            <div className="absolute -inset-[7px] rounded-[34px] bg-white/20 border border-white/10" />
-
-            <div className="relative rounded-[28px] bg-white p-12 min-h-[40vh] max-h-[40vh] overflow-auto no-scrollbar">
+        {/* CONTENT */}
+        <main className="flex-1 overflow-auto bg-[#09090B] p-6">
+          <div className="max-w-7xl mx-auto">
+            <div className="p-6 min-h-[70vh]">
               {children}
             </div>
-
           </div>
+        </main>
 
-        </div>
-
-      </main>
-
-      {/* footer section */}
-      <footer className="w-full ">
-
-        <div className="max-w-6xl mx-auto px-6 py-10 text-white">
-
-          <div className="mb-6">
-            <img src="/Union.png" className="max-h-20 max-w-40" />
-          </div>
-
-          <div className="border-t border-white/20 mb-6" />
-
-          <div className="flex flex-wrap gap-6 text-sm text-white/70">
-
-            <span>© 2026 AgencyOS Inc</span>
-            <a href="#" className="hover:text-white">Privacy</a>
-            <a href="#" className="hover:text-white">Articles</a>
-            <a href="#" className="hover:text-white">Services</a>
-            <a href="#" className="hover:text-white">Our Team</a>
-            <a href="#" className="hover:text-white">Contact Us</a>
-            
-          </div>
-
-        </div>
-
-      </footer>
-
+      </div>
     </div>
   );
 }

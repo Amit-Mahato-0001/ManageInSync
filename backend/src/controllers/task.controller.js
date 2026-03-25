@@ -1,4 +1,4 @@
-const { createTask, getTasks, deleteTask } = require("../services/task.service")
+const { createTask, getTasks, deleteTask, updateTask } = require("../services/task.service")
 
 const createTaskHandler = async (req, res, next) => {
 
@@ -10,8 +10,6 @@ const createTaskHandler = async (req, res, next) => {
             assigneeId: req.body.assigneeId,
             tenantId: req.tenantId,
             projectId,
-            status: req.body.status,
-            priority: req.body.priority,
             createdBy: req.user._id,
             user: req.user
         })
@@ -89,4 +87,30 @@ const deleteTaskHandler = async (req, res, next) => {
     }
 }
 
-module.exports = {createTaskHandler, getTasksHandler, deleteTaskHandler}
+const updateTaskHandler = async(req, res, next) => {
+
+    try{
+
+        const {projectId, taskId} = req.params
+
+        const task = await updateTask({
+
+            tenantId: req.tenantId,
+            projectId,
+            taskId,
+            user: req.user,
+            status: req.body.status,
+            priority: req.body.priority
+
+        })
+
+        return res.status(200).json({ message: "Task updated successfully", task })
+
+    } catch(error) {
+
+        next(error)
+        
+    }
+}
+
+module.exports = {createTaskHandler, getTasksHandler, deleteTaskHandler, updateTaskHandler}

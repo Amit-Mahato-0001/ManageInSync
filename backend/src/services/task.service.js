@@ -68,15 +68,13 @@ const createTask = async (data) => {
         assigneeId,
         tenantId,
         projectId,
-        status,
-        priority,
         createdBy,
         user
     } = data
 
-    if (!title || !assigneeId || !tenantId || !projectId || !status || !priority || !createdBy) {
+    if (!title || !assigneeId || !tenantId || !projectId || !createdBy) {
 
-        throw new Error("Title, assigneeId, tenantId, projectId, status, priority and createdBy are required")
+        throw new Error("Title, assigneeId, tenantId, projectId and createdBy are required")
 
     }
 
@@ -127,8 +125,8 @@ const createTask = async (data) => {
         assigneeId,
         tenantId,
         projectId,
-        status,
-        priority,
+        status: "todo",
+        priority: "medium",
         createdBy
 
     })
@@ -244,4 +242,37 @@ const deleteTask = async ({ tenantId, projectId, taskId, user }) => {
     return task
 }
 
-module.exports = { createTask, getTasks, deleteTask }
+const updateTask = async({ tenantId, projectId, taskId, user, status, priority }) => {
+
+    await getProject({tenantId, projectId, user })
+
+    if(!taskId || !mongoose.Types.ObjectId.isValid(taskId)) {
+
+        throw new Error("Invalid taskId")
+
+    }
+
+    const updates = {}
+
+    if(status) updates.status = status
+    if(priority) updates.priority = priority
+
+    const task = await Task.findOneAndUpdate(
+
+        {
+            _id: new mongoose.Types.ObjectId(taskId),
+            tenantId: new mongoose.Types.ObjectId(tenantId),
+            projectId: new mongoose.Types.ObjectId(projectId),
+            deletedAt: null
+        },
+        updates,
+        {new: true}
+    )
+
+    if(!task) throw new Error("Task not found")
+
+    return task
+
+}
+
+module.exports = { createTask, getTasks, deleteTask, updateTask }

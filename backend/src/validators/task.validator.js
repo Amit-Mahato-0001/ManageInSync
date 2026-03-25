@@ -33,8 +33,21 @@ const deleteTaskSchema = z.object({
 
 })
 
+const updateTaskSchema = z.object({
+
+    status: z
+    .string()
+    .valid("todo", "in_progress", "completed").optional(),
+
+    priority: z
+    .string()
+    .valid("low", "medium", "high").optional()
+
+}).or("status", "priority") // atleast one must be present
+
 module.exports = {
     createTaskSchema,
     projectTaskParamsSchema,
-    deleteTaskSchema
+    deleteTaskSchema,
+    updateTaskSchema
 }

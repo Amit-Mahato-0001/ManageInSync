@@ -2,8 +2,8 @@ const express = require("express")
 const requireRole = require("../middleware/rbac.middleware")
 const auditLogger = require("../middleware/audit.middleware")
 const validate = require("../middleware/validate.middleware")
-const { createTaskHandler, getTasksHandler, deleteTaskHandler} = require("../controllers/task.controller")
-const { createTaskSchema, deleteTaskSchema } = require("../validators/task.validator")
+const { createTaskHandler, getTasksHandler, deleteTaskHandler, updateTaskHandler} = require("../controllers/task.controller")
+const { createTaskSchema, deleteTaskSchema, updateTaskSchema } = require("../validators/task.validator")
 
 const router = express.Router()
 
@@ -24,6 +24,13 @@ router.delete('/:taskId',
     validate(deleteTaskSchema, "params"),
     auditLogger("TASK_DELETED"),
     deleteTaskHandler
+)
+
+router.patch('/:taskId',
+    requireRole(["owner", "admin", "member"]),
+    validate(updateTaskSchema, "body"),
+    auditLogger("TASK_UPDATED"),
+    updateTaskHandler
 )
 
 module.exports = router

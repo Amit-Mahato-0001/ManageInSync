@@ -11,3 +11,7 @@ export const createTask = (projectId, data) => {
 export const deleteTask = (projectId, taskId) => {
   return api.delete(`/projects/${projectId}/tasks/${taskId}`);
 };
+
+export const updateTask = (projectId, taskId, data) => {
+  return api.patch(`/projects/${projectId}/tasks/${taskId}`, data);
+};

@@ -7,26 +7,26 @@ const { createTaskSchema, deleteTaskSchema, updateTaskSchema } = require("../val
 
 const router = express.Router()
 
-router.post('/',
+router.post('/projects/:projectId/tasks',
     requireRole(["owner", "admin"]),
     validate(createTaskSchema, "body"),
     auditLogger("TASK_CREATED"),
     createTaskHandler
 )
 
-router.get('/',
+router.get('/projects/:projectId/tasks',
     requireRole(["owner", "admin", "member"]),
     getTasksHandler
 )
 
-router.delete('/:taskId',
+router.delete('/projects/:projectId/tasks/:taskId',
     requireRole(["owner", "admin"]),
     validate(deleteTaskSchema, "params"),
     auditLogger("TASK_DELETED"),
     deleteTaskHandler
 )
 
-router.patch('/:taskId',
+router.patch('/projects/:projectId/tasks/:taskId',
     requireRole(["owner", "admin", "member"]),
     validate(updateTaskSchema, "body"),
     auditLogger("TASK_UPDATED"),

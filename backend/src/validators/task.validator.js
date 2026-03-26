@@ -36,14 +36,20 @@ const deleteTaskSchema = z.object({
 const updateTaskSchema = z.object({
 
     status: z
-    .string()
-    .valid("todo", "in_progress", "completed").optional(),
+    .enum(["todo", "in-progress", "done"])
+    .optional(),
 
     priority: z
-    .string()
-    .valid("low", "medium", "high").optional()
+    .enum(["low", "medium", "high"])
 
-}).or("status", "priority") // atleast one must be present
+}).refine(
+    
+    (data) => data.status !== undefined || data.priority !== undefined,
+
+    {
+        message: "Atleast one of status or priority must be provided",
+    }
+)
 
 module.exports = {
     createTaskSchema,

@@ -17,6 +17,7 @@ const inviteRoutes = require('./routes/invite.route')
 const memberRoutes = require('./routes/member.route')
 const tenantRoutes = require('./routes/tenant.route')
 const userRoutes = require('./routes/user.route')
+const taskRoutes = require('./routes/task.route')
 
 const app = express()
 connectDB()
@@ -63,6 +64,7 @@ app.use("/api/dashboard", dashboardRoutes)
 app.use("/api/members", memberRoutes)
 app.use("/api/tenants", tenantRoutes)
 app.use("/api/users", userRoutes)
+app.use("/api", taskRoutes)
 
 app.use(errorHandler)
 

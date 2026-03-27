@@ -20,7 +20,7 @@ const AuthLayout = ({ children }) => {
 
       </div>
 
-      <div className="w-1/2 flex items-center justify-center bg-white">
+      <div className="w-1/2 flex items-center justify-center bg-[#09090B]">
         <div className="w-full max-w-md">
           {children}
         </div>

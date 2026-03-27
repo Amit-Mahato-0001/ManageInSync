@@ -1,8 +1,7 @@
-import React, { useState } from 'react'
+import { useState } from "react"
 import authApi from '../api/auth'
 import { useAuth } from '../context/AuthContext'
-import { useNavigate } from 'react-router-dom'
-import { FaGithub, FaGoogle } from "react-icons/fa";
+import { Link, useNavigate } from 'react-router-dom'
 
 const Login = () => {
 
@@ -28,7 +27,7 @@ const Login = () => {
 
     } catch (err) {
 
-      setError("Invalid email or password")
+      setError(err?.response?.data?.error || "Invalid email or password")
 
     } finally {
 
@@ -38,89 +37,69 @@ const Login = () => {
   }
 
   return (
-  <div className="w-full max-w-md">
+    <div className="w-full">
+      <div className="rounded-2xl border border-white/10 bg-gradient-to-br from-[#18181B] to-[#09090B] p-8 text-white shadow-xl">
+        <p className="text-xs font-semibold tracking-widest text-blue-400 mb-2">
+          MANAGEINSYNC
+        </p>
 
-    <p className="text-xs font-semibold text-blue-500 tracking-wide mb-2">
-      AGENCY OS
-    </p>
+        <h1 className="text-3xl font-semibold mb-2">
+          Welcome back
+        </h1>
 
-    <h1 className="text-4xl font-bold text-gray-900 mb-4">
-      Welcome to ManageInSync
-    </h1>
+        <p className="text-sm text-white/60 mb-7">
+          Sign in to continue managing your projects, members, and clients.
+        </p>
 
-    <p className="text-gray-500 text-sm mb-8">
-      Our Agency OS is safest and optimized to get up-and-running.
-    </p>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          {error && (
+            <p className="text-sm text-red-400 bg-red-500/10 border border-red-500/20 rounded-md px-3 py-2">
+              {error}
+            </p>
+          )}
 
-    <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-1.5">
+            <label className="text-xs text-white/60">Email</label>
+            <input
+              type="email"
+              required
+              className="w-full rounded-md border border-white/10 bg-black/20 px-4 py-2.5 text-sm outline-none focus:border-blue-500/60 focus:ring-2 focus:ring-blue-500/20"
+              placeholder="you@agency.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+            />
+          </div>
 
-      {error && (
-        <p className="text-red-500 text-sm">{error}</p>
-      )}
+          <div className="space-y-1.5">
+            <label className="text-xs text-white/60">Password</label>
+            <input
+              type="password"
+              required
+              className="w-full rounded-md border border-white/10 bg-black/20 px-4 py-2.5 text-sm outline-none focus:border-blue-500/60 focus:ring-2 focus:ring-blue-500/20"
+              placeholder="Enter your password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+            />
+          </div>
 
-      <input
-        className="w-full rounded-lg border border-gray-300 px-4 py-3 hover:outline-none hover:ring-2 hover:ring-blue-500"
-        placeholder="Email Address"
-        value={email}
-        onChange={(e) => setEmail(e.target.value)}
-      />
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full rounded-md bg-blue-600 hover:bg-blue-500 transition-colors text-sm font-medium py-2.5 disabled:opacity-60 disabled:cursor-not-allowed"
+          >
+            {loading ? "Logging in..." : "Login"}
+          </button>
+        </form>
 
-      <input
-        type="password"
-        className="w-full rounded-lg border border-gray-300 px-4 py-3 hover:outline-none hover:ring-2 hover:ring-blue-500"
-        placeholder="Password"
-        value={password}
-        onChange={(e) => setPassword(e.target.value)}
-      />
-
-      <div className="flex items-center justify-between pt-2">
-        <button
-          disabled={loading}
-          className="px-20 py-2 rounded-full bg-blue-500 hover:bg-blue-700 text-white font-medium disabled:opacity-50"
-        >
-          {loading ? "Logging in..." : "Login"}
-        </button>
-
-        <a href="#" className="text-sm text-gray-400 hover:underline">
-          Forgot Password
-        </a>
+        <p className="text-sm text-white/50 mt-6 text-center">
+          Don&apos;t have an account?{" "}
+          <Link to="/signup" className="text-blue-400 hover:text-blue-300">
+            Create one
+          </Link>
+        </p>
       </div>
-
-
-      <div className="flex items-center gap-4 my-6">
-        <div className="flex-1 h-px bg-gray-200"></div>
-        <span className="text-sm text-gray-400">or</span>
-        <div className="flex-1 h-px bg-gray-200"></div>
-      </div>
-
-      <div className="flex gap-4">
-        <button
-          type="button"
-          className="group flex items-center justify-center gap-2 flex-1 py-2 rounded-full border border-gray-200 bg-white hover:bg-blue-500 transition"
-        >
-          <FaGithub className='text-2xl text-gray-400 group-hover:text-white transition-colors duration-200'/>
-        </button>
-
-        <button
-          type="button"
-          className="group flex items-center justify-center gap-2 flex-1 py-2 rounded-full border border-gray-200 bg-white hover:bg-blue-500 transition"
-        >
-          <FaGoogle className='text-2xl text-gray-400 group-hover:text-white transition-colors duration-200'/>
-        </button>
-      </div>
-
-    </form>
-
-    {/* Bottom Text */}
-    <p className="text-sm text-gray-400 mt-8 text-center">
-      Don't have an account?{" "}
-      <a href="/signup" className="text-blue-500 font-medium hover:underline">
-        Create Now
-      </a>
-    </p>
-
-  </div>
-);
+    </div>
+  )
 
 }
 

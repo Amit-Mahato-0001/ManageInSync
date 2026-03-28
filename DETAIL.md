@@ -1,590 +1,238 @@
-# DETAIL - Full Docker + CI/CD Setup (Do It Yourself Guide)
+# Add Project Conversations (Self implementation)
 
-This guide is written for your placement timeline.
-Follow these steps in order, without skipping.
-
-Important:
-Your current `backend/.env` contains real secrets (Mongo URI, JWT secret, email password).
-Do not commit real secrets to GitHub.
-Rotate these credentials before production use.
-
-## Goal
-
-By the end of this guide you will have:
-
-1. Docker setup for backend
-2. Docker setup for frontend
-3. `docker-compose.yml` for local full stack run
-4. GitHub Actions CI workflow
-5. GitHub Actions CD workflow (build + push Docker images)
+This feature lets people inside the same project talk in one place.
+It is useful for updates, blockers, and quick decisions without leaving the app.
 
 ---
 
-## Part 0 - Prerequisites
+## 1) What users should be able to do
 
-Install these first:
+1. Open a project and see a Conversation tab.
+2. Send messages in that project chat.
+3. Read old messages (latest first or scroll history).
+4. See who sent each message and when.
+5. Edit or delete their own message.
+6. See unread count for each project.
 
-1. Docker Desktop
-2. Git
-3. GitHub account
-4. VS Code (or your IDE)
-
-Verify installation:
-
-```powershell
-docker --version
-docker compose version
-git --version
-```
+Simple MVP rule:
+- One conversation per project is enough for now.
+- Build group chat first, no direct 1:1 chat now.
 
 ---
 
-## Part 1 - Create a safe working branch
+## 2) Access and safety rules (very important)
 
-```powershell
-git checkout -b chore/docker-cicd
-```
+Only users who belong to that project can read or send messages.
+That means:
+- Owner/Admin can access.
+- Project members can access.
+- Project clients can access only if they are assigned to that project.
 
----
-
-## Part 2 - Prepare code before Docker
-
-### Step 2.1 - Make frontend API URL configurable
-
-File: `frontend/src/api/axios.js`
-
-Replace hardcoded base URL with env-based URL:
-
-```js
-import axios from 'axios'
-
-const api = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api',
-  withCredentials: false
-})
-
-api.interceptors.request.use(
-  (config) => {
-    const token = localStorage.getItem('token')
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`
-    }
-    return config
-  },
-  (error) => Promise.reject(error)
-)
-
-export default api
-```
-
-### Step 2.2 - Add backend start script
-
-File: `backend/package.json`
-
-Update scripts section to include start command:
-
-```json
-"scripts": {
-  "start": "node server.js",
-  "test": "echo \"No backend tests yet\" && exit 0"
-}
-```
-
-You can keep more scripts later (dev, lint, etc.).
-
-### Step 2.3 - Create env example files
-
-Create `backend/.env.example`:
-
-```env
-PORT=3000
-MONGO_URI=mongodb://mongo:27017/manageinsync
-JWT_SECRET=replace_me
-EMAIL_HOST=smtp.gmail.com
-EMAIL_PORT=587
-EMAIL_USER=replace_me
-EMAIL_PASS=replace_me
-FRONTEND_URL=http://localhost:5173
-```
-
-Create `frontend/.env.example`:
-
-```env
-VITE_API_BASE_URL=http://localhost:3000/api
-```
+Also enforce:
+- Same tenant only.
+- No cross-project message access.
+- Soft delete messages (do not hard delete).
 
 ---
 
-## Part 3 - Dockerize backend
+## 3) Backend changes
 
-### Step 3.1 - Create backend Dockerfile
+### 3.1 Create new models
 
-File: `backend/Dockerfile`
+Create `conversation.model.js`
+- `tenantId`
+- `projectId`
+- `createdBy`
+- `lastMessageAt`
+- `deletedAt`
+- timestamps
 
-```dockerfile
-FROM node:20-alpine
+Create `message.model.js`
+- `tenantId`
+- `projectId`
+- `conversationId`
+- `senderId`
+- `text` (max length e.g. 2000)
+- `editedAt` (optional)
+- `deletedAt` (optional)
+- `readBy` (array of userId + seenAt, optional for MVP)
+- timestamps
 
-WORKDIR /app
+### 3.2 Add indexes
 
-COPY package*.json ./
-RUN npm ci --omit=dev
+Conversation indexes:
+- `{ tenantId: 1, projectId: 1, deletedAt: 1 }`
+- `{ projectId: 1, lastMessageAt: -1 }`
 
-COPY . .
+Message indexes:
+- `{ tenantId: 1, conversationId: 1, createdAt: -1 }`
+- `{ tenantId: 1, projectId: 1, createdAt: -1 }`
 
-EXPOSE 3000
+### 3.3 Add validators
 
-CMD ["node", "server.js"]
-```
+Create validators for:
+- create conversation (for MVP auto-create is also fine)
+- send message (`text` required, trimmed, max length)
+- update message
+- pagination query (`cursor`, `limit`)
 
-### Step 3.2 - Create backend dockerignore
+### 3.4 Add service layer
 
-File: `backend/.dockerignore`
+Create `conversation.service.js`:
+- `getOrCreateProjectConversation(projectId, user)`
+- `listProjectMessages(conversationId, tenantId, limit, cursor)`
+- `sendMessage(conversationId, projectId, tenantId, senderId, text)`
+- `editMessage(messageId, senderId, text)`
+- `deleteMessage(messageId, actor)`
+- `markAsRead(conversationId, userId)` (optional in MVP)
 
-```gitignore
-node_modules
-npm-debug.log
-.env
-.git
-.gitignore
-```
+### 3.5 Add controller + routes
 
-### Step 3.3 - Build backend image locally
+Recommended routes:
+- `GET /api/projects/:projectId/conversation`
+- `GET /api/projects/:projectId/conversation/messages?cursor=...&limit=...`
+- `POST /api/projects/:projectId/conversation/messages`
+- `PATCH /api/projects/:projectId/conversation/messages/:messageId`
+- `DELETE /api/projects/:projectId/conversation/messages/:messageId`
+- `POST /api/projects/:projectId/conversation/read` (optional)
 
-```powershell
-docker build -t agency-os-backend -f backend/Dockerfile backend
-```
+Use existing middleware chain:
+- auth -> tenant resolver -> role check -> validator -> controller
 
----
+### 3.6 Permission check helper
 
-## Part 4 - Dockerize frontend
+Create one reusable helper:
+- `canAccessProject(projectId, userId, role, tenantId)`
 
-### Step 4.1 - Add nginx config for React Router
+Use this helper in conversation APIs so rules stay consistent everywhere.
 
-File: `frontend/nginx.conf`
+### 3.7 Audit logs
 
-```nginx
-server {
-  listen 80;
-  server_name _;
+Log these events:
+- message sent
+- message edited
+- message deleted
 
-  root /usr/share/nginx/html;
-  index index.html;
-
-  location / {
-    try_files $uri /index.html;
-  }
-}
-```
-
-### Step 4.2 - Create frontend Dockerfile
-
-File: `frontend/Dockerfile`
-
-```dockerfile
-FROM node:20-alpine AS build
-
-WORKDIR /app
-
-COPY package*.json ./
-RUN npm ci
-
-COPY . .
-
-ARG VITE_API_BASE_URL=http://localhost:3000/api
-ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
-
-RUN npm run build
-
-FROM nginx:1.27-alpine
-
-COPY --from=build /app/dist /usr/share/nginx/html
-COPY nginx.conf /etc/nginx/conf.d/default.conf
-
-EXPOSE 80
-
-CMD ["nginx", "-g", "daemon off;"]
-```
-
-### Step 4.3 - Create frontend dockerignore
-
-File: `frontend/.dockerignore`
-
-```gitignore
-node_modules
-dist
-npm-debug.log
-.env
-.git
-.gitignore
-```
-
-### Step 4.4 - Build frontend image locally
-
-```powershell
-docker build -t agency-os-frontend --build-arg VITE_API_BASE_URL=http://localhost:3000/api -f frontend/Dockerfile frontend
-```
+This is great for interview discussion and admin visibility.
 
 ---
 
-## Part 5 - Add docker-compose for full local run
+## 4) Frontend changes
 
-### Step 5.1 - Create backend docker env file
+### 4.1 API file
 
-File: `backend/.env.docker`
+Create `frontend/src/api/conversations.js` with:
+- `getConversation(projectId)`
+- `getMessages(projectId, cursor, limit)`
+- `sendMessage(projectId, text)`
+- `editMessage(projectId, messageId, text)`
+- `deleteMessage(projectId, messageId)`
+- `markConversationRead(projectId)` (optional)
 
-```env
-PORT=3000
-MONGO_URI=mongodb://mongo:27017/manageinsync
-JWT_SECRET=replace_me_with_strong_value
-EMAIL_HOST=smtp.gmail.com
-EMAIL_PORT=587
-EMAIL_USER=replace_me
-EMAIL_PASS=replace_me
-FRONTEND_URL=http://localhost:5173
-```
+### 4.2 UI components
 
-Do not commit real values.
-Commit only safe placeholders or keep this file untracked.
+Create:
+- `ProjectConversation.jsx` page
+- `MessageList.jsx`
+- `MessageComposer.jsx`
+- `MessageItem.jsx`
 
-### Step 5.2 - Create compose file in project root
+Show in each message:
+- sender name
+- time
+- edited label (if edited)
+- actions (edit/delete only for own message)
 
-File: `docker-compose.yml`
+### 4.3 Routing
 
-```yaml
-services:
-  mongo:
-    image: mongo:7
-    container_name: agencyos-mongo
-    restart: unless-stopped
-    ports:
-      - "27017:27017"
-    volumes:
-      - mongo_data:/data/db
+Add route:
+- `/projects/:projectId/conversation`
 
-  backend:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
-    container_name: agencyos-backend
-    restart: unless-stopped
-    env_file:
-      - ./backend/.env.docker
-    depends_on:
-      - mongo
-    ports:
-      - "3000:3000"
+Add a tab/button in project area:
+- Tasks
+- Conversation
 
-  frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
-      args:
-        VITE_API_BASE_URL: http://localhost:3000/api
-    container_name: agencyos-frontend
-    restart: unless-stopped
-    depends_on:
-      - backend
-    ports:
-      - "5173:80"
+### 4.4 Live updates
 
-volumes:
-  mongo_data:
-```
+Fast MVP choice:
+- Poll every 5-8 seconds while tab is open.
 
-### Step 5.3 - Run full stack
+Better after MVP:
+- Socket.IO for real-time push.
 
-```powershell
-docker compose up -d --build
-```
+For placement in limited time, polling is acceptable if stable.
 
-### Step 5.4 - Check logs
+### 4.5 UX details
 
-```powershell
-docker compose logs -f backend
-docker compose logs -f frontend
-docker compose logs -f mongo
-```
-
-### Step 5.5 - Stop stack
-
-```powershell
-docker compose down
-```
-
-If you want to remove DB volume too:
-
-```powershell
-docker compose down -v
-```
+Please include:
+- loading state
+- empty chat state ("Start the conversation")
+- error toast/message
+- disabled send button when message is empty
+- auto-scroll to latest message
 
 ---
 
-## Part 6 - Add GitHub Actions CI workflow
+## 5) Security and quality checklist
 
-### Step 6.1 - Create workflow folder
-
-```powershell
-New-Item -ItemType Directory -Force .github/workflows
-```
-
-### Step 6.2 - Create CI workflow file
-
-File: `.github/workflows/ci.yml`
-
-```yaml
-name: CI
-
-on:
-  pull_request:
-    branches: [main]
-  push:
-    branches: [main]
-
-jobs:
-  backend-check:
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: backend
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: npm
-          cache-dependency-path: backend/package-lock.json
-
-      - name: Install backend deps
-        run: npm ci
-
-      - name: Syntax check
-        run: |
-          node --check server.js
-          node --check src/app.js
-
-  frontend-check:
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: frontend
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: npm
-          cache-dependency-path: frontend/package-lock.json
-
-      - name: Install frontend deps
-        run: npm ci
-
-      - name: Lint
-        run: npm run lint
-
-      - name: Build
-        run: npm run build
-
-  docker-build-check:
-    runs-on: ubuntu-latest
-    needs: [backend-check, frontend-check]
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Build backend image
-        run: docker build -t agency-os-backend -f backend/Dockerfile backend
-
-      - name: Build frontend image
-        run: docker build -t agency-os-frontend --build-arg VITE_API_BASE_URL=http://localhost:3000/api -f frontend/Dockerfile frontend
-```
-
-### Step 6.3 - Push and verify CI
-
-```powershell
-git add .
-git commit -m "Add Docker + CI workflow"
-git push -u origin chore/docker-cicd
-```
-
-Then open GitHub -> Actions tab -> check CI status.
+- Trim and sanitize message text.
+- Reject empty text after trim.
+- Enforce max length.
+- Rate limit message send endpoint.
+- Never trust projectId/conversationId from client alone.
+- Always verify tenant + project membership on backend.
 
 ---
 
-## Part 7 - Add GitHub Actions CD workflow
+## 6) Test checklist (must do)
 
-This CD will:
+Backend tests/manual checks:
+- member can send message in own project
+- non-member gets 403
+- cross-tenant access blocked
+- deleted message not shown in normal list
+- pagination works
 
-1. Build Docker images
-2. Push images to Docker Hub
-3. Optional: trigger deploy hooks
-
-### Step 7.1 - Create Docker Hub repositories
-
-Create these repos in Docker Hub:
-
-1. `agency-os-backend`
-2. `agency-os-frontend`
-
-### Step 7.2 - Add GitHub repository secrets
-
-GitHub -> Repository -> Settings -> Secrets and variables -> Actions -> New repository secret
-
-Add these secrets:
-
-1. `DOCKERHUB_USERNAME`
-2. `DOCKERHUB_TOKEN`
-3. `DEPLOY_HOOK_BACKEND` (optional)
-4. `DEPLOY_HOOK_FRONTEND` (optional)
-
-### Step 7.3 - Create CD workflow file
-
-File: `.github/workflows/cd.yml`
-
-```yaml
-name: CD
-
-on:
-  push:
-    branches: [main]
-
-jobs:
-  publish-images:
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Login to Docker Hub
-        uses: docker/login-action@v3
-        with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
-
-      - name: Build and push backend image
-        uses: docker/build-push-action@v6
-        with:
-          context: ./backend
-          file: ./backend/Dockerfile
-          push: true
-          tags: |
-            ${{ secrets.DOCKERHUB_USERNAME }}/agency-os-backend:latest
-            ${{ secrets.DOCKERHUB_USERNAME }}/agency-os-backend:${{ github.sha }}
-
-      - name: Build and push frontend image
-        uses: docker/build-push-action@v6
-        with:
-          context: ./frontend
-          file: ./frontend/Dockerfile
-          push: true
-          build-args: |
-            VITE_API_BASE_URL=${{ vars.PROD_API_BASE_URL }}
-          tags: |
-            ${{ secrets.DOCKERHUB_USERNAME }}/agency-os-frontend:latest
-            ${{ secrets.DOCKERHUB_USERNAME }}/agency-os-frontend:${{ github.sha }}
-
-  trigger-deploy:
-    runs-on: ubuntu-latest
-    needs: [publish-images]
-    if: ${{ secrets.DEPLOY_HOOK_BACKEND != '' && secrets.DEPLOY_HOOK_FRONTEND != '' }}
-
-    steps:
-      - name: Trigger backend deploy
-        run: curl -X POST "${{ secrets.DEPLOY_HOOK_BACKEND }}"
-
-      - name: Trigger frontend deploy
-        run: curl -X POST "${{ secrets.DEPLOY_HOOK_FRONTEND }}"
-```
-
-### Step 7.4 - Add repository variable for frontend build arg
-
-GitHub -> Settings -> Secrets and variables -> Actions -> Variables
-
-Add variable:
-
-- `PROD_API_BASE_URL` = your production backend URL + `/api`
-
-Example:
-
-- `https://api.yourdomain.com/api`
-
-### Step 7.5 - Push to main and verify CD
-
-1. Merge your PR to `main`
-2. Open Actions tab
-3. Check `CD` workflow
-4. Confirm new images in Docker Hub
+Frontend checks:
+- send message and instant refresh
+- edit own message works
+- delete own message works
+- unread badge clears when conversation is opened
+- no crash on empty/error states
 
 ---
 
-## Part 8 - Deployment notes (important)
+## 7) Suggested implementation order (practical)
 
-CD above pushes images.
-Where to run those images is your deployment target (Render, VPS, EC2, etc.).
+1. DB models + indexes
+2. Access helper (`canAccessProject`)
+3. Send/list message APIs
+4. Frontend chat screen with polling
+5. Edit/delete message
+6. Unread count
+7. Audit logs + final cleanup
 
-For placements, this is enough proof:
-
-1. CI green
-2. CD green
-3. Images published
-4. App live link working
-
----
-
-## Part 9 - Quick placement demo flow
-
-Use this demo in interviews:
-
-1. Show architecture doc
-2. Show Docker files and compose
-3. Show GitHub Actions CI/CD pipelines
-4. Show Docker Hub images with latest tags
-5. Open live app and run one business flow
-
-Flow suggestion:
-
-1. Login as owner
-2. Create project
-3. Assign member
-4. Create task
-5. Update task status
-6. Show audit log
+This order gives visible progress fast and keeps risk low.
 
 ---
 
-## Part 10 - Common mistakes to avoid
+## 8) Good interview explanation (simple words)
 
-1. Hardcoded API URLs in frontend
-2. Committing `.env` with real secrets
-3. Missing React Router fallback in nginx
-4. Using `latest` tag only (also push SHA tag)
-5. Not testing `docker compose up` before pushing
-6. No rollback plan
+"I added project-level conversations so team members can discuss work where it happens.
+I kept access strict using tenant + project membership checks.
+I built message APIs with pagination, soft delete, and audit logs.
+On the frontend I added a conversation tab inside each project with clear states for loading, error, and empty chat.
+I first shipped a stable polling version, then planned Socket.IO as next improvement."
 
 ---
 
-## Part 11 - Done checklist
+## 9) Nice upgrades later (not now)
 
-Mark done only when all are true:
+- file attachments
+- @mentions
+- typing indicator
+- reactions
+- thread replies
+- search inside conversation
 
-- [ ] `backend/Dockerfile` works
-- [ ] `frontend/Dockerfile` works
-- [ ] `docker-compose.yml` runs full stack
-- [ ] `ci.yml` passes on PR
-- [ ] `cd.yml` pushes images on main
-- [ ] secrets are not committed
-- [ ] live link is accessible
-
-If all checked, your deployment story is placement-ready.
+Do these only after MVP is stable.

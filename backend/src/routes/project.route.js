@@ -1,10 +1,34 @@
-const express = require('express')
-const { createProjectHandler, getProjectHandler, deleteProjectHandler, assignClientHandler, updateProjectStatusHandler, assignMemberHandler } = require('../controllers/project.controller')
-const { createTaskHandler, getTasksHandler, deleteTaskHandler } = require("../controllers/task.controller")
-const requireRole = require('../middleware/rbac.middleware')
-const auditLogger = require('../middleware/audit.middleware')
-const router = express.Router()
+const express = require("express")
+
+const {
+    createProjectHandler,
+    getProjectHandler,
+    deleteProjectHandler,
+    assignClientHandler,
+    updateProjectStatusHandler,
+    assignMemberHandler
+} = require("../controllers/project.controller")
+
+const {
+    createTaskHandler,
+    getTasksHandler,
+    deleteTaskHandler
+} = require("../controllers/task.controller")
+
+const {
+    getProjectConversationHandler,
+    getProjectMessagesHandler,
+    sendProjectMessageHandler,
+    editProjectMessageHandler,
+    deleteProjectMessageHandler,
+    markProjectConversationReadHandler
+} = require("../controllers/conversation.controller")
+
+const requireRole = require("../middleware/rbac.middleware")
+const auditLogger = require("../middleware/audit.middleware")
+const buildMessageRateLimit = require("../middleware/messageRateLimit.middleware")
 const validate = require("../middleware/validate.middleware")
+
 const {
     createProjectSchema,
     projectIdParamsSchema,
@@ -12,7 +36,7 @@ const {
     assignProjectSchema,
     updateProjectStatusSchema,
     assignMemberSchema
-} = require('../validators/project.validator')
+} = require("../validators/project.validator")
 
 const {
     createTaskSchema,
@@ -20,34 +44,41 @@ const {
     deleteTaskSchema
 } = require("../validators/task.validator")
 
-//CREATE PROJECT
+const {
+    projectConversationParamsSchema,
+    conversationMessageParamsSchema,
+    sendMessageSchema,
+    updateMessageSchema,
+    listMessagesQuerySchema
+} = require("../validators/conversation.validator")
+
+const router = express.Router()
+const messageRateLimit = buildMessageRateLimit({ windowMs: 60000, max: 20 })
+
 router.post(
-    '/',
+    "/",
     requireRole(["owner", "admin", "member"]),
     validate(createProjectSchema, "body"),
     auditLogger("PROJECT_CREATED"),
     createProjectHandler
 )
 
-//GET PROJECTS
 router.get(
-    '/',
+    "/",
     requireRole(["owner", "admin", "member", "client"]),
     getProjectHandler
 )
 
-//PROJECT DELETE
 router.delete(
-    '/:projectId',
-    requireRole(["owner", "admin" ]),
+    "/:projectId",
+    requireRole(["owner", "admin"]),
     validate(deleteProjectSchema, "params"),
     auditLogger("PROJECT_DELETED"),
     deleteProjectHandler
 )
 
-//CLIENT ASSIGN
 router.put(
-    '/:projectId/assign-client',
+    "/:projectId/assign-client",
     requireRole(["owner", "admin"]),
     validate(projectIdParamsSchema, "params"),
     validate(assignProjectSchema, "body"),
@@ -55,7 +86,6 @@ router.put(
     assignClientHandler
 )
 
-//STATUS UPDATE
 router.patch(
     "/:projectId/status",
     requireRole(["owner", "admin", "member"]),
@@ -64,10 +94,8 @@ router.patch(
     updateProjectStatusHandler
 )
 
-//ASSIGN MEMBER
-
 router.put(
-    '/:projectId/assign-member',
+    "/:projectId/assign-member",
     requireRole(["owner", "admin"]),
     validate(projectIdParamsSchema, "params"),
     validate(assignMemberSchema, "body"),
@@ -75,7 +103,6 @@ router.put(
     assignMemberHandler
 )
 
-// CREATE TASK 
 router.post(
     "/:projectId/tasks",
     requireRole(["owner", "admin"]),
@@ -85,7 +112,6 @@ router.post(
     createTaskHandler
 )
 
-// GET PROJECT TASKS
 router.get(
     "/:projectId/tasks",
     requireRole(["owner", "admin", "member"]),
@@ -93,13 +119,61 @@ router.get(
     getTasksHandler
 )
 
-// DELETE TASK
 router.delete(
     "/:projectId/tasks/:taskId",
     requireRole(["owner", "admin"]),
     validate(deleteTaskSchema, "params"),
     auditLogger("TASK_DELETED"),
     deleteTaskHandler
+)
+
+router.get(
+    "/:projectId/conversation",
+    requireRole(["owner", "admin", "member", "client"]),
+    validate(projectConversationParamsSchema, "params"),
+    getProjectConversationHandler
+)
+
+router.get(
+    "/:projectId/conversation/messages",
+    requireRole(["owner", "admin", "member", "client"]),
+    validate(projectConversationParamsSchema, "params"),
+    validate(listMessagesQuerySchema, "query"),
+    getProjectMessagesHandler
+)
+
+router.post(
+    "/:projectId/conversation/messages",
+    requireRole(["owner", "admin", "member", "client"]),
+    validate(projectConversationParamsSchema, "params"),
+    validate(sendMessageSchema, "body"),
+    messageRateLimit,
+    auditLogger("MESSAGE_SENT"),
+    sendProjectMessageHandler
+)
+
+router.patch(
+    "/:projectId/conversation/messages/:messageId",
+    requireRole(["owner", "admin", "member", "client"]),
+    validate(conversationMessageParamsSchema, "params"),
+    validate(updateMessageSchema, "body"),
+    auditLogger("MESSAGE_EDITED"),
+    editProjectMessageHandler
+)
+
+router.delete(
+    "/:projectId/conversation/messages/:messageId",
+    requireRole(["owner", "admin", "member", "client"]),
+    validate(conversationMessageParamsSchema, "params"),
+    auditLogger("MESSAGE_DELETED"),
+    deleteProjectMessageHandler
+)
+
+router.post(
+    "/:projectId/conversation/read",
+    requireRole(["owner", "admin", "member", "client"]),
+    validate(projectConversationParamsSchema, "params"),
+    markProjectConversationReadHandler
 )
 
 module.exports = router

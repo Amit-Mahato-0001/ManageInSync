@@ -2,6 +2,8 @@ const mongoose = require('mongoose')
 const Project = require('../models/project.model')
 const Task = require('../models/task.model')
 const User = require('../models/user.model')
+const Conversation = require("../models/conversation.model")
+const Message = require("../models/message.model")
 
 //CREATE PROJECT 
 
@@ -25,7 +27,7 @@ const createProject = async (data) => {
 
 //GET PROJECT
 
-const getProject = async ({tenantId, user, page, limit}) => {
+const getProject = async ({ tenantId, user, page, limit, search, status }) => {
 
     if(!tenantId){
         throw new Error("TenantId required")
@@ -38,6 +40,14 @@ const getProject = async ({tenantId, user, page, limit}) => {
     const query = {
         tenantId,
         deletedAt: null
+    }
+
+    if (search?.trim()) {
+        query.name = { $regex: search.trim(), $options: "i" }
+    }
+
+    if (status) {
+        query.status = status
     }
 
     //Role filtering
@@ -61,9 +71,60 @@ const getProject = async ({tenantId, user, page, limit}) => {
 
     const total = await Project.countDocuments(query)
 
+    const projectIds = projects.map((project) => project._id)
+    const unreadByProject = {}
+
+    if (projectIds.length > 0) {
+        const conversations = await Conversation.find({
+            tenantId: new mongoose.Types.ObjectId(tenantId),
+            projectId: { $in: projectIds },
+            deletedAt: null
+        })
+            .select("_id projectId")
+            .lean()
+
+        const conversationIds = conversations.map((item) => item._id)
+
+        if (conversationIds.length > 0) {
+            const unreadCounts = await Message.aggregate([
+                {
+                    $match: {
+                        tenantId: new mongoose.Types.ObjectId(tenantId),
+                        projectId: { $in: projectIds },
+                        conversationId: { $in: conversationIds },
+                        deletedAt: null,
+                        senderId: { $ne: new mongoose.Types.ObjectId(user._id) },
+                        readBy: {
+                            $not: {
+                                $elemMatch: {
+                                    userId: new mongoose.Types.ObjectId(user._id)
+                                }
+                            }
+                        }
+                    }
+                },
+                {
+                    $group: {
+                        _id: "$projectId",
+                        unreadCount: { $sum: 1 }
+                    }
+                }
+            ])
+
+            unreadCounts.forEach((item) => {
+                unreadByProject[item._id.toString()] = item.unreadCount
+            })
+        }
+    }
+
+    const projectsWithUnread = projects.map((project) => ({
+        ...project,
+        unreadCount: unreadByProject[project._id.toString()] || 0
+    }))
+
     return {
 
-        data: projects,
+        data: projectsWithUnread,
         pagination: {
             total,
             page,

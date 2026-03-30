@@ -28,15 +28,15 @@ const ProjectCard = ({
 
   const navigate = useNavigate()
   const canViewTasks = user?.role !== "client"
+  const projectRouteState = {
+    projectName: p.name,
+    projectStatus: p.status,
+    unreadCount: p.unreadCount || 0
+  }
 
   const handleCardClick = () => {
-    if (!canViewTasks) return
-
-    navigate(`/projects/${p._id}/tasks`, {
-      state: {
-        projectName: p.name,
-        projectStatus: p.status
-      }
+    navigate(canViewTasks ? `/projects/${p._id}/tasks` : `/projects/${p._id}/conversation`, {
+      state: projectRouteState
     })
   }
 
@@ -127,6 +127,14 @@ const ProjectCard = ({
           >
             Members
           </button>
+        </div>
+      )}
+
+      {p.unreadCount > 0 && (
+        <div className="flex justify-end">
+          <span className="rounded-full bg-blue-500/15 px-3 py-1 text-xs font-medium text-blue-300">
+            {p.unreadCount} unread
+          </span>
         </div>
       )}
 

@@ -46,7 +46,8 @@ const ProjectCard = ({
       className="relative cursor-pointer rounded-xl p-5 border border-white/10 bg-gradient-to-br from-[#18181B] to-[#09090B] space-y-4 hover:border-blue-500 transition"
     >
 
-      {/* Top Section */}
+      {/* top section */}
+      
       <div className="flex justify-between items-start">
         <div>
           <h2 className="font-medium">{p.name}</h2>
@@ -65,7 +66,8 @@ const ProjectCard = ({
         )}
       </div>
 
-      {/* Status Dropdown */}
+      {/* status dropdown */}
+
       <select
         value={p.status}
         onClick={(e) => e.stopPropagation()}
@@ -77,7 +79,8 @@ const ProjectCard = ({
         <option value="completed">Completed</option>
       </select>
 
-      {/* Clients */}
+      {/* clients */}
+
       {canAssign && (
         <div className="text-sm text-white/60 flex gap-2">
           <User2 className="w-4 h-4" />
@@ -90,7 +93,8 @@ const ProjectCard = ({
         </div>
       )}
 
-      {/* Members */}
+      {/* members */}
+
       {canAssign && (
         <div className="text-sm text-white/60 flex gap-2">
           <Users className="w-4 h-4" />
@@ -103,7 +107,8 @@ const ProjectCard = ({
         </div>
       )}
 
-      {/* Assign Buttons */}
+      {/* assign buttons */}
+
       {canAssign && (
         <div className="flex gap-2">
           <button
@@ -112,7 +117,7 @@ const ProjectCard = ({
               setOpenClientDropdown(openClientDropdown === p._id ? null : p._id)
               setOpenMemberDropdown(null)
             }}
-            className="text-xs px-3 py-1 rounded-md bg-white/10"
+            className="text-xs px-3 py-1 rounded-md border border-white/10 bg-gradient-to-br from-[#18181B] to-blue-500"
           >
             Clients
           </button>
@@ -123,7 +128,7 @@ const ProjectCard = ({
               setOpenMemberDropdown(openMemberDropdown === p._id ? null : p._id)
               setOpenClientDropdown(null)
             }}
-            className="text-xs px-3 py-1 rounded-md bg-white/10"
+            className="text-xs px-3 py-1 rounded-md border border-white/10 bg-gradient-to-br from-[#18181B] to-blue-500"
           >
             Members
           </button>

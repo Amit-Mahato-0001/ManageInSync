@@ -6,7 +6,7 @@ const ProjectsPagination = ({ page, totalPages, onPageChange }) => {
 
     <div className="flex items-center justify-center gap-3 mt-6">
 
-      {/* PREV */}
+      {/* prev */}
       <button
         onClick={() => onPageChange(page - 1)}
         disabled={page === 1}
@@ -15,12 +15,12 @@ const ProjectsPagination = ({ page, totalPages, onPageChange }) => {
         <ArrowLeft size={16} />
       </button>
 
-      {/* PAGE INFO */}
+      {/* page info */}
       <div className="px-3 py-1 rounded-md bg-[#18181B] border border-white/10 text-sm text-white/70">
         {page} / {totalPages}
       </div>
 
-      {/* NEXT */}
+      {/* next */}
       <button
         onClick={() => onPageChange(page + 1)}
         disabled={page === totalPages}

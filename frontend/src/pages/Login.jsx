@@ -39,9 +39,6 @@ const Login = () => {
   return (
     <div className="w-full">
       <div className="rounded-2xl border border-white/10 bg-gradient-to-br from-[#18181B] to-[#09090B] p-8 text-white shadow-xl">
-        <p className="text-xs font-semibold tracking-widest text-blue-400 mb-2">
-          MANAGEINSYNC
-        </p>
 
         <h1 className="text-3xl font-semibold mb-2">
           Welcome back
@@ -63,8 +60,8 @@ const Login = () => {
             <input
               type="email"
               required
-              className="w-full rounded-md border border-white/10 bg-black/20 px-4 py-2.5 text-sm outline-none focus:border-blue-500/60 focus:ring-2 focus:ring-blue-500/20"
-              placeholder="you@agency.com"
+              className="w-full rounded-md border border-white/10 px-4 py-2.5 text-sm outline-none focus:border-blue-500/60 focus:ring-2 focus:ring-blue-500/20"
+              placeholder="your@gmail.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
             />
@@ -75,7 +72,7 @@ const Login = () => {
             <input
               type="password"
               required
-              className="w-full rounded-md border border-white/10 bg-black/20 px-4 py-2.5 text-sm outline-none focus:border-blue-500/60 focus:ring-2 focus:ring-blue-500/20"
+              className="w-full rounded-md border border-white/10 px-4 py-2.5 text-sm outline-none focus:border-blue-500/60 focus:ring-2 focus:ring-blue-500/20"
               placeholder="Enter your password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
@@ -85,7 +82,7 @@ const Login = () => {
           <button
             type="submit"
             disabled={loading}
-            className="w-full rounded-md bg-blue-600 hover:bg-blue-500 transition-colors text-sm font-medium py-2.5 disabled:opacity-60 disabled:cursor-not-allowed"
+            className="w-full rounded-lg border border-white/10 bg-gradient-to-br from-[#18181B] to-blue-500 transition-colors text-sm font-medium py-2.5 disabled:opacity-60 disabled:cursor-not-allowed"
           >
             {loading ? "Logging in..." : "Login"}
           </button>

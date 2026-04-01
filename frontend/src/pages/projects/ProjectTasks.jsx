@@ -7,17 +7,18 @@ import { useAuth } from "../../context/AuthContext"
 import TasksPagination from "../../components/TasksPagination"
 
 const getStatusStyle = (status) => {
-  if (status === "todo") return "bg-yellow-500/10 text-yellow-400"
-  if (status === "in-progress") return "bg-blue-500/10 text-blue-400"
-  if (status === "done") return "bg-green-500/10 text-green-400"
+  if (status === "todo") return "bg-gradient-to-br from-[#18181B] to-yellow-500"
+  if (status === "in-progress") return "bg-gradient-to-br from-[#18181B] to-purple-500"
+  if (status === "done") return "bg-gradient-to-br from-[#18181B] to-green-500"
 
   return "bg-white/10 text-white/60"
+  
 }
 
 const getPriorityStyle = (priority) => {
-  if (priority === "low") return "bg-gray-500/10 text-gray-400"
-  if (priority === "medium") return "bg-orange-500/10 text-orange-400"
-  if (priority === "high") return "bg-red-500/10 text-red-400"
+  if (priority === "low") return "bg-gradient-to-br from-[#18181B] to-gray-500"
+  if (priority === "medium") return "bg-gradient-to-br from-[#18181B] to-orange-500"
+  if (priority === "high") return "bg-gradient-to-br from-[#18181B] to-red-500"
 
   return "bg-white/10 text-white/60"
 }
@@ -251,16 +252,19 @@ const ProjectTasks = () => {
               <Link
                 to={`/projects/${projectId}/conversation`}
                 state={projectRouteState}
-                className={getTabClassName(false)}
+                className={`${getTabClassName(false)} relative`}
               >
                 Conversation
+
+                {unreadCount > 0 && (
+                  <span 
+                    className="absolute top-1 right-1 h-2.5 w-2.5 rounded-full bg-gradient-to-br from-[#18181B] to-green-500" 
+                  >
+                  </span>
+                )}
+
               </Link>
 
-              {unreadCount > 0 && (
-                <span className="rounded-full bg-blue-500/15 px-3 py-1 text-xs font-medium text-blue-300">
-                  {unreadCount} unread
-                </span>
-              )}
             </div>
 
             {canCreateTasks ? (
@@ -308,7 +312,7 @@ const ProjectTasks = () => {
                       value={task.status}
                       disabled={updatingTaskId === task._id || isCompletedProject}
                       onChange={(e) => handleUpdateTask(task, { status: e.target.value })}
-                      className="border border-white/10 px-3 py-2 rounded-md text-sm bg-transparent"
+                      className="border border-white/10 px-3 py-2 rounded-md text-sm"
                     >
                       <option value="todo">Todo</option>
                       <option value="in-progress">In Progress</option>
@@ -319,7 +323,7 @@ const ProjectTasks = () => {
                       value={task.priority}
                       disabled={updatingTaskId === task._id || isCompletedProject}
                       onChange={(e) => handleUpdateTask(task, { priority: e.target.value })}
-                      className="border border-white/10 px-3 py-2 rounded-md text-sm bg-transparent"
+                      className="border border-white/10 px-3 py-2 rounded-md text-sm"
                     >
                       <option value="low">Low</option>
                       <option value="medium">Medium</option>
@@ -329,12 +333,18 @@ const ProjectTasks = () => {
                 )}
 
                 {canCreateTasks && (
+
                   <button
                     disabled={deletingTaskId === task._id || updatingTaskId === task._id}
                     onClick={() => handleDeleteTask(task._id)}
                   >
-                    <Trash2 className="w-4 h-4 text-red-400" />
+
+                    <div className="p-2 rounded-lg border border-white/10 bg-gradient-to-br from-[#18181B] to-red-500">
+                      <Trash2 size={16} />
+                    </div>
+
                   </button>
+
                 )}
 
                 {updatingTaskId === task._id && (

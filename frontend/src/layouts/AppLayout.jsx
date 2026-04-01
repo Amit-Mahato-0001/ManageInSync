@@ -6,6 +6,7 @@ import {
   Users,
   User,
   FileText,
+  LogOut,
 } from "lucide-react";
 
 export default function AppLayout({ children }) {
@@ -37,9 +38,10 @@ export default function AppLayout({ children }) {
 
         <button
           onClick={handleLogout}
-          className="text-sm px-3 py-1.5 rounded-md bg-white/10"
+          className="inline-flex items-center gap-2 rounded-lg border border-white/10 bg-gradient-to-br from-[#18181B] to-blue-500 px-2 py-1 text-sm font-medium text-white"
         >
           Logout
+          <LogOut size={16}/>
         </button>
       </header>
 

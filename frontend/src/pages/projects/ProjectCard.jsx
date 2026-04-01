@@ -61,7 +61,9 @@ const ProjectCard = ({
               handleDelete(p._id)
             }}
           >
-            <Trash2 className="w-4 h-4 text-red-400" />
+            <div className="p-2 rounded-lg border border-white/10 bg-gradient-to-br from-[#18181B] to-red-500">
+              <Trash2 size={16} />
+            </div>
           </button>
         )}
       </div>
@@ -137,7 +139,7 @@ const ProjectCard = ({
 
       {p.unreadCount > 0 && (
         <div className="flex justify-end">
-          <span className="rounded-full bg-blue-500/15 px-3 py-1 text-xs font-medium text-blue-300">
+          <span className="rounded-lg bg-gradient-to-br from-[#18181B] to-green-500 px-2 py-1 text-xs font-medium">
             {p.unreadCount} unread
           </span>
         </div>

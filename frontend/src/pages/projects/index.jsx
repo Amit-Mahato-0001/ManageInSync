@@ -34,7 +34,7 @@ const Projects = () => {
 
   const loadProjects = useCallback(async () => {
 
-    const res = await fetchProjects({ page, limit: 3 })
+    const res = await fetchProjects({ page, limit: 4 })
     setProjects(res.data.projects.data)
     setPagination(res.data.projects.pagination)
     

@@ -131,7 +131,7 @@ const Members = () => {
 
             <div className="flex items-center gap-2 text-sm">
 
-              <User2 className="w-4 h-4 text-blue-400" />
+              <User2 className="w-4 h-4" />
 
               <span>{m.email}</span>
 
@@ -140,7 +140,11 @@ const Members = () => {
             {/* delete */}
 
             <button onClick={() => handleDelete(m._id)}>
-              <Trash2 className="w-4 h-4 text-red-400" />
+
+              <div className="p-2 rounded-lg border border-white/10 bg-gradient-to-br from-[#18181B] to-red-500">
+                <Trash2 size={16} />
+              </div>
+
             </button>
 
           </div>

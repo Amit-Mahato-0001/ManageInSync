@@ -77,7 +77,7 @@ const Dashboard = () => {
           label="Total Projects"
           value={data.dashboardStats.totalProjects}
           icon={Folder}
-          color="text-blue-400 bg-blue-500/10"
+          color="border border-white/10 bg-gradient-to-br from-[#18181B] to-orange-500"
           sub="projects in workspace"
         />
 
@@ -85,7 +85,7 @@ const Dashboard = () => {
           label="Active Projects"
           value={data.dashboardStats.activeProjects}
           icon={CheckCircle}
-          color="text-green-400 bg-green-500/10"
+          color="border border-white/10 bg-gradient-to-br from-[#18181B] to-green-500"
           sub="currently active"
         />
 
@@ -93,7 +93,7 @@ const Dashboard = () => {
           label="Team Members"
           value={data.dashboardStats.totalUsers}
           icon={Users}
-          color="text-purple-400 bg-purple-500/10"
+          color="border border-white/10 bg-gradient-to-br from-[#18181B] to-purple-500"
           sub="in your team"
         />
 
@@ -101,7 +101,7 @@ const Dashboard = () => {
           label="Clients"
           value={data.dashboardStats.totalClients}
           icon={User}
-          color="text-yellow-400 bg-yellow-500/10"
+          color="border border-white/10 bg-gradient-to-br from-[#18181B] to-yellow-500"
           sub="total clients"
         />
 

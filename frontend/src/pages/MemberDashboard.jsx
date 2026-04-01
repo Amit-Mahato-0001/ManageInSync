@@ -76,18 +76,18 @@ const MemberDashboard = () => {
               </p>
 
               {/* STATUS */}
-              <span className={`text-xs px-2 py-1 rounded-md ${
+              <span className={`text-xs px-2 py-1 rounded-lg ${
                 p.status === "active"
-                  ? "bg-green-500/10 text-green-400"
+                  ? "bg-gradient-to-br from-[#18181B] to-green-500"
                   : p.status === "on-hold"
-                  ? "bg-yellow-500/10 text-yellow-400"
-                  : "bg-gray-500/10 text-gray-400"
+                  ? "bg-gradient-to-br from-[#18181B] to-yellow-500"
+                  : "bg-gradient-to-br from-[#18181B] to-gray-500"
               }`}>
                 {p.status || "unknown"}
               </span>
 
               {/* OPTIONAL SUBTEXT */}
-              <p className="text-xs text-white/40">
+              <p className="text-xs font-medium text-white/40 mt-2">
                 Assigned project
               </p>
 

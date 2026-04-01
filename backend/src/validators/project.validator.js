@@ -36,7 +36,6 @@ const assignProjectSchema = z.object({
 
     clientIds: z
     .array(objectId("clientId"))
-    .min(1, "Atleast one client required"),
 
 })
 
@@ -49,7 +48,6 @@ const assignMemberSchema = z.object({
 
     memberIds: z
     .array(objectId("memberId"))
-    .min(1, "At least one member required")
 
 })
 

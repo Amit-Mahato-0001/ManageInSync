@@ -82,7 +82,7 @@ const assignClientHandler = async (req, res, next) => {
         })
 
         return res.status(200).json({
-            message: "Client assigned successfully",
+            message: "Project clients updated successfully",
             project
         })
 
@@ -134,7 +134,7 @@ const assignMemberHandler = async (req, res, next) => {
 
         return res.status(200).json({
 
-            message: "Member assigned successfully",
+            message: "Project members updated successfully",
             project
 
         })

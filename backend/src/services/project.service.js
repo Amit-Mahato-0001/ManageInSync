@@ -181,7 +181,7 @@ const assignClient = async ({projectId, clientIds, tenantId}) => {
     if(
         !mongoose.Types.ObjectId.isValid(projectId)
     ){
-        throw new Error("Invalid projectId or clientIds");
+        throw new Error("Invalid projectId");
     }
 
     const project = await Project.findOne({
@@ -194,25 +194,34 @@ const assignClient = async ({projectId, clientIds, tenantId}) => {
         throw new Error("Project not found")
     }
 
+    const uniqueClientIds = [...new Set(clientIds.map(id => id.toString()))] //avoid duplicate Id's
+    
+    //empty array alloweed
+    if(uniqueClientIds.length === 0) {
+
+        project.clients = []
+        await project.save()
+        return await Project.findById(projectId)
+    }
+
     const validClients = await User.find({
 
-        _id: { $in: clientIds },
+        _id: { $in: uniqueClientIds },
         tenantId,
         role: "client",
         status: "active"
     })
 
-    if(!validClients.length){
-        throw new Error("No valid clients found")
+    if(validClients.length !== uniqueClientIds.length){
+
+        throw new Error("Some client Id's are invalid")
     }
 
     const validClientIds = validClients.map(c => c._id)
 
-    //using $addToSet to prevent duplicates
-    await Project.updateOne(
-        { _id: projectId },
-        { $addToSet: { clients: { $each: validClientIds }}}
-    )
+    //replace old clients with final selected clients
+    project.clients = validClientIds
+    await project.save()
     
     //return updated project
     return await Project.findById(projectId)
@@ -277,16 +286,28 @@ const assignMember = async({projectId, memberIds, tenantId}) => {
 
     }
 
+    //avoid duplicate Id's
+    const uniqueMemberIds = [...new Set(memberIds.map(id => id.toString()))]
+
+    //empty array allowed
+    if(uniqueMemberIds.length === 0){
+
+        project.members = []
+        await project.save()
+        return await Project.findById(projectId)
+
+    }
+
     const validMembers = await User.find({
 
-        _id: { $in: memberIds },
+        _id: { $in: uniqueMemberIds },
         tenantId,
         role: "member",
         status: "active"
 
     })
 
-    if(validMembers.length !== memberIds.length){
+    if(validMembers.length !== uniqueMemberIds.length){
 
         throw new Error("Some memberIds are invalid")
 
@@ -294,12 +315,11 @@ const assignMember = async({projectId, memberIds, tenantId}) => {
 
     const validMemberIds = validMembers.map(m => m._id)
 
-    await Project.updateOne(
+    //replace full list
+    project.members = validMemberIds
+    await project.save()
 
-        {_id : projectId},
-        { $addToSet: {members: {$each: validMemberIds}}}
-    )
-
+    //return krdo updated project ko bus bus ;)
     return await Project.findById(projectId)
 }
 

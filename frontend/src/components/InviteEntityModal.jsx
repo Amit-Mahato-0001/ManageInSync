@@ -1,6 +1,8 @@
 import { useState } from "react"
 import { Rocket, X } from "lucide-react"
 
+const EMAIL_PATTERN = /^\S+@\S+\.\S+$/
+
 const InviteEntityModal = ({
   entityLabel,
   description,
@@ -15,6 +17,7 @@ const InviteEntityModal = ({
   const handleOpenModal = () => {
 
     setError("")
+    setEmail("")
     setIsModalOpen(true)
   }
 
@@ -34,8 +37,17 @@ const InviteEntityModal = ({
     const safeEmail = email.trim()
 
     if (!safeEmail) {
+
       setError(`${entityLabel} email required`)
       return
+
+    }
+
+    if (!EMAIL_PATTERN.test(safeEmail)) {
+
+      setError(`Enter a valid ${entityLabel.toLowerCase()} email`)
+      return
+
     }
 
     try {
@@ -48,9 +60,9 @@ const InviteEntityModal = ({
       setEmail("")
       setIsModalOpen(false)
 
-    } catch (submitError) {
-
-      setError(submitError?.message || `Failed to Add ${entityLabel.toLowerCase()}`)
+    } catch {
+      
+      return
 
     } finally {
 
@@ -91,7 +103,7 @@ const InviteEntityModal = ({
               </button>
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit} className="space-y-4" noValidate>
 
               <div>
 

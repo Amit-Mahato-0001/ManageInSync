@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react"
 import { Link, useLocation, useParams } from "react-router-dom"
 import { ArrowLeft } from "lucide-react"
+import toast from "react-hot-toast"
 import {
   deleteMessage as deleteConversationMessage,
   editMessage as editConversationMessage,
@@ -43,6 +44,19 @@ const getTabClassName = (active) => {
     : "px-4 py-2 text-sm font-medium"
 }
 
+const runAsyncToast = async (loadingMessage, action, fallbackError) => {
+  const toastId = toast.loading(loadingMessage)
+
+  try {
+    const result = await action()
+    toast.dismiss(toastId)
+    return result
+  } catch (error) {
+    toast.error(getErrorMessage(error, fallbackError), { id: toastId })
+    throw error
+  }
+}
+
 const ProjectConversation = () => {
   const { projectId } = useParams()
   const { state } = useLocation()
@@ -59,7 +73,7 @@ const ProjectConversation = () => {
   const [editText, setEditText] = useState("")
   const [savingEdit, setSavingEdit] = useState(false)
   const [deletingMessageId, setDeletingMessageId] = useState(null)
-  const [unreadCount, setUnreadCount] = useState(0)
+  const [_unreadCount, setUnreadCount] = useState(0)
 
   const listRef = useRef(null)
   const bottomRef = useRef(null)
@@ -242,7 +256,11 @@ const ProjectConversation = () => {
       setSubmitting(true)
       setError("")
 
-      const response = await sendConversationMessage(projectId, safeText)
+      const response = await runAsyncToast(
+        "Sending message...",
+        () => sendConversationMessage(projectId, safeText),
+        "Failed to send message"
+      )
       const nextMessage = response.data?.data
       const mergedMessages = mergeMessages(messagesRef.current, nextMessage ? [nextMessage] : [])
 
@@ -251,8 +269,8 @@ const ProjectConversation = () => {
       setComposerText("")
       setUnreadCount(0)
       scheduleScrollToBottom("smooth")
-    } catch (requestError) {
-      setError(getErrorMessage(requestError, "Failed to send message"))
+    } catch {
+      return
     } finally {
       setSubmitting(false)
     }
@@ -272,7 +290,6 @@ const ProjectConversation = () => {
     const safeText = editText.trim()
 
     if (!safeText) {
-      setError("Message text is required")
       return
     }
 
@@ -280,7 +297,11 @@ const ProjectConversation = () => {
       setSavingEdit(true)
       setError("")
 
-      const response = await editConversationMessage(projectId, messageId, safeText)
+      const response = await runAsyncToast(
+        "Saving message...",
+        () => editConversationMessage(projectId, messageId, safeText),
+        "Failed to edit message"
+      )
       const updatedMessage = response.data?.data
       const mergedMessages = mergeMessages(
         messagesRef.current.filter((message) => message._id !== messageId),
@@ -290,8 +311,8 @@ const ProjectConversation = () => {
       messagesRef.current = mergedMessages
       setMessages(mergedMessages)
       handleCancelEdit()
-    } catch (requestError) {
-      setError(getErrorMessage(requestError, "Failed to edit message"))
+    } catch {
+      return
     } finally {
       setSavingEdit(false)
     }
@@ -304,7 +325,11 @@ const ProjectConversation = () => {
       setDeletingMessageId(messageId)
       setError("")
 
-      await deleteConversationMessage(projectId, messageId)
+      await runAsyncToast(
+        "Deleting message...",
+        () => deleteConversationMessage(projectId, messageId),
+        "Failed to delete message"
+      )
 
       const remainingMessages = messagesRef.current.filter((message) => message._id !== messageId)
 
@@ -314,85 +339,84 @@ const ProjectConversation = () => {
       if (editingMessageId === messageId) {
         handleCancelEdit()
       }
-    } catch (requestError) {
-      setError(getErrorMessage(requestError, "Failed to delete message"))
+    } catch {
+      return
     } finally {
       setDeletingMessageId(null)
     }
   }
 
   return (
-  <div className="flex h-[calc(100vh-9.5rem)] min-h-0 flex-col gap-6 overflow-hidden">
-    <div className="space-y-4">
-      <div className="flex items-center gap-4">
-        <Link
-          to="/projects"
-          className="inline-flex items-center gap-2 "
-        >
-          <ArrowLeft size={30} />
-        </Link>
+    <div className="flex h-[calc(100vh-9.5rem)] min-h-0 flex-col gap-6 overflow-hidden">
+      <div className="space-y-4">
+        <div className="flex items-center gap-4">
+          <Link
+            to="/projects"
+            className="inline-flex items-center gap-2 "
+          >
+            <ArrowLeft size={30} />
+          </Link>
 
-        <div>
-          <h1 className="text-2xl font-semibold">{projectName}</h1>
-          <p className="text-sm text-white/60">Collaborate, share updates, and stay aligned with your team</p>
+          <div>
+            <h1 className="text-2xl font-semibold">{projectName}</h1>
+            <p className="text-sm text-white/60">Collaborate, share updates, and stay aligned with your team</p>
+          </div>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2">
+          {canViewTasks && (
+            <Link
+              to={`/projects/${projectId}/tasks`}
+              state={projectRouteState}
+              className={getTabClassName(false)}
+            >
+              Tasks
+            </Link>
+          )}
+
+          <Link
+            to={`/projects/${projectId}/conversation`}
+            state={projectRouteState}
+            className={getTabClassName(true)}
+          >
+            Conversation
+          </Link>
         </div>
       </div>
 
-      <div className="flex flex-wrap items-center gap-2">
-        {canViewTasks && (
-          <Link
-            to={`/projects/${projectId}/tasks`}
-            state={projectRouteState}
-            className={getTabClassName(false)}
-          >
-            Tasks
-          </Link>
-        )}
+      {error && <p className="text-sm text-red-400">{error}</p>}
 
-        <Link
-          to={`/projects/${projectId}/conversation`}
-          state={projectRouteState}
-          className={getTabClassName(true)}
-        >
-          Conversation
-        </Link>
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+        <MessageList
+          messages={messages}
+          loading={loading}
+          currentUserId={currentUserId}
+          editingMessageId={editingMessageId}
+          editText={editText}
+          setEditText={setEditText}
+          savingEdit={savingEdit}
+          deletingMessageId={deletingMessageId}
+          onStartEdit={handleStartEdit}
+          onCancelEdit={handleCancelEdit}
+          onSubmitEdit={handleSubmitEdit}
+          onDelete={handleDeleteMessage}
+          hasMore={Boolean(olderCursor)}
+          onLoadOlder={handleLoadOlder}
+          loadingOlder={loadingOlder}
+          listRef={listRef}
+          bottomRef={bottomRef}
+        />
 
+        <MessageComposer
+          value={composerText}
+          onChange={setComposerText}
+          onSubmit={handleSendMessage}
+          disabled={loading}
+          submitting={submitting}
+        />
       </div>
     </div>
-
-    {error && <p className="text-sm text-red-400">{error}</p>}
-
-    <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-      <MessageList
-        messages={messages}
-        loading={loading}
-        currentUserId={currentUserId}
-        editingMessageId={editingMessageId}
-        editText={editText}
-        setEditText={setEditText}
-        savingEdit={savingEdit}
-        deletingMessageId={deletingMessageId}
-        onStartEdit={handleStartEdit}
-        onCancelEdit={handleCancelEdit}
-        onSubmitEdit={handleSubmitEdit}
-        onDelete={handleDeleteMessage}
-        hasMore={Boolean(olderCursor)}
-        onLoadOlder={handleLoadOlder}
-        loadingOlder={loadingOlder}
-        listRef={listRef}
-        bottomRef={bottomRef}
-      />
-
-      <MessageComposer
-        value={composerText}
-        onChange={setComposerText}
-        onSubmit={handleSendMessage}
-        disabled={loading}
-        submitting={submitting}
-      />
-    </div>
-  </div>
-)
+  )
 }
 
 export default ProjectConversation

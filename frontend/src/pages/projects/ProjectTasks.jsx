@@ -12,7 +12,6 @@ const getStatusStyle = (status) => {
   if (status === "done") return "bg-gradient-to-br from-[#18181B] to-green-500"
 
   return "bg-white/10 text-white/60"
-  
 }
 
 const getPriorityStyle = (priority) => {
@@ -21,6 +20,23 @@ const getPriorityStyle = (priority) => {
   if (priority === "high") return "bg-gradient-to-br from-[#18181B] to-red-500"
 
   return "bg-white/10 text-white/60"
+}
+
+const getErrorMessage = (error, fallback) => {
+  return error?.response?.data?.error || error?.response?.data?.message || fallback
+}
+
+const runAsyncToast = async (loadingMessage, action, fallbackError) => {
+  const toastId = toast.loading(loadingMessage)
+
+  try {
+    const result = await action()
+    toast.dismiss(toastId)
+    return result
+  } catch (error) {
+    toast.error(getErrorMessage(error, fallbackError), { id: toastId })
+    throw error
+  }
 }
 
 const getTabClassName = (active) => {
@@ -36,7 +52,8 @@ const ProjectTasks = () => {
 
   const [tasks, setTasks] = useState([])
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState("")
+  const [pageError, setPageError] = useState("")
+  const [formError, setFormError] = useState("")
   const [title, setTitle] = useState("")
   const [status, setStatus] = useState("todo")
   const [priority, setPriority] = useState("medium")
@@ -61,23 +78,28 @@ const ProjectTasks = () => {
     unreadCount
   }
 
-  const showError = (message) => {
-    setError(message)
-    toast.error(message)
-  }
-
-  const loadTasks = useCallback(async () => {
+  const loadTasks = useCallback(async ({ showLoader = true, throwOnError = false } = {}) => {
     try {
-      setLoading(true)
-      setError("")
+      if (showLoader) {
+        setLoading(true)
+      }
+
+      setPageError("")
 
       const res = await fetchTasks(projectId, { page, limit: 5 })
       setTasks(res.data.tasks.data)
       setPagination(res.data.tasks.pagination)
-    } catch (err) {
-      showError(err?.response?.data?.error || "Failed to load tasks")
+    } catch (error) {
+      console.error(error)
+      setPageError(getErrorMessage(error, "Failed to load tasks"))
+
+      if (throwOnError) {
+        throw error
+      }
     } finally {
-      setLoading(false)
+      if (showLoader) {
+        setLoading(false)
+      }
     }
   }, [projectId, page])
 
@@ -86,17 +108,11 @@ const ProjectTasks = () => {
   }, [loadTasks])
 
   const handleOpenCreateModal = () => {
-    if (!canCreateTasks) {
-      showError("Only owner/admin can create tasks")
+    if (!canCreateTasks || isCompletedProject) {
       return
     }
 
-    if (isCompletedProject) {
-      showError("Cannot create tasks in completed projects")
-      return
-    }
-
-    setError("")
+    setFormError("")
     setIsCreateModalOpen(true)
   }
 
@@ -107,54 +123,67 @@ const ProjectTasks = () => {
     setTitle("")
     setStatus("todo")
     setPriority("medium")
+    setFormError("")
   }
 
   const handleCreateTask = async (e) => {
     e.preventDefault()
 
     if (!canCreateTasks) {
-      showError("Only owner/admin can create tasks")
+      setFormError("Only owner/admin can create tasks")
       return
     }
 
     if (isCompletedProject) {
-      showError("Cannot create tasks in completed projects")
+      setFormError("Cannot create tasks in completed projects")
       return
     }
 
     if (!currentUserId) {
-      showError("Session expired")
+      setFormError("Session expired")
       return
     }
 
-    if (!title.trim()) {
-      showError("Title required")
+    const safeTitle = title.trim()
+
+    if (!safeTitle) {
+      setFormError("Task title is required")
       return
     }
 
     try {
       setSubmitting(true)
-      setError("")
+      setFormError("")
 
-      await createTask(projectId, {
-        title: title.trim(),
-        assigneeId: currentUserId,
-        status,
-        priority
-      })
+      await toast.promise(
+        (async () => {
+          await createTask(projectId, {
+            title: safeTitle,
+            assigneeId: currentUserId,
+            status,
+            priority
+          })
+
+          if (page === 1) {
+            await loadTasks({ showLoader: false, throwOnError: true })
+          } else {
+            setPage(1)
+          }
+        })(),
+        {
+          loading: "Creating task...",
+          success: "Task created",
+          error: (error) => getErrorMessage(error, "Failed to create task"),
+        }
+      )
 
       setTitle("")
       setStatus("todo")
       setPriority("medium")
+      setFormError("")
       setIsCreateModalOpen(false)
-
-      if (page === 1) {
-        await loadTasks()
-      } else {
-        setPage(1)
-      }
-    } catch (err) {
-      showError(err?.response?.data?.error || "Failed to create task")
+    } catch {
+      return
     } finally {
       setSubmitting(false)
     }
@@ -162,7 +191,7 @@ const ProjectTasks = () => {
 
   const handleDeleteTask = async (taskId) => {
     if (!canCreateTasks) {
-      showError("Not allowed")
+      toast.error("Not allowed")
       return
     }
 
@@ -170,17 +199,25 @@ const ProjectTasks = () => {
 
     try {
       setDeletingTaskId(taskId)
-      setError("")
 
-      await deleteTask(projectId, taskId)
+      await toast.promise(
+        (async () => {
+          await deleteTask(projectId, taskId)
 
-      if (tasks.length === 1 && page > 1) {
-        setPage((prev) => prev - 1)
-      } else {
-        await loadTasks()
-      }
-    } catch (err) {
-      showError(err?.response?.data?.error || "Failed to delete task")
+          if (tasks.length === 1 && page > 1) {
+            setPage((prev) => prev - 1)
+          } else {
+            await loadTasks({ showLoader: false, throwOnError: true })
+          }
+        })(),
+        {
+          loading: "Deleting task...",
+          success: "Task deleted",
+          error: (error) => getErrorMessage(error, "Failed to delete task"),
+        }
+      )
+    } catch {
+      return
     } finally {
       setDeletingTaskId(null)
     }
@@ -188,12 +225,12 @@ const ProjectTasks = () => {
 
   const handleUpdateTask = async (task, updates) => {
     if (!canUpdateTasks) {
-      showError("Not allowed")
+      toast.error("Not allowed")
       return
     }
 
     if (isCompletedProject) {
-      showError("Cannot update tasks in completed projects")
+      toast.error("Cannot update tasks in completed projects")
       return
     }
 
@@ -203,12 +240,17 @@ const ProjectTasks = () => {
 
     try {
       setUpdatingTaskId(task._id)
-      setError("")
 
-      await updateTask(projectId, task._id, updates)
-      await loadTasks()
-    } catch (err) {
-      showError(err?.response?.data?.error || "Failed to update task")
+      await runAsyncToast(
+        field === "status" ? "Updating task status..." : "Updating task priority...",
+        async () => {
+          await updateTask(projectId, task._id, updates)
+          await loadTasks({ showLoader: false, throwOnError: true })
+        },
+        "Failed to update task"
+      )
+    } catch {
+      return
     } finally {
       setUpdatingTaskId(null)
     }
@@ -257,14 +299,12 @@ const ProjectTasks = () => {
                 Conversation
 
                 {unreadCount > 0 && (
-                  <span 
-                    className="absolute top-1 right-1 h-2.5 w-2.5 rounded-full bg-gradient-to-br from-[#18181B] to-green-500" 
+                  <span
+                    className="absolute top-1 right-1 h-2.5 w-2.5 rounded-full bg-gradient-to-br from-[#18181B] to-green-500"
                   >
                   </span>
                 )}
-
               </Link>
-
             </div>
 
             {canCreateTasks ? (
@@ -285,9 +325,15 @@ const ProjectTasks = () => {
           </div>
         </div>
 
-        {error && <p className="hidden text-sm text-red-500">{error}</p>}
+        {pageError && <p className="text-sm text-red-500">{pageError}</p>}
 
         <div className="space-y-3">
+          {loading && (
+            <p className="text-sm text-white/50">
+              Loading tasks...
+            </p>
+          )}
+
           {!loading && tasks.map((task) => (
             <div
               key={task._id}
@@ -333,18 +379,15 @@ const ProjectTasks = () => {
                 )}
 
                 {canCreateTasks && (
-
                   <button
                     disabled={deletingTaskId === task._id || updatingTaskId === task._id}
                     onClick={() => handleDeleteTask(task._id)}
+                    className="disabled:cursor-not-allowed disabled:opacity-60"
                   >
-
                     <div className="p-2 rounded-lg border border-white/10 bg-gradient-to-br from-[#18181B] to-red-500">
                       <Trash2 size={16} />
                     </div>
-
                   </button>
-
                 )}
 
                 {updatingTaskId === task._id && (
@@ -364,7 +407,6 @@ const ProjectTasks = () => {
         </div>
       </div>
 
-      {/* Create Task Modal */}
       {isCreateModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
           <div className="w-full max-w-md rounded-lg border border-white/10 bg-gradient-to-br from-[#18181B] to-[#09090B] p-6">
@@ -384,17 +426,29 @@ const ProjectTasks = () => {
               </button>
             </div>
 
-            <form onSubmit={handleCreateTask} className="space-y-4">
+            <form onSubmit={handleCreateTask} className="space-y-4" noValidate>
               <div>
                 <label className="mb-2 block text-sm font-medium text-white/80">
                   Task Title
                 </label>
                 <input
                   value={title}
-                  onChange={(e) => setTitle(e.target.value)}
+                  onChange={(e) => {
+                    setTitle(e.target.value)
+
+                    if (formError) {
+                      setFormError("")
+                    }
+                  }}
                   placeholder="Enter task title..."
                   className="w-full rounded-lg border border-white/10 px-4 py-3 text-sm text-white outline-none transition focus:border-blue-500"
                 />
+
+                {formError && (
+                  <p className="mt-2 text-sm text-red-400">
+                    {formError}
+                  </p>
+                )}
               </div>
 
               <div>

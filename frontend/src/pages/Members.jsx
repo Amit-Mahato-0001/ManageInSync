@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react"
+import toast from "react-hot-toast"
 import { deleteMember, fetchMembers, inviteMember } from "../api/members"
 import { triggerDashboardRefresh } from "../utils/dashboardRefresh"
 import { Trash2, User2 } from "lucide-react"
@@ -8,8 +9,8 @@ const Members = () => {
 
   const [members, setMembers] = useState([])
   const [error, setError] = useState("")
-  const [message, setMessage] = useState("")
   const [loading, setLoading] = useState(true)
+  const [deletingMemberId, setDeletingMemberId] = useState(null)
 
   useEffect(() => {
 
@@ -17,22 +18,32 @@ const Members = () => {
 
   }, [])
 
-  const loadMembers = async () => {
+  const loadMembers = async ({ showLoader = true, throwOnError = false } = {}) => {
 
     try {
 
-      setLoading(true)
+      if (showLoader) {
+        setLoading(true)
+      }
+
       const res = await fetchMembers()
       setMembers(res.data.members)
+      setError("")
 
     } catch (err) {
 
       console.error(err)
       setError("Failed to load members")
 
+      if (throwOnError) {
+        throw err
+      }
+
     } finally {
 
-      setLoading(false)
+      if (showLoader) {
+        setLoading(false)
+      }
 
     }
 
@@ -48,16 +59,23 @@ const Members = () => {
     try {
 
       setError("")
-      setMessage("")
 
       const tenantId = localStorage.getItem("tenantId")
       const role = "member"
 
-      await inviteMember({ email: safeEmail, tenantId, role })
-
-      setMessage("Invite sent successfully")
-      await loadMembers()
-      triggerDashboardRefresh()
+      await toast.promise(
+        (async () => {
+          await inviteMember({ email: safeEmail, tenantId, role })
+          await loadMembers({ showLoader: false, throwOnError: true })
+          triggerDashboardRefresh()
+        })(),
+        {
+          loading: "Sending member invite...",
+          success: "Member invite sent",
+          error: (requestError) =>
+            requestError?.response?.data?.message || "Failed to send invite",
+        }
+      )
 
     } catch (error) {
 
@@ -72,18 +90,28 @@ const Members = () => {
     if (!confirm("Delete this member?")) return
 
     try {
+      setDeletingMemberId(memberId)
 
-      await deleteMember(memberId)
+      await toast.promise(
+        (async () => {
+          await deleteMember(memberId)
 
-      setMembers(prev =>
-        prev.filter(m => m._id !== memberId)
+          setMembers((prev) =>
+            prev.filter((member) => member._id !== memberId)
+          )
+
+          triggerDashboardRefresh()
+        })(),
+        {
+          loading: "Deleting member...",
+          success: "Member deleted",
+          error: "Failed to delete member",
+        }
       )
-
-      triggerDashboardRefresh()
-
     } catch {
-
-      alert("Failed to delete member")
+      return
+    } finally {
+      setDeletingMemberId(null)
 
     }
 
@@ -114,7 +142,6 @@ const Members = () => {
         onSubmit={handleSubmit}
       />
 
-      {message && <p className="text-green-400 text-sm">{message}</p>}
       {error && <p className="text-red-500 text-sm">{error}</p>}
 
       {/* members list */}
@@ -139,7 +166,11 @@ const Members = () => {
 
             {/* delete */}
 
-            <button onClick={() => handleDelete(m._id)}>
+            <button
+              onClick={() => handleDelete(m._id)}
+              disabled={deletingMemberId === m._id}
+              className="disabled:cursor-not-allowed disabled:opacity-60"
+            >
 
               <div className="p-2 rounded-lg border border-white/10 bg-gradient-to-br from-[#18181B] to-red-500">
                 <Trash2 size={16} />

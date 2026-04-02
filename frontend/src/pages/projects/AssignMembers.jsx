@@ -1,7 +1,21 @@
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
+import toast from "react-hot-toast"
+
+const hasSameSelection = (currentValues = [], nextValues = []) => {
+
+  if (currentValues.length !== nextValues.length) {
+
+    return false
+
+  }
+
+  const sortedCurrentValues = [...currentValues].sort()
+  const sortedNextValues = [...nextValues].sort()
+
+  return sortedCurrentValues.every((value, index) => value === sortedNextValues[index])
+}
 
 const AssignMembers = ({
-
   p,
   members,
   openMemberDropdown,
@@ -12,8 +26,9 @@ const AssignMembers = ({
   loadProjects,
   page,
   setPage
-
 }) => {
+
+  const [saving, setSaving] = useState(false)
 
   const isOpen = openMemberDropdown === p._id
 
@@ -49,15 +64,16 @@ const AssignMembers = ({
               checked={selectedMembers[p._id]?.includes(m._id) || false}
 
               onChange={() => {
-                
+
                 setSelectedMembers((prev) => {
 
                   const arr = prev[p._id] || []
 
                   return {
+
                     ...prev,
                     [p._id]: arr.includes(m._id)
-                      ? arr.filter((i) => i !== m._id)
+                      ? arr.filter((id) => id !== m._id)
                       : [...arr, m._id],
                   }
 
@@ -76,28 +92,50 @@ const AssignMembers = ({
       </div>
 
       <button
-
-        className="text-xs mt-3 w-full py-2 rounded-md border border-white/10 bg-gradient-to-br from-[#18181B] to-blue-500"
-
+      
+        className="text-xs mt-3 w-full py-2 rounded-md border border-white/10 bg-gradient-to-br from-[#18181B] to-blue-500 disabled:cursor-not-allowed disabled:opacity-60"
+        disabled={saving}
         onClick={async () => {
-
           const finalMembers = selectedMembers[p._id] || []
 
-          await assignMember(p._id, finalMembers)
+          if (hasSameSelection(p.members || [], finalMembers)) {
+            setOpenMemberDropdown(null)
+            return
+          }
 
-          setOpenMemberDropdown(null)
+          try {
+            setSaving(true)
 
-          page === 1 ? await loadProjects() : setPage(1)
+            await toast.promise(
+              (async () => {
+                await assignMember(p._id, finalMembers)
 
+                if (page === 1) {
+                  await loadProjects({ showLoader: false, throwOnError: true })
+                } else {
+                  setPage(1)
+                }
+              })(),
+              {
+                loading: "Saving members...",
+                success: "Members updated",
+                error: (error) =>
+                  error?.response?.data?.error || "Failed to update members",
+              }
+            )
+
+            setOpenMemberDropdown(null)
+          } catch {
+            return
+          } finally {
+            setSaving(false)
+          }
         }}
       >
-        Save
+        {saving ? "Saving..." : "Save"}
       </button>
-
     </div>
-
   )
-
 }
 
 export default AssignMembers

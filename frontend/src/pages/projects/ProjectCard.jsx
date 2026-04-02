@@ -1,7 +1,7 @@
+import { useNavigate } from "react-router-dom"
 import { Trash2, User2, Users } from "lucide-react"
 import AssignClients from "./AssignClients"
 import AssignMembers from "./AssignMembers"
-import { useNavigate } from "react-router-dom"
 
 const ProjectCard = ({
   p,
@@ -17,6 +17,8 @@ const ProjectCard = ({
   setSelectedClients,
   selectedMembers,
   setSelectedMembers,
+  deletingProjectId,
+  updatingProjectId,
   handleDelete,
   handleStatusChange,
   assignClient,
@@ -25,7 +27,6 @@ const ProjectCard = ({
   page,
   setPage
 }) => {
-
   const navigate = useNavigate()
   const canViewTasks = user?.role !== "client"
   const projectRouteState = {
@@ -45,9 +46,6 @@ const ProjectCard = ({
       onClick={handleCardClick}
       className="relative cursor-pointer rounded-xl p-5 border border-white/10 bg-gradient-to-br from-[#18181B] to-[#09090B] space-y-4 hover:border-blue-500 transition"
     >
-
-      {/* top section */}
-      
       <div className="flex justify-between items-start">
         <div>
           <h2 className="font-medium">{p.name}</h2>
@@ -56,10 +54,12 @@ const ProjectCard = ({
 
         {(user.role === "owner" || user.role === "admin") && (
           <button
+            disabled={deletingProjectId === p._id}
             onClick={(e) => {
               e.stopPropagation()
               handleDelete(p._id)
             }}
+            className="disabled:cursor-not-allowed disabled:opacity-60"
           >
             <div className="p-2 rounded-lg border border-white/10 bg-gradient-to-br from-[#18181B] to-red-500">
               <Trash2 size={16} />
@@ -68,48 +68,47 @@ const ProjectCard = ({
         )}
       </div>
 
-      {/* status dropdown */}
-
       <select
         value={p.status}
+        disabled={updatingProjectId === p._id}
         onClick={(e) => e.stopPropagation()}
         onChange={(e) => handleStatusChange(p._id, e.target.value)}
-        className="border border-white/10 text-xs px-2 py-1 rounded-md bg-transparent"
+        className="border border-white/10 text-xs px-2 py-1 rounded-md bg-transparent disabled:cursor-not-allowed disabled:opacity-60"
       >
         <option value="active">Active</option>
         <option value="on-hold">On Hold</option>
         <option value="completed">Completed</option>
       </select>
 
-      {/* clients */}
+      {updatingProjectId === p._id && (
+        <p className="text-xs text-white/40">
+          Updating status...
+        </p>
+      )}
 
       {canAssign && (
         <div className="text-sm text-white/60 flex gap-2">
           <User2 className="w-4 h-4" />
           {p.clients?.length > 0
             ? p.clients
-                .map(id => clients.find(x => x._id === id)?.email)
+                .map((id) => clients.find((client) => client._id === id)?.email)
                 .filter(Boolean)
                 .join(", ")
             : "No clients"}
         </div>
       )}
 
-      {/* members */}
-
       {canAssign && (
         <div className="text-sm text-white/60 flex gap-2">
           <Users className="w-4 h-4" />
           {p.members?.length > 0
             ? p.members
-                .map(id => members.find(x => x._id === id)?.email)
+                .map((id) => members.find((member) => member._id === id)?.email)
                 .filter(Boolean)
                 .join(", ")
             : "No members"}
         </div>
       )}
-
-      {/* assign buttons */}
 
       {canAssign && (
         <div className="flex gap-2">
@@ -145,7 +144,6 @@ const ProjectCard = ({
         </div>
       )}
 
-      {/* Dropdowns */}
       <div onClick={(e) => e.stopPropagation()}>
         <AssignClients
           {...{
@@ -177,7 +175,6 @@ const ProjectCard = ({
           }}
         />
       </div>
-
     </div>
   )
 }

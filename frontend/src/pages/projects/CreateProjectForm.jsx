@@ -4,11 +4,13 @@ import toast from "react-hot-toast"
 
 const CreateProjectForm = ({ onSubmit }) => {
   const [name, setName] = useState("")
+  const [error, setError] = useState("")
   const [submitting, setSubmitting] = useState(false)
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
 
   const handleOpenCreateModal = () => {
     setName("")
+    setError("")
     setIsCreateModalOpen(true)
   }
 
@@ -16,6 +18,7 @@ const CreateProjectForm = ({ onSubmit }) => {
     if (submitting) return
 
     setName("")
+    setError("")
     setIsCreateModalOpen(false)
   }
 
@@ -24,31 +27,31 @@ const CreateProjectForm = ({ onSubmit }) => {
 
     const safeName = name.trim()
 
-    //validation → toast
     if (!safeName) {
-      toast.error("Project name is required")
+      setError("Project name is required")
       return
     }
 
     if (safeName.length < 3) {
-      toast.error("Project name must be at least 3 characters")
+      setError("Project name must be at least 3 characters")
       return
     }
 
     try {
       setSubmitting(true)
+      setError("")
 
-      //full async lifecycle handled by toast
       await toast.promise(onSubmit(safeName), {
         loading: "Creating project...",
-        success: `Project "${safeName}" created successfully 🚀`,
-        error: (err) =>
-          err?.message || "Failed to create project. Try again.",
+        success: "Project created",
+        error: (err) => err?.message || "Failed to create project. Try again.",
       })
 
-      //reset + close
       setName("")
+      setError("")
       setIsCreateModalOpen(false)
+    } catch {
+      return
     } finally {
       setSubmitting(false)
     }
@@ -56,7 +59,6 @@ const CreateProjectForm = ({ onSubmit }) => {
 
   return (
     <>
-      {/* Trigger Button */}
       <button
         type="button"
         onClick={handleOpenCreateModal}
@@ -66,12 +68,9 @@ const CreateProjectForm = ({ onSubmit }) => {
         <Rocket size={16} />
       </button>
 
-      {/* Modal */}
       {isCreateModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
           <div className="w-full max-w-md rounded-lg border border-white/10 bg-gradient-to-br from-[#18181B] to-[#09090B] p-6">
-            
-            {/* Header */}
             <div className="mb-5 flex items-center justify-between">
               <div>
                 <h2 className="text-xl font-semibold text-white">
@@ -87,18 +86,29 @@ const CreateProjectForm = ({ onSubmit }) => {
               </button>
             </div>
 
-            {/* Form */}
-            <form onSubmit={handleCreateProject} className="space-y-4">
+            <form onSubmit={handleCreateProject} className="space-y-4" noValidate>
               <div>
                 <label className="mb-2 block text-sm font-medium text-white/80">
                   Project Name
                 </label>
                 <input
                   value={name}
-                  onChange={(e) => setName(e.target.value)}
+                  onChange={(e) => {
+                    setName(e.target.value)
+
+                    if (error) {
+                      setError("")
+                    }
+                  }}
                   placeholder="Enter project name..."
                   className="w-full rounded-lg border border-white/10 px-4 py-3 text-sm text-white outline-none transition focus:border-blue-500"
                 />
+
+                {error && (
+                  <p className="mt-2 text-sm text-red-400">
+                    {error}
+                  </p>
+                )}
               </div>
 
               <div className="flex items-center justify-end pt-2">

@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react"
+import toast from "react-hot-toast"
 import {
   fetchClients,
   inviteClient as inviteClientAPI,
@@ -13,7 +14,7 @@ const Clients = () => {
   const [clients, setClients] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
-  const [message, setMessage] = useState("")
+  const [deletingClientId, setDeletingClientId] = useState(null)
 
   useEffect(() => {
 
@@ -21,22 +22,32 @@ const Clients = () => {
 
   }, [])
 
-  const loadClients = async () => {
+  const loadClients = async ({ showLoader = true, throwOnError = false } = {}) => {
 
     try {
 
-      setLoading(true)
+      if (showLoader) {
+        setLoading(true)
+      }
+
       const res = await fetchClients()
       setClients(res.data.clients)
+      setError("")
 
     } catch (err) {
 
       console.error(err)
       setError("Failed to load clients")
 
+      if (throwOnError) {
+        throw err
+      }
+
     } finally {
 
-      setLoading(false)
+      if (showLoader) {
+        setLoading(false)
+      }
     }
 
   }
@@ -54,16 +65,23 @@ const Clients = () => {
     try {
 
       setError("")
-      setMessage("")
 
       const tenantId = localStorage.getItem("tenantId")
       const role = "client"
 
-      await inviteClientAPI({ email: safeEmail, tenantId, role })
-
-      setMessage("Invite sent successfully")
-      await loadClients()
-      triggerDashboardRefresh()
+      await toast.promise(
+        (async () => {
+          await inviteClientAPI({ email: safeEmail, tenantId, role })
+          await loadClients({ showLoader: false, throwOnError: true })
+          triggerDashboardRefresh()
+        })(),
+        {
+          loading: "Sending client invite...",
+          success: "Client invite sent",
+          error: (requestError) =>
+            requestError?.response?.data?.message || "Failed to send invite",
+        }
+      )
 
     } catch (error) {
 
@@ -78,18 +96,28 @@ const Clients = () => {
     if (!confirm("Delete this client?")) return
 
     try {
-      
-      await deleteClientAPI(clientId)
+      setDeletingClientId(clientId)
 
-      setClients(prev =>
-        prev.filter(c => c._id !== clientId)
+      await toast.promise(
+        (async () => {
+          await deleteClientAPI(clientId)
+
+          setClients((prev) =>
+            prev.filter((client) => client._id !== clientId)
+          )
+
+          triggerDashboardRefresh()
+        })(),
+        {
+          loading: "Deleting client...",
+          success: "Client deleted",
+          error: "Failed to delete client",
+        }
       )
-
-      triggerDashboardRefresh()
-
     } catch {
-
-      alert("Failed to delete client")
+      return
+    } finally {
+      setDeletingClientId(null)
 
     }
 
@@ -119,8 +147,6 @@ const Clients = () => {
         onSubmit={handleSubmit}
       />
 
-      {message && <p className="text-green-400 text-sm">{message}</p>}
-
       {error && <p className="text-red-500 text-sm">{error}</p>}
 
       {/* client list */}
@@ -145,7 +171,11 @@ const Clients = () => {
 
             {/* delete */}
 
-            <button onClick={() => handleDelete(c._id)}>
+            <button
+              onClick={() => handleDelete(c._id)}
+              disabled={deletingClientId === c._id}
+              className="disabled:cursor-not-allowed disabled:opacity-60"
+            >
 
               <div className="p-2 rounded-lg border border-white/10 bg-gradient-to-br from-[#18181B] to-red-500">
                 <Trash2 size={16} />

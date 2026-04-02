@@ -1,8 +1,11 @@
-import { useState } from 'react'
-import { Link, useNavigate, useSearchParams } from 'react-router-dom'
-import authApi from '../api/auth'
+import { useState } from "react"
+import { Link, useNavigate, useSearchParams } from "react-router-dom"
+import toast from "react-hot-toast"
+import authApi from "../api/auth"
 
-export default function AcceptInvite () {
+const MIN_PASSWORD_LENGTH = 8
+
+export default function AcceptInvite() {
   const [params] = useSearchParams()
   const token = params.get("token")
   const navigate = useNavigate()
@@ -21,7 +24,7 @@ export default function AcceptInvite () {
       return
     }
 
-    if (password.length < 8) {
+    if (password.length < MIN_PASSWORD_LENGTH) {
       setError("Password must be at least 8 characters")
       return
     }
@@ -30,16 +33,24 @@ export default function AcceptInvite () {
     setError("")
 
     try {
-      await authApi.acceptInviteApi({
-        token: inviteToken,
-        password
-      })
-
-      navigate('/login')
-    } catch (err) {
-      setError(
-        err.response?.data?.error || err.response?.data?.message || "Failed to accept invite"
+      await toast.promise(
+        authApi.acceptInviteApi({
+          token: inviteToken,
+          password
+        }),
+        {
+          loading: "Activating account...",
+          success: "Invite accepted. Please log in.",
+          error: (requestError) =>
+            requestError?.response?.data?.error ||
+            requestError?.response?.data?.message ||
+            "Failed to accept invite",
+        }
       )
+
+      navigate("/login")
+    } catch {
+      return
     } finally {
       setLoading(false)
     }
@@ -48,7 +59,6 @@ export default function AcceptInvite () {
   return (
     <div className="w-full">
       <div className="rounded-2xl border border-white/10 bg-gradient-to-br from-[#18181B] to-[#09090B] p-8 text-white shadow-xl">
-
         <h1 className="text-3xl font-semibold mb-2">
           Activate your account
         </h1>
@@ -57,7 +67,7 @@ export default function AcceptInvite () {
           Set a secure password to complete your invite.
         </p>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-4" noValidate>
           {error && (
             <p className="text-sm text-red-400 bg-red-500/10 border border-red-500/20 rounded-md px-3 py-2">
               {error}
@@ -71,9 +81,13 @@ export default function AcceptInvite () {
               type="password"
               placeholder="Minimum 8 characters"
               value={password}
-              minLength={8}
-              required
-              onChange={(e) => setPassword(e.target.value)}
+              onChange={(e) => {
+                setPassword(e.target.value)
+
+                if (error) {
+                  setError("")
+                }
+              }}
               className="w-full rounded-md border border-white/10 px-4 py-2.5 text-sm outline-none focus:border-blue-500/60 focus:ring-2 focus:ring-blue-500/20"
             />
           </div>

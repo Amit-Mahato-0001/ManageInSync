@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react"
+import toast from "react-hot-toast"
 import {
   fetchProjects,
   createProject,
@@ -16,6 +17,23 @@ import ProjectsPagination from "../../components/ProjectsPagination"
 import CreateProjectForm from "./CreateProjectForm"
 import ProjectCard from "./ProjectCard"
 
+const getErrorMessage = (error, fallback) => {
+  return error?.response?.data?.error || error?.response?.data?.message || fallback
+}
+
+const runAsyncToast = async (loadingMessage, action, fallbackError) => {
+  const toastId = toast.loading(loadingMessage)
+
+  try {
+    const result = await action()
+    toast.dismiss(toastId)
+    return result
+  } catch (error) {
+    toast.error(getErrorMessage(error, fallbackError), { id: toastId })
+    throw error
+  }
+}
+
 const Projects = () => {
   const { user } = useAuth()
 
@@ -30,115 +48,168 @@ const Projects = () => {
 
   const [page, setPage] = useState(1)
   const [pagination, setPagination] = useState({})
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState("")
+  const [deletingProjectId, setDeletingProjectId] = useState(null)
+  const [updatingProjectId, setUpdatingProjectId] = useState(null)
   const canAssign = user?.role === "owner" || user?.role === "admin"
 
-  const loadProjects = useCallback(async () => {
+  const loadProjects = useCallback(async ({ showLoader = true, throwOnError = false } = {}) => {
+    try {
+      if (showLoader) {
+        setLoading(true)
+      }
 
-    const res = await fetchProjects({ page, limit: 4 })
-    setProjects(res.data.projects.data)
-    setPagination(res.data.projects.pagination)
-    
+      const res = await fetchProjects({ page, limit: 4 })
+      setProjects(res.data.projects.data)
+      setPagination(res.data.projects.pagination)
+      setError("")
+    } catch (requestError) {
+      console.error(requestError)
+      setError(getErrorMessage(requestError, "Failed to load projects"))
+
+      if (throwOnError) {
+        throw requestError
+      }
+    } finally {
+      if (showLoader) {
+        setLoading(false)
+      }
+    }
   }, [page])
 
   useEffect(() => {
-
     loadProjects()
-
   }, [loadProjects])
 
   useEffect(() => {
-
     if (!canAssign) return
 
-    fetchClients().then((res) => setClients(res.data.clients))
-    fetchMembers().then((res) => setMembers(res.data.members))
+    let isMounted = true
 
+    const loadAssignableEntities = async () => {
+      try {
+        const [clientsResponse, membersResponse] = await Promise.all([
+          fetchClients(),
+          fetchMembers()
+        ])
+
+        if (!isMounted) return
+
+        setClients(clientsResponse.data.clients)
+        setMembers(membersResponse.data.members)
+      } catch (requestError) {
+        console.error(requestError)
+      }
+    }
+
+    loadAssignableEntities()
+
+    return () => {
+      isMounted = false
+    }
   }, [canAssign])
 
   const handleCreate = async (name) => {
-
     const safeName = name.trim()
 
-    if (!safeName) {
-
-      throw new Error("Project name required")
-
-    }
-
     try {
-
       await createProject({ name: safeName })
 
-      page === 1 ? await loadProjects() : setPage(1)
+      if (page === 1) {
+        await loadProjects({ showLoader: false, throwOnError: true })
+      } else {
+        setPage(1)
+      }
 
       triggerDashboardRefresh()
-
-    } catch (error) {
-
-      throw new Error(error?.response?.data?.error || "Failed to create project")
-
+    } catch (requestError) {
+      throw new Error(getErrorMessage(requestError, "Failed to create project"))
     }
-
   }
 
   const handleDelete = async (id) => {
-
     if (!confirm("Delete this project?")) return
 
-    await deleteProject(id)
+    try {
+      setDeletingProjectId(id)
 
-    if (projects.length === 1 && page > 1) {
+      await toast.promise(
+        (async () => {
+          await deleteProject(id)
 
-      setPage((p) => p - 1)
+          if (projects.length === 1 && page > 1) {
+            setPage((prevPage) => prevPage - 1)
+          } else if (page === 1) {
+            await loadProjects({ showLoader: false, throwOnError: true })
+          } else {
+            setPage(1)
+          }
 
-    } else {
-
-      setPage(1)
-
+          triggerDashboardRefresh()
+        })(),
+        {
+          loading: "Deleting project...",
+          success: "Project deleted",
+          error: (requestError) =>
+            getErrorMessage(requestError, "Failed to delete project"),
+        }
+      )
+    } catch {
+      return
+    } finally {
+      setDeletingProjectId(null)
     }
-
   }
 
   const handleStatusChange = async (id, status) => {
+    try {
+      setUpdatingProjectId(id)
 
-    await updateProjectStatus(id, status)
+      await runAsyncToast(
+        "Updating project status...",
+        async () => {
+          await updateProjectStatus(id, status)
 
-    setProjects((prev) =>
+          setProjects((prev) =>
+            prev.map((project) => (project._id === id ? { ...project, status } : project))
+          )
 
-      prev.map((p) => (p._id === id ? { ...p, status } : p))
+          triggerDashboardRefresh()
+        },
+        "Failed to update project status"
+      )
+    } catch {
+      return
+    } finally {
+      setUpdatingProjectId(null)
+    }
+  }
 
-    )
-
-    triggerDashboardRefresh()
-
+  if (loading) {
+    return <p>Loading projects...</p>
   }
 
   return (
-
     <div className="space-y-6">
-
       <div>
-
         <h1 className="text-2xl font-semibold">Projects</h1>
 
         <p className="text-sm text-white/60">
           Manage and track your projects
         </p>
-
       </div>
 
       {user?.role !== "client" && (
-
         <CreateProjectForm
           onSubmit={handleCreate}
         />
-
       )}
 
+      {error && <p className="text-sm text-red-500">{error}</p>}
+
       <div className="grid md:grid-cols-2 gap-4">
-
         {projects.map((p) => (
-
           <ProjectCard
             key={p._id}
             p={p}
@@ -154,6 +225,8 @@ const Projects = () => {
             setSelectedClients={setSelectedClients}
             selectedMembers={selectedMembers}
             setSelectedMembers={setSelectedMembers}
+            deletingProjectId={deletingProjectId}
+            updatingProjectId={updatingProjectId}
             handleDelete={handleDelete}
             handleStatusChange={handleStatusChange}
             assignClient={assignClient}
@@ -162,17 +235,20 @@ const Projects = () => {
             page={page}
             setPage={setPage}
           />
-
         ))}
-
       </div>
+
+      {!error && projects.length === 0 && (
+        <p className="text-sm text-white/40">
+          No projects found
+        </p>
+      )}
 
       <ProjectsPagination
         page={page}
         totalPages={pagination.totalPages || 1}
         onPageChange={setPage}
       />
-
     </div>
   )
 }

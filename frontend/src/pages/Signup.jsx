@@ -1,10 +1,13 @@
-import { useState } from 'react'
-import authApi from '../api/auth'
-import { useAuth } from '../context/AuthContext'
-import { Link, useNavigate } from 'react-router-dom'
+import { useState } from "react"
+import { Link, useNavigate } from "react-router-dom"
+import toast from "react-hot-toast"
+import authApi from "../api/auth"
+import { useAuth } from "../context/AuthContext"
+
+const EMAIL_PATTERN = /^\S+@\S+\.\S+$/
+const MIN_PASSWORD_LENGTH = 8
 
 const Signup = () => {
-
   const { login } = useAuth()
   const navigate = useNavigate()
 
@@ -16,22 +19,52 @@ const Signup = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
+
+    const safeAgencyName = agencyName.trim()
+    const safeEmail = email.trim()
+
+    if (!safeAgencyName) {
+      setError("Agency name is required")
+      return
+    }
+
+    if (!safeEmail) {
+      setError("Work email is required")
+      return
+    }
+
+    if (!EMAIL_PATTERN.test(safeEmail)) {
+      setError("Enter a valid work email")
+      return
+    }
+
+    if (password.length < MIN_PASSWORD_LENGTH) {
+      setError("Password must be at least 8 characters")
+      return
+    }
+
     setLoading(true)
     setError("")
 
     try {
-
-      const res = await authApi.signupApi({
-        agencyName,
-        email,
-        password
-      })
+      const res = await toast.promise(
+        authApi.signupApi({
+          agencyName: safeAgencyName,
+          email: safeEmail,
+          password
+        }),
+        {
+          loading: "Creating account...",
+          success: "Workspace created successfully",
+          error: (requestError) =>
+            requestError?.response?.data?.error || "Signup failed",
+        }
+      )
 
       login(res.data.token)
-      navigate('/')
-
-    } catch (error) {
-      setError(error?.response?.data?.error || "Signup failed")
+      navigate("/")
+    } catch {
+      return
     } finally {
       setLoading(false)
     }
@@ -40,7 +73,6 @@ const Signup = () => {
   return (
     <div className="w-full">
       <div className="rounded-2xl border border-white/10 bg-gradient-to-br from-[#18181B] to-[#09090B] p-8 text-white shadow-xl">
-
         <h1 className="text-3xl font-semibold mb-2">
           Create your workspace
         </h1>
@@ -49,7 +81,7 @@ const Signup = () => {
           Start your agency workspace and invite your team in minutes.
         </p>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-4" noValidate>
           {error && (
             <p className="text-sm text-red-400 bg-red-500/10 border border-red-500/20 rounded-md px-3 py-2">
               {error}
@@ -59,11 +91,16 @@ const Signup = () => {
           <div className="space-y-1.5">
             <label className="text-xs text-white/60">Agency Name</label>
             <input
-              required
               className="w-full rounded-md border border-white/10 px-4 py-2.5 text-sm outline-none focus:border-blue-500/60 focus:ring-2 focus:ring-blue-500/20"
               placeholder="Xyz Studio"
               value={agencyName}
-              onChange={(e) => setAgencyName(e.target.value)}
+              onChange={(e) => {
+                setAgencyName(e.target.value)
+
+                if (error) {
+                  setError("")
+                }
+              }}
             />
           </div>
 
@@ -71,11 +108,16 @@ const Signup = () => {
             <label className="text-xs text-white/60">Work Email</label>
             <input
               type="email"
-              required
               className="w-full rounded-md border border-white/10 px-4 py-2.5 text-sm outline-none focus:border-blue-500/60 focus:ring-2 focus:ring-blue-500/20"
               placeholder="your@gmail.com"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              onChange={(e) => {
+                setEmail(e.target.value)
+
+                if (error) {
+                  setError("")
+                }
+              }}
             />
           </div>
 
@@ -83,11 +125,16 @@ const Signup = () => {
             <label className="text-xs text-white/60">Password</label>
             <input
               type="password"
-              required
               className="w-full rounded-md border border-white/10 px-4 py-2.5 text-sm outline-none focus:border-blue-500/60 focus:ring-2 focus:ring-blue-500/20"
               placeholder="Minimum 8 characters"
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              onChange={(e) => {
+                setPassword(e.target.value)
+
+                if (error) {
+                  setError("")
+                }
+              }}
             />
           </div>
 

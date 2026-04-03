@@ -3,6 +3,14 @@ import { Trash2, User2, Users } from "lucide-react"
 import AssignClients from "./AssignClients"
 import AssignMembers from "./AssignMembers"
 
+const formatResolvedAssignments = (ids = [], items = [], fallbackLabel) => {
+  const labels = ids
+    .map((id) => items.find((item) => item._id === id)?.email)
+    .filter(Boolean)
+
+  return labels.length > 0 ? labels.join(", ") : fallbackLabel
+}
+
 const ProjectCard = ({
   p,
   user,
@@ -89,24 +97,14 @@ const ProjectCard = ({
       {canAssign && (
         <div className="text-sm text-white/60 flex gap-2">
           <User2 className="w-4 h-4" />
-          {p.clients?.length > 0
-            ? p.clients
-                .map((id) => clients.find((client) => client._id === id)?.email)
-                .filter(Boolean)
-                .join(", ")
-            : "No clients"}
+          {formatResolvedAssignments(p.clients, clients, "No clients")}
         </div>
       )}
 
       {canAssign && (
         <div className="text-sm text-white/60 flex gap-2">
           <Users className="w-4 h-4" />
-          {p.members?.length > 0
-            ? p.members
-                .map((id) => members.find((member) => member._id === id)?.email)
-                .filter(Boolean)
-                .join(", ")
-            : "No members"}
+          {formatResolvedAssignments(p.members, members, "No members")}
         </div>
       )}
 

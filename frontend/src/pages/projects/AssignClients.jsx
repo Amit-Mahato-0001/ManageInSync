@@ -1,6 +1,20 @@
 import { useEffect, useState } from "react"
 import toast from "react-hot-toast"
 
+const getValidSelectedIds = (selectedIds = [], items = []) => {
+  const validIdSet = new Set(items.map((item) => item._id))
+  const seenIds = new Set()
+
+  return (selectedIds || []).filter((id) => {
+    if (!validIdSet.has(id) || seenIds.has(id)) {
+      return false
+    }
+
+    seenIds.add(id)
+    return true
+  })
+}
+
 const hasSameSelection = (currentValues = [], nextValues = []) => {
   if (currentValues.length !== nextValues.length) {
     return false
@@ -32,13 +46,15 @@ const AssignClients = ({
   useEffect(() => {
 
     if (isOpen) {
+      const validProjectClientIds = getValidSelectedIds(p.clients, clients)
+
       setSelectedClients((prev) => ({
         ...prev,
-        [p._id]: p.clients || [],
+        [p._id]: validProjectClientIds,
       }))
     }
     
-  }, [isOpen, p._id, p.clients, setSelectedClients])
+  }, [clients, isOpen, p._id, p.clients, setSelectedClients])
 
   if (!isOpen) return null
 
@@ -87,7 +103,7 @@ const AssignClients = ({
         className="text-xs mt-3 w-full py-2 rounded-md border border-white/10 bg-gradient-to-br from-[#18181B] to-blue-500 disabled:cursor-not-allowed disabled:opacity-60"
         disabled={saving}
         onClick={async () => {
-          const finalClients = selectedClients[p._id] || []
+          const finalClients = getValidSelectedIds(selectedClients[p._id], clients)
 
           if (hasSameSelection(p.clients || [], finalClients)) {
 

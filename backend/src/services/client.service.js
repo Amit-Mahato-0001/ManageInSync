@@ -77,6 +77,19 @@ const deleteClient = async ({ clientId, tenantId }) => {
         throw new Error("Client not found")
     }
 
+    await Project.updateMany(
+        {
+            tenantId,
+            deletedAt: null,
+            clients: client._id
+        },
+        {
+            $pull: {
+                clients: client._id
+            }
+        }
+    )
+
     return { message: "Client deleted successfully"}
 }
 

@@ -1,4 +1,5 @@
 const User = require("../models/user.model")
+const Project = require("../models/project.model")
 
 const getMembers = async (tenantId) => {
 
@@ -35,6 +36,19 @@ const deleteMember = async ({ memberId, tenantId }) => {
   if (!member) {
     throw new Error("Member not found")
   }
+
+  await Project.updateMany(
+    {
+      tenantId,
+      deletedAt: null,
+      members: member._id
+    },
+    {
+      $pull: {
+        members: member._id
+      }
+    }
+  )
 
   return { message: "Member deleted successfully" }
 }

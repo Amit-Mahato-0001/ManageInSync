@@ -1,6 +1,20 @@
 import { useEffect, useState } from "react"
 import toast from "react-hot-toast"
 
+const getValidSelectedIds = (selectedIds = [], items = []) => {
+  const validIdSet = new Set(items.map((item) => item._id))
+  const seenIds = new Set()
+
+  return (selectedIds || []).filter((id) => {
+    if (!validIdSet.has(id) || seenIds.has(id)) {
+      return false
+    }
+
+    seenIds.add(id)
+    return true
+  })
+}
+
 const hasSameSelection = (currentValues = [], nextValues = []) => {
 
   if (currentValues.length !== nextValues.length) {
@@ -35,17 +49,18 @@ const AssignMembers = ({
   useEffect(() => {
 
     if (isOpen) {
+      const validProjectMemberIds = getValidSelectedIds(p.members, members)
 
       setSelectedMembers((prev) => ({
 
         ...prev,
-        [p._id]: p.members || [],
+        [p._id]: validProjectMemberIds,
 
       }))
 
     }
 
-  }, [isOpen, p._id, p.members, setSelectedMembers])
+  }, [isOpen, members, p._id, p.members, setSelectedMembers])
 
   if (!isOpen) return null
 
@@ -96,7 +111,7 @@ const AssignMembers = ({
         className="text-xs mt-3 w-full py-2 rounded-md border border-white/10 bg-gradient-to-br from-[#18181B] to-blue-500 disabled:cursor-not-allowed disabled:opacity-60"
         disabled={saving}
         onClick={async () => {
-          const finalMembers = selectedMembers[p._id] || []
+          const finalMembers = getValidSelectedIds(selectedMembers[p._id], members)
 
           if (hasSameSelection(p.members || [], finalMembers)) {
             setOpenMemberDropdown(null)

@@ -5,6 +5,90 @@ const User = require('../models/user.model')
 const Conversation = require("../models/conversation.model")
 const Message = require("../models/message.model")
 
+const normalizeObjectIds = (ids = []) => {
+
+    if (!Array.isArray(ids)) {
+        return []
+    }
+
+    const seenIds = new Set()
+
+    return ids.reduce((result, id) => {
+
+        const value = id?.toString?.()
+
+        if (!value || !mongoose.Types.ObjectId.isValid(value) || seenIds.has(value)) {
+            return result
+        }
+
+        seenIds.add(value)
+        result.push(value)
+        return result
+
+    }, [])
+}
+
+const resolveActiveAssignmentIds = async ({ tenantId, role, ids }) => {
+
+    const normalizedIds = normalizeObjectIds(ids)
+
+    if (normalizedIds.length === 0) {
+        return []
+    }
+
+    const users = await User.find({
+        _id: { $in: normalizedIds },
+        tenantId,
+        role,
+        status: "active"
+    })
+        .select("_id")
+        .lean()
+
+    const validIdSet = new Set(users.map((user) => user._id.toString()))
+
+    return normalizedIds.filter((id) => validIdSet.has(id))
+}
+
+const sanitizeProjectAssignments = async (projects, tenantId) => {
+
+    if (!Array.isArray(projects) || projects.length === 0) {
+        return []
+    }
+
+    const allAssignmentIds = new Set()
+
+    projects.forEach((project) => {
+        normalizeObjectIds(project.clients).forEach((id) => allAssignmentIds.add(id))
+        normalizeObjectIds(project.members).forEach((id) => allAssignmentIds.add(id))
+    })
+
+    if (allAssignmentIds.size === 0) {
+        return projects.map((project) => ({
+            ...project,
+            clients: [],
+            members: []
+        }))
+    }
+
+    const users = await User.find({
+        _id: { $in: Array.from(allAssignmentIds) },
+        tenantId,
+        role: { $in: ["client", "member"] },
+        status: "active"
+    })
+        .select("_id role")
+        .lean()
+
+    const userRoleMap = new Map(users.map((user) => [user._id.toString(), user.role]))
+
+    return projects.map((project) => ({
+        ...project,
+        clients: normalizeObjectIds(project.clients).filter((id) => userRoleMap.get(id) === "client"),
+        members: normalizeObjectIds(project.members).filter((id) => userRoleMap.get(id) === "member")
+    }))
+}
+
 //CREATE PROJECT 
 
 const createProject = async (data) => {
@@ -19,9 +103,24 @@ const createProject = async (data) => {
         throw new Error("Invalid tenantId")
     }
 
+    const [clients, members] = await Promise.all([
+        resolveActiveAssignmentIds({
+            tenantId,
+            role: "client",
+            ids: data.clients
+        }),
+        resolveActiveAssignmentIds({
+            tenantId,
+            role: "member",
+            ids: data.members
+        })
+    ])
+
     return Project.create({
         ...data,
-        name: name.trim()
+        name: name.trim(),
+        clients,
+        members
     })
 }
 
@@ -117,7 +216,9 @@ const getProject = async ({ tenantId, user, page, limit, search, status }) => {
         }
     }
 
-    const projectsWithUnread = projects.map((project) => ({
+    const sanitizedProjects = await sanitizeProjectAssignments(projects, tenantId)
+
+    const projectsWithUnread = sanitizedProjects.map((project) => ({
         ...project,
         unreadCount: unreadByProject[project._id.toString()] || 0
     }))
@@ -194,30 +295,11 @@ const assignClient = async ({projectId, clientIds, tenantId}) => {
         throw new Error("Project not found")
     }
 
-    const uniqueClientIds = [...new Set(clientIds.map(id => id.toString()))] //avoid duplicate Id's
-    
-    //empty array alloweed
-    if(uniqueClientIds.length === 0) {
-
-        project.clients = []
-        await project.save()
-        return await Project.findById(projectId)
-    }
-
-    const validClients = await User.find({
-
-        _id: { $in: uniqueClientIds },
+    const validClientIds = await resolveActiveAssignmentIds({
         tenantId,
         role: "client",
-        status: "active"
+        ids: clientIds
     })
-
-    if(validClients.length !== uniqueClientIds.length){
-
-        throw new Error("Some client Id's are invalid")
-    }
-
-    const validClientIds = validClients.map(c => c._id)
 
     //replace old clients with final selected clients
     project.clients = validClientIds
@@ -286,34 +368,11 @@ const assignMember = async({projectId, memberIds, tenantId}) => {
 
     }
 
-    //avoid duplicate Id's
-    const uniqueMemberIds = [...new Set(memberIds.map(id => id.toString()))]
-
-    //empty array allowed
-    if(uniqueMemberIds.length === 0){
-
-        project.members = []
-        await project.save()
-        return await Project.findById(projectId)
-
-    }
-
-    const validMembers = await User.find({
-
-        _id: { $in: uniqueMemberIds },
+    const validMemberIds = await resolveActiveAssignmentIds({
         tenantId,
         role: "member",
-        status: "active"
-
+        ids: memberIds
     })
-
-    if(validMembers.length !== uniqueMemberIds.length){
-
-        throw new Error("Some memberIds are invalid")
-
-    }
-
-    const validMemberIds = validMembers.map(m => m._id)
 
     //replace full list
     project.members = validMemberIds

@@ -64,25 +64,32 @@ const getOrCreateProjectConversation = async (projectId, user, tenantId) => {
     const tenantObjectId = toObjectId(tenantId, "tenantId")
     const projectObjectId = toObjectId(projectId, "projectId")
 
-    let conversation = await Conversation.findOne({
-
-        tenantId: tenantObjectId,
-        projectId: projectObjectId,
-        deletedAt: null
-
-    })
-
-    if (!conversation) {
-
-        conversation = await Conversation.create({
-
+    const conversation = await Conversation.findOneAndUpdate(
+        {
             tenantId: tenantObjectId,
-            projectId: projectObjectId,
-            createdBy: user._id,
-            lastMessageAt: new Date()
+            projectId: projectObjectId
+        },
+        {
+            $setOnInsert: {
+                tenantId: tenantObjectId,
+                projectId: projectObjectId,
+                createdBy: user._id,
+                lastMessageAt: new Date()
+            },
 
-        })
-    }
+            $set: {
+
+                deletedAt: null
+            }
+            
+        },
+
+        {
+            new: true,
+            upsert: true,
+            setDefaultsOnInsert: true
+        }
+    )
 
     const unreadCount = await getUnreadCount({
 

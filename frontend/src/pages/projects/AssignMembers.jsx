@@ -1,5 +1,9 @@
 import { useEffect, useState } from "react"
-import toast from "react-hot-toast"
+import {
+  isValidationError,
+  runAsyncToast,
+  splitValidationErrors
+} from "./projectModuleUtils"
 
 const getValidSelectedIds = (selectedIds = [], items = []) => {
   const validIdSet = new Set(items.map((item) => item._id))
@@ -43,6 +47,7 @@ const AssignMembers = ({
 }) => {
 
   const [saving, setSaving] = useState(false)
+  const [formError, setFormError] = useState("")
 
   const isOpen = openMemberDropdown === p._id
 
@@ -57,6 +62,8 @@ const AssignMembers = ({
         [p._id]: validProjectMemberIds,
 
       }))
+
+      setFormError("")
 
     }
 
@@ -79,6 +86,7 @@ const AssignMembers = ({
               checked={selectedMembers[p._id]?.includes(m._id) || false}
 
               onChange={() => {
+                setFormError("")
 
                 setSelectedMembers((prev) => {
 
@@ -120,9 +128,10 @@ const AssignMembers = ({
 
           try {
             setSaving(true)
+            setFormError("")
 
-            await toast.promise(
-              (async () => {
+            await runAsyncToast(
+              async () => {
                 await assignMember(p._id, finalMembers)
 
                 if (page === 1) {
@@ -130,17 +139,23 @@ const AssignMembers = ({
                 } else {
                   setPage(1)
                 }
-              })(),
+              },
               {
-                loading: "Saving members...",
-                success: "Members updated",
-                error: (error) =>
-                  error?.response?.data?.error || "Failed to update members",
+                loadingMessage: "Saving members...",
+                successMessage: "Members updated",
+                fallbackError: "Failed to update members",
+                suppressErrorToast: isValidationError
               }
             )
 
             setOpenMemberDropdown(null)
-          } catch {
+          } catch (error) {
+            if (isValidationError(error)) {
+              const { fieldErrors, formError: nextFormError } = splitValidationErrors(error)
+
+              setFormError(fieldErrors.memberIds || nextFormError)
+            }
+
             return
           } finally {
             setSaving(false)
@@ -149,6 +164,12 @@ const AssignMembers = ({
       >
         {saving ? "Saving..." : "Save"}
       </button>
+
+      {formError && (
+        <p className="mt-2 text-xs text-red-400">
+          {formError}
+        </p>
+      )}
     </div>
   )
 }

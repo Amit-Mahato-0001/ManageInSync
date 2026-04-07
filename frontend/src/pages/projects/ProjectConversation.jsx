@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react"
 import { Link, useLocation, useParams } from "react-router-dom"
 import { ArrowLeft } from "lucide-react"
-import toast from "react-hot-toast"
 import {
   deleteMessage as deleteConversationMessage,
   editMessage as editConversationMessage,
@@ -13,12 +12,14 @@ import {
 import { useAuth } from "../../context/AuthContext"
 import MessageComposer from "./MessageComposer"
 import MessageList from "./MessageList"
+import {
+  getErrorMessage,
+  isValidationError,
+  runAsyncToast,
+  splitValidationErrors
+} from "./projectModuleUtils"
 
 const POLL_INTERVAL_MS = 6000
-
-const getErrorMessage = (error, fallback) => {
-  return error?.response?.data?.error || error?.response?.data?.message || fallback
-}
 
 const sortMessages = (messages) => {
   return [...messages].sort((firstMessage, secondMessage) => {
@@ -44,19 +45,6 @@ const getTabClassName = (active) => {
     : "px-4 py-2 text-sm font-medium"
 }
 
-const runAsyncToast = async (loadingMessage, action, fallbackError) => {
-  const toastId = toast.loading(loadingMessage)
-
-  try {
-    const result = await action()
-    toast.dismiss(toastId)
-    return result
-  } catch (error) {
-    toast.error(getErrorMessage(error, fallbackError), { id: toastId })
-    throw error
-  }
-}
-
 const ProjectConversation = () => {
   const { projectId } = useParams()
   const { state } = useLocation()
@@ -67,10 +55,12 @@ const ProjectConversation = () => {
   const [loadingOlder, setLoadingOlder] = useState(false)
   const [error, setError] = useState("")
   const [composerText, setComposerText] = useState("")
+  const [composerError, setComposerError] = useState("")
   const [olderCursor, setOlderCursor] = useState(null)
   const [submitting, setSubmitting] = useState(false)
   const [editingMessageId, setEditingMessageId] = useState(null)
   const [editText, setEditText] = useState("")
+  const [editError, setEditError] = useState("")
   const [savingEdit, setSavingEdit] = useState(false)
   const [deletingMessageId, setDeletingMessageId] = useState(null)
   const [_unreadCount, setUnreadCount] = useState(0)
@@ -141,6 +131,8 @@ const ProjectConversation = () => {
       setError("")
       setEditingMessageId(null)
       setEditText("")
+      setEditError("")
+      setComposerError("")
 
       const [conversationResponse, messagesResponse] = await Promise.all([
         getConversation(projectId),
@@ -253,17 +245,23 @@ const ProjectConversation = () => {
     const safeText = composerText.trim()
 
     if (!safeText) {
+      setComposerError("Message text is required")
       return
     }
 
     try {
       setSubmitting(true)
       setError("")
+      setComposerError("")
 
       const response = await runAsyncToast(
-        "Sending message...",
         () => sendConversationMessage(projectId, safeText),
-        "Failed to send message"
+        {
+          loadingMessage: "Sending message...",
+          successMessage: "Message sent",
+          fallbackError: "Failed to send message",
+          suppressErrorToast: isValidationError
+        }
       )
       const nextMessage = response.data?.data
       const mergedMessages = mergeMessages(messagesRef.current, nextMessage ? [nextMessage] : [])
@@ -271,9 +269,16 @@ const ProjectConversation = () => {
       messagesRef.current = mergedMessages
       setMessages(mergedMessages)
       setComposerText("")
+      setComposerError("")
       setUnreadCount(0)
       scheduleScrollToBottom("smooth")
-    } catch {
+    } catch (requestError) {
+      if (isValidationError(requestError)) {
+        const { fieldErrors, formError } = splitValidationErrors(requestError)
+
+        setComposerError(fieldErrors.text || formError || "Message text is required")
+      }
+
       return
     } finally {
       setSubmitting(false)
@@ -283,28 +288,36 @@ const ProjectConversation = () => {
   const handleStartEdit = (message) => {
     setEditingMessageId(message._id)
     setEditText(message.text)
+    setEditError("")
   }
 
   const handleCancelEdit = () => {
     setEditingMessageId(null)
     setEditText("")
+    setEditError("")
   }
 
   const handleSubmitEdit = async (messageId) => {
     const safeText = editText.trim()
 
     if (!safeText) {
+      setEditError("Message text is required")
       return
     }
 
     try {
       setSavingEdit(true)
       setError("")
+      setEditError("")
 
       const response = await runAsyncToast(
-        "Saving message...",
         () => editConversationMessage(projectId, messageId, safeText),
-        "Failed to edit message"
+        {
+          loadingMessage: "Saving message...",
+          successMessage: "Message updated",
+          fallbackError: "Failed to edit message",
+          suppressErrorToast: isValidationError
+        }
       )
       const updatedMessage = response.data?.data
       const mergedMessages = mergeMessages(
@@ -315,7 +328,13 @@ const ProjectConversation = () => {
       messagesRef.current = mergedMessages
       setMessages(mergedMessages)
       handleCancelEdit()
-    } catch {
+    } catch (requestError) {
+      if (isValidationError(requestError)) {
+        const { fieldErrors, formError } = splitValidationErrors(requestError)
+
+        setEditError(fieldErrors.text || formError || "Message text is required")
+      }
+
       return
     } finally {
       setSavingEdit(false)
@@ -330,9 +349,12 @@ const ProjectConversation = () => {
       setError("")
 
       await runAsyncToast(
-        "Deleting message...",
         () => deleteConversationMessage(projectId, messageId),
-        "Failed to delete message"
+        {
+          loadingMessage: "Deleting message...",
+          successMessage: "Message deleted",
+          fallbackError: "Failed to delete message"
+        }
       )
 
       const remainingMessages = messagesRef.current.filter((message) => message._id !== messageId)
@@ -347,6 +369,22 @@ const ProjectConversation = () => {
       return
     } finally {
       setDeletingMessageId(null)
+    }
+  }
+
+  const handleComposerChange = (value) => {
+    setComposerText(value)
+
+    if (composerError) {
+      setComposerError("")
+    }
+  }
+
+  const handleEditTextChange = (value) => {
+    setEditText(value)
+
+    if (editError) {
+      setEditError("")
     }
   }
 
@@ -397,7 +435,8 @@ const ProjectConversation = () => {
           currentUserId={currentUserId}
           editingMessageId={editingMessageId}
           editText={editText}
-          setEditText={setEditText}
+          editError={editError}
+          setEditText={handleEditTextChange}
           savingEdit={savingEdit}
           deletingMessageId={deletingMessageId}
           onStartEdit={handleStartEdit}
@@ -413,7 +452,8 @@ const ProjectConversation = () => {
 
         <MessageComposer
           value={composerText}
-          onChange={setComposerText}
+          error={composerError}
+          onChange={handleComposerChange}
           onSubmit={handleSendMessage}
           disabled={loading}
           submitting={submitting}

@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useState } from "react"
-import toast from "react-hot-toast"
 import {
   fetchProjects,
   createProject,
@@ -16,23 +15,7 @@ import ProjectsPagination from "../../components/ProjectsPagination"
 
 import CreateProjectForm from "./CreateProjectForm"
 import ProjectCard from "./ProjectCard"
-
-const getErrorMessage = (error, fallback) => {
-  return error?.response?.data?.error || error?.response?.data?.message || fallback
-}
-
-const runAsyncToast = async (loadingMessage, action, fallbackError) => {
-  const toastId = toast.loading(loadingMessage)
-
-  try {
-    const result = await action()
-    toast.dismiss(toastId)
-    return result
-  } catch (error) {
-    toast.error(getErrorMessage(error, fallbackError), { id: toastId })
-    throw error
-  }
-}
+import { getErrorMessage, runAsyncToast } from "./projectModuleUtils"
 
 const Projects = () => {
   const { user } = useAuth()
@@ -111,25 +94,19 @@ const Projects = () => {
   }, [canAssign])
 
   const handleCreate = async ({ name, description, targetDate }) => {
-    const safeName = name.trim()
+    await createProject({
+      name: name.trim(),
+      description,
+      targetDate
+    })
 
-    try {
-      await createProject({
-        name: safeName,
-        description,
-        targetDate
-      })
-
-      if (page === 1) {
-        await loadProjects({ showLoader: false, throwOnError: true })
-      } else {
-        setPage(1)
-      }
-
-      triggerDashboardRefresh()
-    } catch (requestError) {
-      throw new Error(getErrorMessage(requestError, "Failed to create project"))
+    if (page === 1) {
+      await loadProjects({ showLoader: false, throwOnError: true })
+    } else {
+      setPage(1)
     }
+
+    triggerDashboardRefresh()
   }
 
   const handleDelete = async (id) => {
@@ -138,8 +115,8 @@ const Projects = () => {
     try {
       setDeletingProjectId(id)
 
-      await toast.promise(
-        (async () => {
+      await runAsyncToast(
+        async () => {
           await deleteProject(id)
 
           if (projects.length === 1 && page > 1) {
@@ -151,12 +128,11 @@ const Projects = () => {
           }
 
           triggerDashboardRefresh()
-        })(),
+        },
         {
-          loading: "Deleting project...",
-          success: "Project deleted",
-          error: (requestError) =>
-            getErrorMessage(requestError, "Failed to delete project"),
+          loadingMessage: "Deleting project...",
+          successMessage: "Project deleted",
+          fallbackError: "Failed to delete project"
         }
       )
     } catch {
@@ -171,7 +147,6 @@ const Projects = () => {
       setUpdatingProjectId(id)
 
       await runAsyncToast(
-        "Updating project status...",
         async () => {
           await updateProjectStatus(id, status)
 
@@ -181,7 +156,11 @@ const Projects = () => {
 
           triggerDashboardRefresh()
         },
-        "Failed to update project status"
+        {
+          loadingMessage: "Updating project status...",
+          successMessage: "Project status updated",
+          fallbackError: "Failed to update project status"
+        }
       )
     } catch {
       return

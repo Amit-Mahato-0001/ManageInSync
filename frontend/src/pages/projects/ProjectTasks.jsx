@@ -1,11 +1,16 @@
 import { useCallback, useEffect, useState } from "react"
 import { Link, useLocation, useParams } from "react-router-dom"
 import { ArrowLeft, Rocket, Trash2, X } from "lucide-react"
-import toast from "react-hot-toast"
 import { createTask, deleteTask, fetchTasks, updateTask } from "../../api/tasks"
 import { useAuth } from "../../context/AuthContext"
 import TasksPagination from "../../components/TasksPagination"
 import { formatDate } from "../../utils/formatDate"
+import {
+  getErrorMessage,
+  isValidationError,
+  runAsyncToast,
+  splitValidationErrors
+} from "./projectModuleUtils"
 
 const getStatusStyle = (status) => {
   if (status === "todo") return "bg-gradient-to-br from-[#18181B] to-yellow-500"
@@ -35,23 +40,6 @@ const getTargetDateParts = (date) => {
   return { month, day }
 }
 
-const getErrorMessage = (error, fallback) => {
-  return error?.response?.data?.error || error?.response?.data?.message || fallback
-}
-
-const runAsyncToast = async (loadingMessage, action, fallbackError) => {
-  const toastId = toast.loading(loadingMessage)
-
-  try {
-    const result = await action()
-    toast.dismiss(toastId)
-    return result
-  } catch (error) {
-    toast.error(getErrorMessage(error, fallbackError), { id: toastId })
-    throw error
-  }
-}
-
 const getTabClassName = (active) => {
   return active
     ? "rounded-lg bg-white px-4 py-2 text-sm font-medium border border-white/10 bg-gradient-to-br from-[#18181B] to-blue-500"
@@ -66,6 +54,7 @@ const ProjectTasks = () => {
   const [tasks, setTasks] = useState([])
   const [loading, setLoading] = useState(true)
   const [pageError, setPageError] = useState("")
+  const [fieldErrors, setFieldErrors] = useState({})
   const [formError, setFormError] = useState("")
   const [title, setTitle] = useState("")
   const [description, setDescription] = useState("")
@@ -137,6 +126,7 @@ const ProjectTasks = () => {
     setTargetDate("")
     setStatus("todo")
     setPriority("medium")
+    setFieldErrors({})
     setFormError("")
     setIsCreateModalOpen(true)
   }
@@ -150,6 +140,7 @@ const ProjectTasks = () => {
     setTargetDate("")
     setStatus("todo")
     setPriority("medium")
+    setFieldErrors({})
     setFormError("")
   }
 
@@ -157,42 +148,33 @@ const ProjectTasks = () => {
     e.preventDefault()
 
     if (!canCreateTasks) {
+      setFieldErrors({})
       setFormError("Only owner/admin can create tasks")
       return
     }
 
     if (isCompletedProject) {
+      setFieldErrors({})
       setFormError("Cannot create tasks in completed projects")
       return
     }
 
     if (!currentUserId) {
+      setFieldErrors({})
       setFormError("Session expired")
-      return
-    }
-
-    const safeTitle = title.trim()
-    const safeDescription = description.trim()
-
-    if (!safeTitle) {
-      setFormError("Task title is required")
-      return
-    }
-
-    if (safeDescription && safeDescription.length < 2) {
-      setFormError("Description must be at least 2 characters")
       return
     }
 
     try {
       setSubmitting(true)
+      setFieldErrors({})
       setFormError("")
 
-      await toast.promise(
-        (async () => {
+      await runAsyncToast(
+        async () => {
           await createTask(projectId, {
-            title: safeTitle,
-            description: safeDescription || undefined,
+            title: title.trim(),
+            description: description.trim() || undefined,
             targetDate: targetDate || undefined,
             assigneeId: currentUserId,
             status,
@@ -204,11 +186,12 @@ const ProjectTasks = () => {
           } else {
             setPage(1)
           }
-        })(),
+        },
         {
-          loading: "Creating task...",
-          success: "Task created",
-          error: (error) => getErrorMessage(error, "Failed to create task"),
+          loadingMessage: "Creating task...",
+          successMessage: "Task created",
+          fallbackError: "Failed to create task",
+          suppressErrorToast: isValidationError
         }
       )
 
@@ -217,9 +200,24 @@ const ProjectTasks = () => {
       setTargetDate("")
       setStatus("todo")
       setPriority("medium")
+      setFieldErrors({})
       setFormError("")
       setIsCreateModalOpen(false)
-    } catch {
+    } catch (error) {
+      if (isValidationError(error)) {
+        const { fieldErrors: nextFieldErrors, formError: nextFormError } = splitValidationErrors(error)
+        const nextFormState = { ...nextFieldErrors }
+
+        if (nextFormState.assigneeId) {
+          setFormError(nextFormError || nextFormState.assigneeId)
+          delete nextFormState.assigneeId
+        } else {
+          setFormError(nextFormError)
+        }
+
+        setFieldErrors(nextFormState)
+      }
+
       return
     } finally {
       setSubmitting(false)
@@ -228,7 +226,7 @@ const ProjectTasks = () => {
 
   const handleDeleteTask = async (taskId) => {
     if (!canCreateTasks) {
-      toast.error("Not allowed")
+      setPageError("Only owner/admin can delete tasks")
       return
     }
 
@@ -237,8 +235,8 @@ const ProjectTasks = () => {
     try {
       setDeletingTaskId(taskId)
 
-      await toast.promise(
-        (async () => {
+      await runAsyncToast(
+        async () => {
           await deleteTask(projectId, taskId)
 
           if (tasks.length === 1 && page > 1) {
@@ -246,11 +244,11 @@ const ProjectTasks = () => {
           } else {
             await loadTasks({ showLoader: false, throwOnError: true })
           }
-        })(),
+        },
         {
-          loading: "Deleting task...",
-          success: "Task deleted",
-          error: (error) => getErrorMessage(error, "Failed to delete task"),
+          loadingMessage: "Deleting task...",
+          successMessage: "Task deleted",
+          fallbackError: "Failed to delete task"
         }
       )
     } catch {
@@ -262,12 +260,12 @@ const ProjectTasks = () => {
 
   const handleUpdateTask = async (task, updates) => {
     if (!canUpdateTasks) {
-      toast.error("Not allowed")
+      setPageError("Only owner, admin, or member can update tasks")
       return
     }
 
     if (isCompletedProject) {
-      toast.error("Cannot update tasks in completed projects")
+      setPageError("Cannot update tasks in completed projects")
       return
     }
 
@@ -277,14 +275,20 @@ const ProjectTasks = () => {
 
     try {
       setUpdatingTaskId(task._id)
+      setPageError("")
 
       await runAsyncToast(
-        field === "status" ? "Updating task status..." : "Updating task priority...",
         async () => {
           await updateTask(projectId, task._id, updates)
           await loadTasks({ showLoader: false, throwOnError: true })
         },
-        "Failed to update task"
+        {
+          loadingMessage:
+            field === "status" ? "Updating task status..." : "Updating task priority...",
+          successMessage:
+            field === "status" ? "Task status updated" : "Task priority updated",
+          fallbackError: "Failed to update task"
+        }
       )
     } catch {
       return
@@ -510,18 +514,21 @@ const ProjectTasks = () => {
                   value={title}
                   onChange={(e) => {
                     setTitle(e.target.value)
-
-                    if (formError) {
-                      setFormError("")
-                    }
+                    setFieldErrors((prev) => ({ ...prev, title: "" }))
+                    setFormError("")
                   }}
                   placeholder="Enter task title..."
-                  className="w-full rounded-lg border border-white/10 px-4 py-3 text-sm text-white outline-none transition focus:border-blue-500 bg-transparent"
+                  aria-invalid={Boolean(fieldErrors.title)}
+                  className={`w-full rounded-lg border px-4 py-3 text-sm text-white outline-none transition bg-transparent ${
+                    fieldErrors.title
+                      ? "border-red-400/80 focus:border-red-400"
+                      : "border-white/10 focus:border-blue-500"
+                  }`}
                 />
 
-                {formError && (
+                {fieldErrors.title && (
                   <p className="mt-2 text-sm text-red-400">
-                    {formError}
+                    {fieldErrors.title}
                   </p>
                 )}
               </div>
@@ -534,15 +541,24 @@ const ProjectTasks = () => {
                   value={description}
                   onChange={(e) => {
                     setDescription(e.target.value)
-
-                    if (formError) {
-                      setFormError("")
-                    }
+                    setFieldErrors((prev) => ({ ...prev, description: "" }))
+                    setFormError("")
                   }}
                   placeholder="Write a short task description..."
                   rows={4}
-                  className="w-full rounded-lg border border-white/10 px-4 py-3 text-sm text-white outline-none transition focus:border-blue-500 bg-transparent"
+                  aria-invalid={Boolean(fieldErrors.description)}
+                  className={`w-full rounded-lg border px-4 py-3 text-sm text-white outline-none transition bg-transparent ${
+                    fieldErrors.description
+                      ? "border-red-400/80 focus:border-red-400"
+                      : "border-white/10 focus:border-blue-500"
+                  }`}
                 />
+
+                {fieldErrors.description && (
+                  <p className="mt-2 text-sm text-red-400">
+                    {fieldErrors.description}
+                  </p>
+                )}
               </div>
 
               <div>
@@ -554,13 +570,22 @@ const ProjectTasks = () => {
                   value={targetDate}
                   onChange={(e) => {
                     setTargetDate(e.target.value)
-
-                    if (formError) {
-                      setFormError("")
-                    }
+                    setFieldErrors((prev) => ({ ...prev, targetDate: "" }))
+                    setFormError("")
                   }}
-                  className="w-full rounded-lg border border-white/10 px-4 py-3 text-sm text-white outline-none transition focus:border-blue-500 bg-transparent"
+                  aria-invalid={Boolean(fieldErrors.targetDate)}
+                  className={`w-full rounded-lg border px-4 py-3 text-sm text-white outline-none transition bg-transparent ${
+                    fieldErrors.targetDate
+                      ? "border-red-400/80 focus:border-red-400"
+                      : "border-white/10 focus:border-blue-500"
+                  }`}
                 />
+
+                {fieldErrors.targetDate && (
+                  <p className="mt-2 text-sm text-red-400">
+                    {fieldErrors.targetDate}
+                  </p>
+                )}
               </div>
 
               <div>
@@ -569,13 +594,28 @@ const ProjectTasks = () => {
                 </label>
                 <select
                   value={status}
-                  onChange={(e) => setStatus(e.target.value)}
-                  className="w-full rounded-lg border border-white/10 px-4 py-3 text-sm text-white outline-none transition focus:border-blue-500 bg-transparent"
+                  onChange={(e) => {
+                    setStatus(e.target.value)
+                    setFieldErrors((prev) => ({ ...prev, status: "" }))
+                    setFormError("")
+                  }}
+                  aria-invalid={Boolean(fieldErrors.status)}
+                  className={`w-full rounded-lg border px-4 py-3 text-sm text-white outline-none transition bg-transparent ${
+                    fieldErrors.status
+                      ? "border-red-400/80 focus:border-red-400"
+                      : "border-white/10 focus:border-blue-500"
+                  }`}
                 >
                   <option value="todo" className="bg-[#0B0F19]">Todo</option>
                   <option value="in-progress" className="bg-[#0B0F19]">In Progress</option>
                   <option value="done" className="bg-[#0B0F19]">Done</option>
                 </select>
+
+                {fieldErrors.status && (
+                  <p className="mt-2 text-sm text-red-400">
+                    {fieldErrors.status}
+                  </p>
+                )}
               </div>
 
               <div>
@@ -584,14 +624,35 @@ const ProjectTasks = () => {
                 </label>
                 <select
                   value={priority}
-                  onChange={(e) => setPriority(e.target.value)}
-                  className="w-full rounded-lg border border-white/10 px-4 py-3 text-sm text-white outline-none transition focus:border-blue-500 bg-transparent"
+                  onChange={(e) => {
+                    setPriority(e.target.value)
+                    setFieldErrors((prev) => ({ ...prev, priority: "" }))
+                    setFormError("")
+                  }}
+                  aria-invalid={Boolean(fieldErrors.priority)}
+                  className={`w-full rounded-lg border px-4 py-3 text-sm text-white outline-none transition bg-transparent ${
+                    fieldErrors.priority
+                      ? "border-red-400/80 focus:border-red-400"
+                      : "border-white/10 focus:border-blue-500"
+                  }`}
                 >
                   <option value="low" className="bg-[#0B0F19]">Low</option>
                   <option value="medium" className="bg-[#0B0F19]">Medium</option>
                   <option value="high" className="bg-[#0B0F19]">High</option>
                 </select>
+
+                {fieldErrors.priority && (
+                  <p className="mt-2 text-sm text-red-400">
+                    {fieldErrors.priority}
+                  </p>
+                )}
               </div>
+
+              {formError && (
+                <p className="text-sm text-red-400">
+                  {formError}
+                </p>
+              )}
 
               <div className="flex items-center justify-end pt-2">
                 <button

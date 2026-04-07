@@ -6,6 +6,7 @@ const MessageList = ({
   currentUserId,
   editingMessageId,
   editText,
+  editError,
   setEditText,
   savingEdit,
   deletingMessageId,
@@ -57,6 +58,7 @@ const MessageList = ({
               isOwnMessage={senderId === currentUserId}
               isEditing={editingMessageId === message._id}
               editText={editText}
+              editError={editError}
               setEditText={setEditText}
               savingEdit={savingEdit}
               deletingMessageId={deletingMessageId}

@@ -22,6 +22,7 @@ const MessageItem = ({
   isOwnMessage,
   isEditing,
   editText,
+  editError,
   setEditText,
   savingEdit,
   deletingMessageId,
@@ -78,8 +79,19 @@ const MessageItem = ({
                 maxLength={2000}
                 value={editText}
                 onChange={(event) => setEditText(event.target.value)}
-                className="w-full resize-none rounded-xl border border-white/10 bg-black/20 px-4 py-3 text-sm outline-none transition focus:border-blue-500"
+                aria-invalid={Boolean(editError)}
+                className={`w-full resize-none rounded-xl border bg-black/20 px-4 py-3 text-sm outline-none transition ${
+                  editError
+                    ? "border-red-400/80 focus:border-red-400"
+                    : "border-white/10 focus:border-blue-500"
+                }`}
               />
+
+              {editError && (
+                <p className="text-sm text-red-200">
+                  {editError}
+                </p>
+              )}
 
               <div className="flex items-center justify-end gap-3">
                 <div className="flex items-center gap-2">

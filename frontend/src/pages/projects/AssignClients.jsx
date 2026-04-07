@@ -1,5 +1,9 @@
 import { useEffect, useState } from "react"
-import toast from "react-hot-toast"
+import {
+  isValidationError,
+  runAsyncToast,
+  splitValidationErrors
+} from "./projectModuleUtils"
 
 const getValidSelectedIds = (selectedIds = [], items = []) => {
   const validIdSet = new Set(items.map((item) => item._id))
@@ -40,6 +44,7 @@ const AssignClients = ({
 }) => {
 
   const [saving, setSaving] = useState(false)
+  const [formError, setFormError] = useState("")
 
   const isOpen = openClientDropdown === p._id
 
@@ -52,6 +57,8 @@ const AssignClients = ({
         ...prev,
         [p._id]: validProjectClientIds,
       }))
+
+      setFormError("")
     }
     
   }, [clients, isOpen, p._id, p.clients, setSelectedClients])
@@ -73,6 +80,8 @@ const AssignClients = ({
               checked={selectedClients[p._id]?.includes(c._id) || false}
 
               onChange={() => {
+                setFormError("")
+
                 setSelectedClients((prev) => {
                   const arr = prev[p._id] || []
 
@@ -114,37 +123,34 @@ const AssignClients = ({
 
           try {
             setSaving(true)
+            setFormError("")
 
-            await toast.promise(
-
-              (async () => {
-
+            await runAsyncToast(
+              async () => {
                 await assignClient(p._id, finalClients)
 
                 if (page === 1) {
-
                   await loadProjects({ showLoader: false, throwOnError: true })
-
                 } else {
-
                   setPage(1)
-
                 }
-
-              })(),
-
+              },
               {
-                loading: "Saving clients...",
-                success: "Clients updated",
-                error: (error) =>
-                  error?.response?.data?.error || "Failed to update clients",
+                loadingMessage: "Saving clients...",
+                successMessage: "Clients updated",
+                fallbackError: "Failed to update clients",
+                suppressErrorToast: isValidationError
               }
-
             )
 
             setOpenClientDropdown(null)
 
-          } catch {
+          } catch (error) {
+            if (isValidationError(error)) {
+              const { fieldErrors, formError: nextFormError } = splitValidationErrors(error)
+
+              setFormError(fieldErrors.clientIds || nextFormError)
+            }
 
             return
 
@@ -157,6 +163,12 @@ const AssignClients = ({
       >
         {saving ? "Saving..." : "Save"}
       </button>
+
+      {formError && (
+        <p className="mt-2 text-xs text-red-400">
+          {formError}
+        </p>
+      )}
     </div>
   )
 }

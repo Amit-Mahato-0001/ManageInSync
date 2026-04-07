@@ -1,12 +1,17 @@
 import { useState } from "react"
 import { Rocket, X } from "lucide-react"
-import toast from "react-hot-toast"
+import {
+  isValidationError,
+  runAsyncToast,
+  splitValidationErrors
+} from "./projectModuleUtils"
 
 const CreateProjectForm = ({ onSubmit }) => {
   const [name, setName] = useState("")
   const [description, setDescription] = useState("")
   const [targetDate, setTargetDate] = useState("")
-  const [error, setError] = useState("")
+  const [fieldErrors, setFieldErrors] = useState({})
+  const [formError, setFormError] = useState("")
   const [submitting, setSubmitting] = useState(false)
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
 
@@ -14,7 +19,8 @@ const CreateProjectForm = ({ onSubmit }) => {
     setName("")
     setDescription("")
     setTargetDate("")
-    setError("")
+    setFieldErrors({})
+    setFormError("")
     setIsCreateModalOpen(true)
   }
 
@@ -24,51 +30,48 @@ const CreateProjectForm = ({ onSubmit }) => {
     setName("")
     setDescription("")
     setTargetDate("")
-    setError("")
+    setFieldErrors({})
+    setFormError("")
     setIsCreateModalOpen(false)
   }
 
   const handleCreateProject = async (e) => {
     e.preventDefault()
 
-    const safeName = name.trim()
-    const safeDescription = description.trim()
-
-    if (!safeName) {
-      setError("Project name is required")
-      return
-    }
-
-    if (safeName.length < 3) {
-      setError("Project name must be at least 3 characters")
-      return
-    }
-
-    if (safeDescription && safeDescription.length < 2) {
-      setError("Description must be at least 2 characters")
-      return
-    }
-
     try {
       setSubmitting(true)
-      setError("")
+      setFieldErrors({})
+      setFormError("")
 
-      await toast.promise(onSubmit({
-        name: safeName,
-        description: safeDescription || undefined,
-        targetDate: targetDate || undefined
-      }), {
-        loading: "Creating project...",
-        success: "Project created",
-        error: (err) => err?.message || "Failed to create project. Try again.",
-      })
+      await runAsyncToast(
+        () =>
+          onSubmit({
+            name: name.trim(),
+            description: description.trim() || undefined,
+            targetDate: targetDate || undefined
+          }),
+        {
+          loadingMessage: "Creating project...",
+          successMessage: "Project created",
+          fallbackError: "Failed to create project. Try again.",
+          suppressErrorToast: isValidationError
+        }
+      )
 
       setName("")
       setDescription("")
       setTargetDate("")
-      setError("")
+      setFieldErrors({})
+      setFormError("")
       setIsCreateModalOpen(false)
-    } catch {
+    } catch (error) {
+      if (isValidationError(error)) {
+        const { fieldErrors: nextFieldErrors, formError: nextFormError } = splitValidationErrors(error)
+
+        setFieldErrors(nextFieldErrors)
+        setFormError(nextFormError)
+      }
+
       return
     } finally {
       setSubmitting(false)
@@ -113,18 +116,21 @@ const CreateProjectForm = ({ onSubmit }) => {
                   value={name}
                   onChange={(e) => {
                     setName(e.target.value)
-
-                    if (error) {
-                      setError("")
-                    }
+                    setFieldErrors((prev) => ({ ...prev, name: "" }))
+                    setFormError("")
                   }}
                   placeholder="Enter project name..."
-                  className="w-full rounded-lg border border-white/10 px-4 py-3 text-sm text-white outline-none transition focus:border-blue-500"
+                  aria-invalid={Boolean(fieldErrors.name)}
+                  className={`w-full rounded-lg border px-4 py-3 text-sm text-white outline-none transition bg-transparent ${
+                    fieldErrors.name
+                      ? "border-red-400/80 focus:border-red-400"
+                      : "border-white/10 focus:border-blue-500"
+                  }`}
                 />
 
-                {error && (
+                {fieldErrors.name && (
                   <p className="mt-2 text-sm text-red-400">
-                    {error}
+                    {fieldErrors.name}
                   </p>
                 )}
               </div>
@@ -137,15 +143,24 @@ const CreateProjectForm = ({ onSubmit }) => {
                   value={description}
                   onChange={(e) => {
                     setDescription(e.target.value)
-
-                    if (error) {
-                      setError("")
-                    }
+                    setFieldErrors((prev) => ({ ...prev, description: "" }))
+                    setFormError("")
                   }}
                   placeholder="Write a short project description..."
                   rows={4}
-                  className="w-full rounded-lg border border-white/10 px-4 py-3 text-sm text-white outline-none transition focus:border-blue-500"
+                  aria-invalid={Boolean(fieldErrors.description)}
+                  className={`w-full rounded-lg border px-4 py-3 text-sm text-white outline-none transition bg-transparent ${
+                    fieldErrors.description
+                      ? "border-red-400/80 focus:border-red-400"
+                      : "border-white/10 focus:border-blue-500"
+                  }`}
                 />
+
+                {fieldErrors.description && (
+                  <p className="mt-2 text-sm text-red-400">
+                    {fieldErrors.description}
+                  </p>
+                )}
               </div>
 
               <div>
@@ -157,14 +172,29 @@ const CreateProjectForm = ({ onSubmit }) => {
                   value={targetDate}
                   onChange={(e) => {
                     setTargetDate(e.target.value)
-
-                    if (error) {
-                      setError("")
-                    }
+                    setFieldErrors((prev) => ({ ...prev, targetDate: "" }))
+                    setFormError("")
                   }}
-                  className="w-full rounded-lg border border-white/10 px-4 py-3 text-sm text-white outline-none transition focus:border-blue-500"
+                  aria-invalid={Boolean(fieldErrors.targetDate)}
+                  className={`w-full rounded-lg border px-4 py-3 text-sm text-white outline-none transition bg-transparent ${
+                    fieldErrors.targetDate
+                      ? "border-red-400/80 focus:border-red-400"
+                      : "border-white/10 focus:border-blue-500"
+                  }`}
                 />
+
+                {fieldErrors.targetDate && (
+                  <p className="mt-2 text-sm text-red-400">
+                    {fieldErrors.targetDate}
+                  </p>
+                )}
               </div>
+
+              {formError && (
+                <p className="text-sm text-red-400">
+                  {formError}
+                </p>
+              )}
 
               <div className="flex items-center justify-end pt-2">
                 <button

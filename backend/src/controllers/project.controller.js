@@ -6,6 +6,7 @@ const createProjectHandler = async (req, res, next) => {
         const project = await createProject({
             name: req.body.name,
             description: req.body.description,
+            targetDate: req.body.targetDate,
             members: req.body.memberIds,
             clients: req.body.clientIds,
             tenantId: req.tenantId

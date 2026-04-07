@@ -7,7 +7,11 @@ const createTaskHandler = async (req, res, next) => {
         
         const task = await createTask({
             title: req.body.title,
+            description: req.body.description,
+            targetDate: req.body.targetDate,
             assigneeId: req.body.assigneeId,
+            status: req.body.status,
+            priority: req.body.priority,
             tenantId: req.tenantId,
             projectId,
             createdBy: req.user._id,
@@ -100,7 +104,9 @@ const updateTaskHandler = async(req, res, next) => {
             taskId,
             user: req.user,
             status: req.body.status,
-            priority: req.body.priority
+            priority: req.body.priority,
+            description: req.body.description,
+            targetDate: req.body.targetDate
 
         })
 

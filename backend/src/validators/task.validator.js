@@ -1,5 +1,5 @@
 const { z } = require("zod")
-const { objectId } = require("./common.validator")
+const { objectId, dateString } = require("./common.validator")
 
 const createTaskSchema = z.object({
 
@@ -8,6 +8,16 @@ const createTaskSchema = z.object({
     .trim()
     .min(2, "Task title must be at least 2 characters")
     .max(200, "Task title is too long"),
+
+    description: z
+    .string()
+    .trim()
+    .min(2, "Task description must be at least 2 characters")
+    .max(500, "Task description is too long")
+    .optional(),
+
+    targetDate: dateString("targetDate")
+    .optional(),
 
     assigneeId: objectId("assigneeId"),
 
@@ -41,13 +51,28 @@ const updateTaskSchema = z.object({
 
     priority: z
     .enum(["low", "medium", "high"])
+    .optional(),
+
+    description: z
+    .string()
+    .trim()
+    .min(2, "Task description must be at least 2 characters")
+    .max(500, "Task description is too long")
+    .optional(),
+
+    targetDate: dateString("targetDate")
+    .optional()
 
 }).refine(
     
-    (data) => data.status !== undefined || data.priority !== undefined,
+    (data) =>
+        data.status !== undefined ||
+        data.priority !== undefined ||
+        data.description !== undefined ||
+        data.targetDate !== undefined,
 
     {
-        message: "Atleast one of status or priority must be provided",
+        message: "Atleast one task field must be provided",
     }
 )
 

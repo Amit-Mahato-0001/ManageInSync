@@ -5,6 +5,7 @@ import toast from "react-hot-toast"
 import { createTask, deleteTask, fetchTasks, updateTask } from "../../api/tasks"
 import { useAuth } from "../../context/AuthContext"
 import TasksPagination from "../../components/TasksPagination"
+import { formatDate } from "../../utils/formatDate"
 
 const getStatusStyle = (status) => {
   if (status === "todo") return "bg-gradient-to-br from-[#18181B] to-yellow-500"
@@ -20,6 +21,18 @@ const getPriorityStyle = (priority) => {
   if (priority === "high") return "bg-gradient-to-br from-[#18181B] to-red-500"
 
   return "bg-white/10 text-white/60"
+}
+
+const getTargetDateParts = (date) => {
+  if (!date) return null
+
+  const d = new Date(date)
+  if (isNaN(d.getTime())) return null
+
+  const month = d.toLocaleString("en-US", { month: "short" }).toUpperCase()
+  const day = d.getDate()
+
+  return { month, day }
 }
 
 const getErrorMessage = (error, fallback) => {
@@ -55,6 +68,8 @@ const ProjectTasks = () => {
   const [pageError, setPageError] = useState("")
   const [formError, setFormError] = useState("")
   const [title, setTitle] = useState("")
+  const [description, setDescription] = useState("")
+  const [targetDate, setTargetDate] = useState("")
   const [status, setStatus] = useState("todo")
   const [priority, setPriority] = useState("medium")
   const [submitting, setSubmitting] = useState(false)
@@ -70,10 +85,15 @@ const ProjectTasks = () => {
     user?.role === "owner" || user?.role === "admin" || user?.role === "member"
   const currentUserId = user?.userId
   const projectName = state?.projectName || "Project"
+  const projectDescription = state?.projectDescription || ""
+  const projectTargetDate = state?.projectTargetDate || ""
   const unreadCount = Number(state?.unreadCount) || 0
   const isCompletedProject = state?.projectStatus === "completed"
+
   const projectRouteState = {
     projectName,
+    projectDescription,
+    projectTargetDate,
     projectStatus: state?.projectStatus,
     unreadCount
   }
@@ -112,6 +132,11 @@ const ProjectTasks = () => {
       return
     }
 
+    setTitle("")
+    setDescription("")
+    setTargetDate("")
+    setStatus("todo")
+    setPriority("medium")
     setFormError("")
     setIsCreateModalOpen(true)
   }
@@ -121,6 +146,8 @@ const ProjectTasks = () => {
 
     setIsCreateModalOpen(false)
     setTitle("")
+    setDescription("")
+    setTargetDate("")
     setStatus("todo")
     setPriority("medium")
     setFormError("")
@@ -145,9 +172,15 @@ const ProjectTasks = () => {
     }
 
     const safeTitle = title.trim()
+    const safeDescription = description.trim()
 
     if (!safeTitle) {
       setFormError("Task title is required")
+      return
+    }
+
+    if (safeDescription && safeDescription.length < 2) {
+      setFormError("Description must be at least 2 characters")
       return
     }
 
@@ -159,6 +192,8 @@ const ProjectTasks = () => {
         (async () => {
           await createTask(projectId, {
             title: safeTitle,
+            description: safeDescription || undefined,
+            targetDate: targetDate || undefined,
             assigneeId: currentUserId,
             status,
             priority
@@ -178,6 +213,8 @@ const ProjectTasks = () => {
       )
 
       setTitle("")
+      setDescription("")
+      setTargetDate("")
       setStatus("todo")
       setPriority("medium")
       setFormError("")
@@ -334,70 +371,108 @@ const ProjectTasks = () => {
             </p>
           )}
 
-          {!loading && tasks.map((task) => (
-            <div
-              key={task._id}
-              className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between rounded-xl p-5 border border-white/10 bg-gradient-to-br from-[#18181B] to-[#09090B]"
-            >
-              <div className="space-y-2">
-                <h2 className="font-medium">{task.title}</h2>
-                <div className="flex gap-2 text-xs">
-                  <span className={`px-2 py-1 rounded-md ${getStatusStyle(task.status)}`}>
-                    {task.status}
-                  </span>
-                  <span className={`px-2 py-1 rounded-md ${getPriorityStyle(task.priority)}`}>
-                    {task.priority}
-                  </span>
-                </div>
-              </div>
+          {!loading &&
+            tasks.map((task) => {
+              const taskTargetDateParts = getTargetDateParts(task.targetDate)
+              const formattedTaskTargetDate = formatDate(task.targetDate)
 
-              <div className="flex flex-wrap items-center gap-2">
-                {canUpdateTasks && (
-                  <>
-                    <select
-                      value={task.status}
-                      disabled={updatingTaskId === task._id || isCompletedProject}
-                      onChange={(e) => handleUpdateTask(task, { status: e.target.value })}
-                      className="border border-white/10 px-3 py-2 rounded-md text-sm"
-                    >
-                      <option value="todo">Todo</option>
-                      <option value="in-progress">In Progress</option>
-                      <option value="done">Done</option>
-                    </select>
+              return (
+                <div
+                  key={task._id}
+                  className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between rounded-xl p-5 border border-white/10 bg-gradient-to-br from-[#18181B] to-[#09090B]"
+                >
+                  <div className="space-y-3 flex-1 min-w-0">
+                    <div className="space-y-2">
+                      <h2 className="font-medium text-white text-lg">{task.title}</h2>
 
-                    <select
-                      value={task.priority}
-                      disabled={updatingTaskId === task._id || isCompletedProject}
-                      onChange={(e) => handleUpdateTask(task, { priority: e.target.value })}
-                      className="border border-white/10 px-3 py-2 rounded-md text-sm"
-                    >
-                      <option value="low">Low</option>
-                      <option value="medium">Medium</option>
-                      <option value="high">High</option>
-                    </select>
-                  </>
-                )}
-
-                {canCreateTasks && (
-                  <button
-                    disabled={deletingTaskId === task._id || updatingTaskId === task._id}
-                    onClick={() => handleDeleteTask(task._id)}
-                    className="disabled:cursor-not-allowed disabled:opacity-60"
-                  >
-                    <div className="p-2 rounded-lg border border-white/10 bg-gradient-to-br from-[#18181B] to-red-500">
-                      <Trash2 size={16} />
+                      {task.description && (
+                        <p className="text-sm text-white/55">
+                          {task.description}
+                        </p>
+                      )}
                     </div>
-                  </button>
-                )}
 
-                {updatingTaskId === task._id && (
-                  <span className="text-xs text-white/50">
-                    Updating...
-                  </span>
-                )}
-              </div>
-            </div>
-          ))}
+                    {formattedTaskTargetDate && taskTargetDateParts && (
+                      <div className="flex items-center gap-3 pt-1">
+                        <span className="text-sm font-medium ">
+                          Target Date
+                        </span>
+
+                        <div className="overflow-hidden rounded-xl border border-blue-500/50 shadow-[0_0_0_1px_rgba(168,85,247,0.08)]">
+                          <div className="bg-gradient-to-r from-[#18181B] to-blue-500 px-3 py-1 text-center">
+                            <p className="text-xs font-bold tracking-wider text-white">
+                              {taskTargetDateParts.month}
+                            </p>
+                          </div>
+
+                          <div className="px-3 py-2 text-center">
+                            <p className="text-s font-extrabold leading-none text-white">
+                              {taskTargetDateParts.day}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="flex flex-wrap gap-2 text-xs">
+                      <span className={`px-2 py-1 rounded-md ${getStatusStyle(task.status)}`}>
+                        {task.status}
+                      </span>
+
+                      <span className={`px-2 py-1 rounded-md ${getPriorityStyle(task.priority)}`}>
+                        {task.priority}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-wrap items-center gap-2">
+                    {canUpdateTasks && (
+                      <>
+                        <select
+                          value={task.status}
+                          disabled={updatingTaskId === task._id || isCompletedProject}
+                          onChange={(e) => handleUpdateTask(task, { status: e.target.value })}
+                          className="border border-white/10 px-3 py-2 rounded-md text-sm bg-transparent"
+                        >
+                          <option value="todo" className="bg-[#0B0F19]">Todo</option>
+                          <option value="in-progress" className="bg-[#0B0F19]">In Progress</option>
+                          <option value="done" className="bg-[#0B0F19]">Done</option>
+                        </select>
+
+                        <select
+                          value={task.priority}
+                          disabled={updatingTaskId === task._id || isCompletedProject}
+                          onChange={(e) => handleUpdateTask(task, { priority: e.target.value })}
+                          className="border border-white/10 px-3 py-2 rounded-md text-sm bg-transparent"
+                        >
+                          <option value="low" className="bg-[#0B0F19]">Low</option>
+                          <option value="medium" className="bg-[#0B0F19]">Medium</option>
+                          <option value="high" className="bg-[#0B0F19]">High</option>
+                        </select>
+                      </>
+                    )}
+
+                    {canCreateTasks && (
+                      <button
+                        disabled={deletingTaskId === task._id || updatingTaskId === task._id}
+                        onClick={() => handleDeleteTask(task._id)}
+                        className="disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        <div className="p-2 rounded-lg border border-white/10 bg-gradient-to-br from-[#18181B] to-red-500">
+                          <Trash2 size={16} />
+                        </div>
+                      </button>
+                    )}
+
+                    {updatingTaskId === task._id && (
+                      <span className="text-xs text-white/50">
+                        Updating...
+                      </span>
+                    )}
+                  </div>
+                </div>
+              )
+            })}
 
           {!loading && tasks.length === 0 && (
             <p className="text-sm text-white/40">No tasks in this project</p>
@@ -441,7 +516,7 @@ const ProjectTasks = () => {
                     }
                   }}
                   placeholder="Enter task title..."
-                  className="w-full rounded-lg border border-white/10 px-4 py-3 text-sm text-white outline-none transition focus:border-blue-500"
+                  className="w-full rounded-lg border border-white/10 px-4 py-3 text-sm text-white outline-none transition focus:border-blue-500 bg-transparent"
                 />
 
                 {formError && (
@@ -453,12 +528,49 @@ const ProjectTasks = () => {
 
               <div>
                 <label className="mb-2 block text-sm font-medium text-white/80">
+                  Description
+                </label>
+                <textarea
+                  value={description}
+                  onChange={(e) => {
+                    setDescription(e.target.value)
+
+                    if (formError) {
+                      setFormError("")
+                    }
+                  }}
+                  placeholder="Write a short task description..."
+                  rows={4}
+                  className="w-full rounded-lg border border-white/10 px-4 py-3 text-sm text-white outline-none transition focus:border-blue-500 bg-transparent"
+                />
+              </div>
+
+              <div>
+                <label className="mb-2 block text-sm font-medium text-white/80">
+                  Target Date
+                </label>
+                <input
+                  type="date"
+                  value={targetDate}
+                  onChange={(e) => {
+                    setTargetDate(e.target.value)
+
+                    if (formError) {
+                      setFormError("")
+                    }
+                  }}
+                  className="w-full rounded-lg border border-white/10 px-4 py-3 text-sm text-white outline-none transition focus:border-blue-500 bg-transparent"
+                />
+              </div>
+
+              <div>
+                <label className="mb-2 block text-sm font-medium text-white/80">
                   Status
                 </label>
                 <select
                   value={status}
                   onChange={(e) => setStatus(e.target.value)}
-                  className="w-full rounded-lg border border-white/10 px-4 py-3 text-sm text-white outline-none transition focus:border-blue-500"
+                  className="w-full rounded-lg border border-white/10 px-4 py-3 text-sm text-white outline-none transition focus:border-blue-500 bg-transparent"
                 >
                   <option value="todo" className="bg-[#0B0F19]">Todo</option>
                   <option value="in-progress" className="bg-[#0B0F19]">In Progress</option>
@@ -473,7 +585,7 @@ const ProjectTasks = () => {
                 <select
                   value={priority}
                   onChange={(e) => setPriority(e.target.value)}
-                  className="w-full rounded-lg border border-white/10 px-4 py-3 text-sm text-white outline-none transition focus:border-blue-500"
+                  className="w-full rounded-lg border border-white/10 px-4 py-3 text-sm text-white outline-none transition focus:border-blue-500 bg-transparent"
                 >
                   <option value="low" className="bg-[#0B0F19]">Low</option>
                   <option value="medium" className="bg-[#0B0F19]">Medium</option>

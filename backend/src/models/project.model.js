@@ -11,6 +11,12 @@ const projectSchema = new mongoose.Schema({
 
     description: {
         type: String,
+        trim: true
+    },
+
+    targetDate: {
+        type: String,
+        trim: true
     },
 
     status: {

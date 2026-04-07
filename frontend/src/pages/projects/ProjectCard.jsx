@@ -2,6 +2,7 @@ import { useNavigate } from "react-router-dom"
 import { Trash2, User2, Users } from "lucide-react"
 import AssignClients from "./AssignClients"
 import AssignMembers from "./AssignMembers"
+import { formatDate } from "../../utils/formatDate"
 
 const formatResolvedAssignments = (ids = [], items = [], fallbackLabel) => {
   const labels = ids
@@ -9,6 +10,18 @@ const formatResolvedAssignments = (ids = [], items = [], fallbackLabel) => {
     .filter(Boolean)
 
   return labels.length > 0 ? labels.join(", ") : fallbackLabel
+}
+
+const getTargetDateParts = (date) => {
+  if (!date) return null
+
+  const d = new Date(date)
+  if (isNaN(d.getTime())) return null
+
+  const month = d.toLocaleString("en-US", { month: "short" }).toUpperCase()
+  const day = d.getDate()
+
+  return { month, day }
 }
 
 const ProjectCard = ({
@@ -37,8 +50,13 @@ const ProjectCard = ({
 }) => {
   const navigate = useNavigate()
   const canViewTasks = user?.role !== "client"
+  const formattedTargetDate = formatDate(p.targetDate)
+  const targetDateParts = getTargetDateParts(p.targetDate)
+
   const projectRouteState = {
     projectName: p.name,
+    projectDescription: p.description || "",
+    projectTargetDate: p.targetDate || "",
     projectStatus: p.status,
     unreadCount: p.unreadCount || 0
   }
@@ -54,10 +72,34 @@ const ProjectCard = ({
       onClick={handleCardClick}
       className="relative cursor-pointer rounded-xl p-5 border border-white/10 bg-gradient-to-br from-[#18181B] to-[#09090B] space-y-4 hover:border-blue-500 transition"
     >
-      <div className="flex justify-between items-start">
-        <div>
-          <h2 className="font-medium">{p.name}</h2>
-          <p className="text-xs text-white/40">No description</p>
+      <div className="flex justify-between items-start gap-4">
+        <div className="space-y-2 flex-1 min-w-0">
+          <h2 className="font-medium text-white text-lg truncate">{p.name}</h2>
+          <p className="text-sm text-white/40 line-clamp-2">
+            {p.description || "No description"}
+          </p>
+
+          {formattedTargetDate && targetDateParts && (
+            <div className="flex items-center gap-3 pt-1">
+              <span className="text-sm font-medium">
+                Target Date
+              </span>
+
+              <div className="overflow-hidden rounded-xl border border-blue-500/50 shadow-[0_0_0_1px_rgba(168,85,247,0.08)]">
+                <div className="bg-gradient-to-r from-[#18181B] to-blue-500 px-3 py-1 text-center">
+                  <p className="text-xs font-bold tracking-wider text-white">
+                    {targetDateParts.month}
+                  </p>
+                </div>
+
+                <div className="px-3 py-2 text-center">
+                  <p className="text-s font-extrabold leading-none text-white">
+                    {targetDateParts.day}
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         {(user.role === "owner" || user.role === "admin") && (
@@ -67,7 +109,7 @@ const ProjectCard = ({
               e.stopPropagation()
               handleDelete(p._id)
             }}
-            className="disabled:cursor-not-allowed disabled:opacity-60"
+            className="disabled:cursor-not-allowed disabled:opacity-60 shrink-0"
           >
             <div className="p-2 rounded-lg border border-white/10 bg-gradient-to-br from-[#18181B] to-red-500">
               <Trash2 size={16} />

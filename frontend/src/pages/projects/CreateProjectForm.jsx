@@ -4,12 +4,16 @@ import toast from "react-hot-toast"
 
 const CreateProjectForm = ({ onSubmit }) => {
   const [name, setName] = useState("")
+  const [description, setDescription] = useState("")
+  const [targetDate, setTargetDate] = useState("")
   const [error, setError] = useState("")
   const [submitting, setSubmitting] = useState(false)
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
 
   const handleOpenCreateModal = () => {
     setName("")
+    setDescription("")
+    setTargetDate("")
     setError("")
     setIsCreateModalOpen(true)
   }
@@ -18,6 +22,8 @@ const CreateProjectForm = ({ onSubmit }) => {
     if (submitting) return
 
     setName("")
+    setDescription("")
+    setTargetDate("")
     setError("")
     setIsCreateModalOpen(false)
   }
@@ -26,6 +32,7 @@ const CreateProjectForm = ({ onSubmit }) => {
     e.preventDefault()
 
     const safeName = name.trim()
+    const safeDescription = description.trim()
 
     if (!safeName) {
       setError("Project name is required")
@@ -37,17 +44,28 @@ const CreateProjectForm = ({ onSubmit }) => {
       return
     }
 
+    if (safeDescription && safeDescription.length < 2) {
+      setError("Description must be at least 2 characters")
+      return
+    }
+
     try {
       setSubmitting(true)
       setError("")
 
-      await toast.promise(onSubmit(safeName), {
+      await toast.promise(onSubmit({
+        name: safeName,
+        description: safeDescription || undefined,
+        targetDate: targetDate || undefined
+      }), {
         loading: "Creating project...",
         success: "Project created",
         error: (err) => err?.message || "Failed to create project. Try again.",
       })
 
       setName("")
+      setDescription("")
+      setTargetDate("")
       setError("")
       setIsCreateModalOpen(false)
     } catch {
@@ -109,6 +127,43 @@ const CreateProjectForm = ({ onSubmit }) => {
                     {error}
                   </p>
                 )}
+              </div>
+
+              <div>
+                <label className="mb-2 block text-sm font-medium text-white/80">
+                  Description
+                </label>
+                <textarea
+                  value={description}
+                  onChange={(e) => {
+                    setDescription(e.target.value)
+
+                    if (error) {
+                      setError("")
+                    }
+                  }}
+                  placeholder="Write a short project description..."
+                  rows={4}
+                  className="w-full rounded-lg border border-white/10 px-4 py-3 text-sm text-white outline-none transition focus:border-blue-500"
+                />
+              </div>
+
+              <div>
+                <label className="mb-2 block text-sm font-medium text-white/80">
+                  Target Date
+                </label>
+                <input
+                  type="date"
+                  value={targetDate}
+                  onChange={(e) => {
+                    setTargetDate(e.target.value)
+
+                    if (error) {
+                      setError("")
+                    }
+                  }}
+                  className="w-full rounded-lg border border-white/10 px-4 py-3 text-sm text-white outline-none transition focus:border-blue-500"
+                />
               </div>
 
               <div className="flex items-center justify-end pt-2">

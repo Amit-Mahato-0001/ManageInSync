@@ -1,5 +1,5 @@
 const { z } = require("zod")
-const { objectId } = require("./common.validator")
+const { objectId, dateString } = require("./common.validator")
 
 const createProjectSchema = z.object({
 
@@ -14,6 +14,9 @@ const createProjectSchema = z.object({
     .trim()
     .min(2, "Description must be atleast 2 characters")
     .max(500, "Description too long")
+    .optional(),
+
+    targetDate: dateString("targetDate")
     .optional(),
 
     memberIds: z

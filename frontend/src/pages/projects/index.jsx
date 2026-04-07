@@ -110,11 +110,15 @@ const Projects = () => {
     }
   }, [canAssign])
 
-  const handleCreate = async (name) => {
+  const handleCreate = async ({ name, description, targetDate }) => {
     const safeName = name.trim()
 
     try {
-      await createProject({ name: safeName })
+      await createProject({
+        name: safeName,
+        description,
+        targetDate
+      })
 
       if (page === 1) {
         await loadProjects({ showLoader: false, throwOnError: true })

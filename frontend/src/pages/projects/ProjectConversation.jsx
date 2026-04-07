@@ -83,9 +83,13 @@ const ProjectConversation = () => {
   const currentUserId = user?.userId
   const canViewTasks = user?.role !== "client"
   const projectName = state?.projectName || "Project"
+  const projectDescription = state?.projectDescription || ""
+  const projectTargetDate = state?.projectTargetDate || ""
   const projectStatus = state?.projectStatus
   const projectRouteState = {
     projectName,
+    projectDescription,
+    projectTargetDate,
     projectStatus,
     unreadCount: 0
   }

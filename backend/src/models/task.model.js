@@ -15,6 +15,16 @@ const taskSchema = new mongoose.Schema(
             trim: true
         },
 
+        description: {
+            type: String,
+            trim: true
+        },
+
+        targetDate: {
+            type: String,
+            trim: true
+        },
+
         assigneeId: {
             type: mongoose.Schema.Types.ObjectId,
             ref: "User",

@@ -119,6 +119,8 @@ const createProject = async (data) => {
     return Project.create({
         ...data,
         name: name.trim(),
+        description: data.description?.trim() || undefined,
+        targetDate: data.targetDate || undefined,
         clients,
         members
     })

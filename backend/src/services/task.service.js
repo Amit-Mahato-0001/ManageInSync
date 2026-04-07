@@ -65,7 +65,11 @@ const createTask = async (data) => {
 
     const {
         title,
+        description,
+        targetDate,
         assigneeId,
+        status,
+        priority,
         tenantId,
         projectId,
         createdBy,
@@ -121,12 +125,14 @@ const createTask = async (data) => {
 
     const newTask = await Task.create({
 
-        title,
+        title: title.trim(),
+        description: description?.trim() || undefined,
+        targetDate: targetDate || undefined,
         assigneeId,
         tenantId,
         projectId,
-        status: "todo",
-        priority: "medium",
+        status: status || "todo",
+        priority: priority || "medium",
         createdBy
 
     })
@@ -242,7 +248,7 @@ const deleteTask = async ({ tenantId, projectId, taskId, user }) => {
     return task
 }
 
-const updateTask = async({ tenantId, projectId, taskId, user, status, priority }) => {
+const updateTask = async({ tenantId, projectId, taskId, user, status, priority, description, targetDate }) => {
 
     await getProject({tenantId, projectId, user })
 
@@ -254,8 +260,10 @@ const updateTask = async({ tenantId, projectId, taskId, user, status, priority }
 
     const updates = {}
 
-    if(status) updates.status = status
-    if(priority) updates.priority = priority
+    if(status !== undefined) updates.status = status
+    if(priority !== undefined) updates.priority = priority
+    if(description !== undefined) updates.description = description.trim()
+    if(targetDate !== undefined) updates.targetDate = targetDate
 
     const task = await Task.findOneAndUpdate(
 

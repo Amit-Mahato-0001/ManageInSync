@@ -4,6 +4,8 @@ import { DASHBOARD_REFRESH_EVENT } from "../utils/dashboardRefresh"
 import {
   Folder,
   CheckCircle,
+  ListChecks,
+  CheckCheck,
   Users,
   User
 } from "lucide-react"
@@ -61,7 +63,7 @@ const Dashboard = () => {
   return (
     <div>
 
-      {/* HEADER */}
+      {/* header */}
       <h1 className="text-2xl font-semibold">
         Welcome back, Unity
       </h1>
@@ -70,8 +72,8 @@ const Dashboard = () => {
         Here's what's happening with your projects today
       </p>
 
-      {/* STATS */}
-      <div className="grid grid-cols-4 gap-4 mt-6">
+      {/* stats */}
+      <div className="grid grid-cols-1 gap-4 mt-6 md:grid-cols-2 xl:grid-cols-3">
 
         <Stat
           label="Total Projects"
@@ -82,16 +84,32 @@ const Dashboard = () => {
         />
 
         <Stat
-          label="Active Projects"
-          value={data.dashboardStats.activeProjects}
+          label="Completed Projects"
+          value={data.dashboardStats.completedProjects}
           icon={CheckCircle}
           color="border border-white/10 bg-gradient-to-br from-[#18181B] to-green-500"
-          sub="currently active"
+          sub="finished projects"
+        />
+
+        <Stat
+          label="Total Tasks"
+          value={data.dashboardStats.totalTasks}
+          icon={ListChecks}
+          color="border border-white/10 bg-gradient-to-br from-[#18181B] to-cyan-500"
+          sub="tasks across projects"
+        />
+
+        <Stat
+          label="Completed Tasks"
+          value={data.dashboardStats.completedTasks}
+          icon={CheckCheck}
+          color="border border-white/10 bg-gradient-to-br from-[#18181B] to-emerald-500"
+          sub="tasks marked done"
         />
 
         <Stat
           label="Team Members"
-          value={data.dashboardStats.totalUsers}
+          value={data.dashboardStats.totalMembers}
           icon={Users}
           color="border border-white/10 bg-gradient-to-br from-[#18181B] to-purple-500"
           sub="in your team"
@@ -112,7 +130,7 @@ const Dashboard = () => {
 }
 
 
-/* ✅ SIMPLE STAT COMPONENT */
+/* stats components */
 
 function Stat({ label, value, icon: Icon, color, sub }) {
 

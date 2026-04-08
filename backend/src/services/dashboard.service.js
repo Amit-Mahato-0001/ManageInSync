@@ -1,9 +1,12 @@
 //total projects
-//active projects
-//total users
+//completed projects
+//total tasks
+//completed tasks
+//total members
 //total clients
 
 const Project = require('../models/project.model')
+const Task = require('../models/task.model')
 const User = require('../models/user.model')
 
 const dashboard = async (tenantId) => {
@@ -18,16 +21,25 @@ const dashboard = async (tenantId) => {
         deletedAt: null
     }
 
-    //users which belong to given tenant id and are active 
-    const activeUserQuery = {
+    //members which belong to given tenant id and are active
+    const activeMemberQuery = {
         tenantId,
+        role: "member",
+        status: "active"
+    }
+
+    //clients which belong to given tenant id and are active
+    const activeClientQuery = {
+        tenantId,
+        role: "client",
         status: "active"
     }
 
     const [
         totalProjects,
-        activeProjects,
-        totalUsers,
+        completedProjects,
+        activeProjectIds,
+        totalMembers,
         totalClients
 
     ] = await Promise.all([
@@ -35,29 +47,53 @@ const dashboard = async (tenantId) => {
         //total projects
         Project.countDocuments(activeProjectQuery),
 
-        //active projects
+        //completed projects
         Project.countDocuments({
             ...activeProjectQuery,
-            status: "active"
+            status: "completed"
         }),
 
-        //total users 
+        //current project ids used to scope dashboard task stats
+        Project.distinct("_id", activeProjectQuery),
+
+        //total members
         User.countDocuments({
-            ...activeUserQuery,
-            role: { $ne: "client" }
+            ...activeMemberQuery
         }),
         
         //total clients
         User.countDocuments({
-            ...activeUserQuery,
-            role: "client"
+            ...activeClientQuery
+        })
+    ])
+
+    const activeProjectTaskQuery = {
+        tenantId,
+        deletedAt: null,
+        projectId: { $in: activeProjectIds }
+    }
+
+    const [
+        totalTasks,
+        completedTasks
+    ] = await Promise.all([
+
+        //total tasks that belong to current projects
+        Task.countDocuments(activeProjectTaskQuery),
+
+        //completed tasks that belong to current projects
+        Task.countDocuments({
+            ...activeProjectTaskQuery,
+            status: "done"
         })
     ])
 
     return{
         totalProjects,
-        activeProjects,
-        totalUsers,
+        completedProjects,
+        totalTasks,
+        completedTasks,
+        totalMembers,
         totalClients
     }
 }

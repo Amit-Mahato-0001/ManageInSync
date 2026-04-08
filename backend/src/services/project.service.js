@@ -249,9 +249,11 @@ const deleteProject = async (projectId, tenantId) => {
         throw new Error("Invalid projectId")
     }
 
+    const deletedAt = new Date()
+
     const project = await Project.findOneAndUpdate(
         { _id: projectId, tenantId, deletedAt: null}, //filter (kya dhundna he)
-        { deletedAt: new Date()}, //update (kya change krna h)
+        { deletedAt }, //update (kya change krna h)
         { new: true} //option (update ke baad wala project return)
     )
 
@@ -266,7 +268,7 @@ const deleteProject = async (projectId, tenantId) => {
             deletedAt: null
         },
         {
-            $set: { deletedAt: new Date() }
+            $set: { deletedAt }
         }
     )
 

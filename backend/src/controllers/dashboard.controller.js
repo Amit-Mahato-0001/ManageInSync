@@ -7,8 +7,11 @@ const dashboardHandler = async (req, res, next) => {
         const dashboardStats = await dashboard(req.tenantId)
 
         res.json({
+
             tenantId: req.tenantId,
+            tenantName: req.tenant?.name,
             dashboardStats
+            
         })
 
     } catch (error) {

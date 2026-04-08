@@ -17,26 +17,35 @@ const Dashboard = () => {
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
+  const tenantName = data?.tenantName?.trim()
 
   const loadDashboard = useCallback(async ({ showLoader = false } = {}) => {
 
     if (showLoader) setLoading(true)
 
     try {
+
       const res = await fetchDashboard()
       setData(res.data)
       setError("")
+
     } catch (err) {
+
       console.error(err)
       setError("Failed to load dashboard")
+
     } finally {
+
       if (showLoader) setLoading(false)
+
     }
 
   }, [])
 
   useEffect(() => {
+
     loadDashboard({ showLoader: true })
+
   }, [loadDashboard])
 
   useEffect(() => {
@@ -49,9 +58,11 @@ const Dashboard = () => {
     window.addEventListener("focus", refresh)
 
     return () => {
+
       clearInterval(interval)
       window.removeEventListener(DASHBOARD_REFRESH_EVENT, refresh)
       window.removeEventListener("focus", refresh)
+      
     }
 
   }, [loadDashboard])
@@ -61,11 +72,12 @@ const Dashboard = () => {
   if (!data?.dashboardStats) return <p>No dashboard data available</p>
 
   return (
+
     <div>
 
       {/* header */}
       <h1 className="text-2xl font-semibold">
-        Welcome back, Unity
+        Welcome back{tenantName ? `, ${tenantName}` : ""}
       </h1>
 
       <p className="text-sm text-white/60 mt-1">
@@ -126,33 +138,43 @@ const Dashboard = () => {
       </div>
 
     </div>
-  )
-}
 
+  )
+
+}
 
 /* stats components */
 
 function Stat({ label, value, icon: Icon, color, sub }) {
 
   return (
+
     <div className="relative rounded-xl p-5 border border-white/10 bg-gradient-to-br from-[#18181B] to-[#09090B]">
 
       <p className="text-sm text-white/60">{label}</p>
 
       <p className="text-3xl font-semibold mt-2">
+
         {value ?? 0}
+
       </p>
 
       <p className="text-xs text-white/40 mt-1">
+
         {sub}
+
       </p>
 
       <div className={`absolute top-4 right-4 p-2 rounded-lg ${color}`}>
+
         <Icon className="w-5 h-5" />
+
       </div>
 
     </div>
+
   )
+
 }
 
 export default Dashboard

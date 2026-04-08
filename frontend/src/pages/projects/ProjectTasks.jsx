@@ -28,18 +28,6 @@ const getPriorityStyle = (priority) => {
   return "bg-white/10 text-white/60"
 }
 
-const getTargetDateParts = (date) => {
-  if (!date) return null
-
-  const d = new Date(date)
-  if (isNaN(d.getTime())) return null
-
-  const month = d.toLocaleString("en-US", { month: "short" }).toUpperCase()
-  const day = d.getDate()
-
-  return { month, day }
-}
-
 const getTabClassName = (active) => {
   return active
     ? "rounded-lg bg-white px-4 py-2 text-sm font-medium border border-white/10 bg-gradient-to-br from-[#18181B] to-blue-500"
@@ -377,7 +365,6 @@ const ProjectTasks = () => {
 
           {!loading &&
             tasks.map((task) => {
-              const taskTargetDateParts = getTargetDateParts(task.targetDate)
               const formattedTaskTargetDate = formatDate(task.targetDate)
 
               return (
@@ -396,26 +383,10 @@ const ProjectTasks = () => {
                       )}
                     </div>
 
-                    {formattedTaskTargetDate && taskTargetDateParts && (
-                      <div className="flex items-center gap-3 pt-1">
-                        <span className="text-sm font-medium ">
-                          Target Date
-                        </span>
-
-                        <div className="overflow-hidden rounded-xl border border-blue-500/50 shadow-[0_0_0_1px_rgba(168,85,247,0.08)]">
-                          <div className="bg-gradient-to-r from-[#18181B] to-blue-500 px-3 py-1 text-center">
-                            <p className="text-xs font-bold tracking-wider text-white">
-                              {taskTargetDateParts.month}
-                            </p>
-                          </div>
-
-                          <div className="px-3 py-2 text-center">
-                            <p className="text-s font-extrabold leading-none text-white">
-                              {taskTargetDateParts.day}
-                            </p>
-                          </div>
-                        </div>
-                      </div>
+                    {formattedTaskTargetDate && (
+                      <p className="pt-1 text-sm text-white/60">
+                        Target Date: {formattedTaskTargetDate}
+                      </p>
                     )}
 
                     <div className="flex flex-wrap gap-2 text-xs">

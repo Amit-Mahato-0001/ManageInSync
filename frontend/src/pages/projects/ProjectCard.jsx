@@ -12,18 +12,6 @@ const formatResolvedAssignments = (ids = [], items = [], fallbackLabel) => {
   return labels.length > 0 ? labels.join(", ") : fallbackLabel
 }
 
-const getTargetDateParts = (date) => {
-  if (!date) return null
-
-  const d = new Date(date)
-  if (isNaN(d.getTime())) return null
-
-  const month = d.toLocaleString("en-US", { month: "short" }).toUpperCase()
-  const day = d.getDate()
-
-  return { month, day }
-}
-
 const ProjectCard = ({
   p,
   user,
@@ -51,7 +39,6 @@ const ProjectCard = ({
   const navigate = useNavigate()
   const canViewTasks = user?.role !== "client"
   const formattedTargetDate = formatDate(p.targetDate)
-  const targetDateParts = getTargetDateParts(p.targetDate)
 
   const projectRouteState = {
     projectName: p.name,
@@ -79,26 +66,10 @@ const ProjectCard = ({
             {p.description || "No description"}
           </p>
 
-          {formattedTargetDate && targetDateParts && (
-            <div className="flex items-center gap-3 pt-1">
-              <span className="text-sm font-medium">
-                Target Date
-              </span>
-
-              <div className="overflow-hidden rounded-xl border border-blue-500/50 shadow-[0_0_0_1px_rgba(168,85,247,0.08)]">
-                <div className="bg-gradient-to-r from-[#18181B] to-blue-500 px-3 py-1 text-center">
-                  <p className="text-xs font-bold tracking-wider text-white">
-                    {targetDateParts.month}
-                  </p>
-                </div>
-
-                <div className="px-3 py-2 text-center">
-                  <p className="text-s font-extrabold leading-none text-white">
-                    {targetDateParts.day}
-                  </p>
-                </div>
-              </div>
-            </div>
+          {formattedTargetDate && (
+            <p className="pt-1 text-sm text-white/60">
+              Target Date: {formattedTargetDate}
+            </p>
           )}
         </div>
 

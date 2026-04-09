@@ -152,7 +152,13 @@ const acceptInvite = async ({ token, password }) => {
 
         message: user.role === "member"
             ? "Password set. Login to activate account"
-            : "Password set successfully. You can login now"
+            : "Password set successfully. You can login now",
+        user: {
+            _id: user._id,
+            email: user.email,
+            role: user.role,
+            tenantId: user.tenantId
+        }
 
     }
 

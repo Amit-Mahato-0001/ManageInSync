@@ -24,7 +24,7 @@ export default function AppLayout({ children }) {
     { name: "Projects", to: "/projects", icon: FolderKanban, roles: ["owner", "admin", "member", "client"] },
     { name: "Clients", to: "/clients", icon: User, roles: ["owner", "admin"] },
     { name: "Members", to: "/members", icon: Users, roles: ["owner", "admin"] },
-    { name: "Audit Logs", to: "/audit-logs", icon: FileText, roles: ["owner", "admin"] },
+    { name: "Activity Feed", to: "/activity-feed", icon: FileText, roles: ["owner", "admin", "member"] },
   ];
 
   return (

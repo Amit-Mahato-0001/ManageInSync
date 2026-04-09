@@ -25,7 +25,6 @@ const {
 } = require("../controllers/conversation.controller")
 
 const requireRole = require("../middleware/rbac.middleware")
-const auditLogger = require("../middleware/audit.middleware")
 const buildMessageRateLimit = require("../middleware/messageRateLimit.middleware")
 const validate = require("../middleware/validate.middleware")
 
@@ -59,7 +58,6 @@ router.post(
     "/",
     requireRole(["owner", "admin", "member"]),
     validate(createProjectSchema, "body"),
-    auditLogger("PROJECT_CREATED"),
     createProjectHandler
 )
 
@@ -73,7 +71,6 @@ router.delete(
     "/:projectId",
     requireRole(["owner", "admin"]),
     validate(deleteProjectSchema, "params"),
-    auditLogger("PROJECT_DELETED"),
     deleteProjectHandler
 )
 
@@ -82,7 +79,6 @@ router.put(
     requireRole(["owner", "admin"]),
     validate(projectIdParamsSchema, "params"),
     validate(assignProjectSchema, "body"),
-    auditLogger("CLIENT_ASSIGN_TO_PROJECT"),
     assignClientHandler
 )
 
@@ -99,7 +95,6 @@ router.put(
     requireRole(["owner", "admin"]),
     validate(projectIdParamsSchema, "params"),
     validate(assignMemberSchema, "body"),
-    auditLogger("MEMBER_ASSIGN_TO_PROJECT"),
     assignMemberHandler
 )
 
@@ -108,7 +103,6 @@ router.post(
     requireRole(["owner", "admin"]),
     validate(projectTaskParamsSchema, "params"),
     validate(createTaskSchema, "body"),
-    auditLogger("TASK_CREATED"),
     createTaskHandler
 )
 
@@ -123,7 +117,6 @@ router.delete(
     "/:projectId/tasks/:taskId",
     requireRole(["owner", "admin"]),
     validate(deleteTaskSchema, "params"),
-    auditLogger("TASK_DELETED"),
     deleteTaskHandler
 )
 
@@ -148,7 +141,6 @@ router.post(
     validate(projectConversationParamsSchema, "params"),
     validate(sendMessageSchema, "body"),
     messageRateLimit,
-    auditLogger("MESSAGE_SENT"),
     sendProjectMessageHandler
 )
 
@@ -157,7 +149,6 @@ router.patch(
     requireRole(["owner", "admin", "member", "client"]),
     validate(conversationMessageParamsSchema, "params"),
     validate(updateMessageSchema, "body"),
-    auditLogger("MESSAGE_EDITED"),
     editProjectMessageHandler
 )
 
@@ -165,7 +156,6 @@ router.delete(
     "/:projectId/conversation/messages/:messageId",
     requireRole(["owner", "admin", "member", "client"]),
     validate(conversationMessageParamsSchema, "params"),
-    auditLogger("MESSAGE_DELETED"),
     deleteProjectMessageHandler
 )
 

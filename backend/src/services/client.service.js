@@ -90,7 +90,10 @@ const deleteClient = async ({ clientId, tenantId }) => {
         }
     )
 
-    return { message: "Client deleted successfully"}
+    return {
+        message: "Client deleted successfully",
+        client
+    }
 }
 
 module.exports = { createClient, getClients, deleteClient }

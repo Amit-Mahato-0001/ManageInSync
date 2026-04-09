@@ -10,7 +10,7 @@ const errorHandler = require('./middleware/errorHandler.middleware')
 
 const projectRoutes = require('./routes/project.route')
 const clientRoutes = require('./routes/client.route')
-const auditRoutes = require('./routes/audit.route')
+const activityRoutes = require('./routes/activity.route')
 const dashboardRoutes = require('./routes/dashboard.route')
 const cors = require('cors')
 const inviteRoutes = require('./routes/invite.route')
@@ -59,7 +59,7 @@ app.get("/api/member-only", requireRole(["owner", "admin", "member"]), (req, res
 
 app.use("/api/projects", projectRoutes)
 app.use("/api/clients", clientRoutes)
-app.use("/api/audit-logs", auditRoutes)
+app.use("/api/activity-feed", activityRoutes)
 app.use("/api/dashboard", dashboardRoutes)
 app.use("/api/members", memberRoutes)
 app.use("/api/tenants", tenantRoutes)

@@ -7,7 +7,7 @@ import AppLayout from './layouts/AppLayout'
 import ProtectedRoute from './components/ProtectedRoute'
 import Projects from './pages/projects/index'
 import Clients from './pages/Clients'
-import AuditLogs from './pages/AuditLogs'
+import ActivityFeed from './pages/ActivityFeed'
 import Signup from './pages/Signup'
 import DashboardRouter from './routes/DashboardRouter'
 import AcceptInvite from './pages/AcceptInvite'
@@ -31,7 +31,7 @@ const App = () => {
           <Route path='/projects/:projectId/conversation' element={<ProtectedRoute allowedRoles={["owner", "admin", "member", "client"]}><AppLayout><ProjectConversation /></AppLayout></ProtectedRoute>} />
           <Route path='/clients' element={<ProtectedRoute allowedRoles={["owner", "admin"]}><AppLayout><Clients /></AppLayout></ProtectedRoute>} />
           <Route path='/members' element={<ProtectedRoute allowedRoles={["owner", "admin"]}><AppLayout><Members /></AppLayout></ProtectedRoute>} />
-          <Route path='/audit-logs' element={<ProtectedRoute allowedRoles={["owner", "admin"]}><AppLayout><AuditLogs /></AppLayout></ProtectedRoute>} />
+          <Route path='/activity-feed' element={<ProtectedRoute allowedRoles={["owner", "admin", "member"]}><AppLayout><ActivityFeed /></AppLayout></ProtectedRoute>} />
         </Routes>
       </BrowserRouter>
     </>

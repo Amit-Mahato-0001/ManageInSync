@@ -50,7 +50,10 @@ const deleteMember = async ({ memberId, tenantId }) => {
     }
   )
 
-  return { message: "Member deleted successfully" }
+  return {
+    message: "Member deleted successfully",
+    member
+  }
 }
 
 module.exports = { getMembers, deleteMember }

@@ -299,6 +299,8 @@ const assignClient = async ({projectId, clientIds, tenantId}) => {
         throw new Error("Project not found")
     }
 
+    const previousClientIds = normalizeObjectIds(project.clients)
+
     const validClientIds = await resolveActiveAssignmentIds({
         tenantId,
         role: "client",
@@ -310,7 +312,10 @@ const assignClient = async ({projectId, clientIds, tenantId}) => {
     await project.save()
     
     //return updated project
-    return await Project.findById(projectId)
+    return {
+        project: await Project.findById(projectId),
+        previousClientIds
+    }
 
 }
 
@@ -336,10 +341,15 @@ const updateProjectStatus = async ({projectId, tenantId, user, status}) => {
         }
     }
 
+    const previousStatus = project.status
+
     project.status = status
     await project.save()
 
-    return project
+    return {
+        project,
+        previousStatus
+    }
 
 }
 
@@ -372,6 +382,8 @@ const assignMember = async({projectId, memberIds, tenantId}) => {
 
     }
 
+    const previousMemberIds = normalizeObjectIds(project.members)
+
     const validMemberIds = await resolveActiveAssignmentIds({
         tenantId,
         role: "member",
@@ -383,7 +395,10 @@ const assignMember = async({projectId, memberIds, tenantId}) => {
     await project.save()
 
     //return krdo updated project ko bus bus ;)
-    return await Project.findById(projectId)
+    return {
+        project: await Project.findById(projectId),
+        previousMemberIds
+    }
 }
 
 module.exports = {

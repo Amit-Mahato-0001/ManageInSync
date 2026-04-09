@@ -1,4 +1,13 @@
 const { createClient, getClients, deleteClient } = require('../services/client.service')
+const {
+  ACTIVITY_CATEGORIES,
+  ACTIVITY_VISIBILITY,
+  buildActorSnapshot,
+  buildTargetUserSnapshot,
+  recordActivity
+} = require("../services/activity.service")
+
+const getActorLabel = (user) => user?.email || "Someone"
 
 const createClientHandler = async (req, res, next) => {
 
@@ -14,6 +23,16 @@ const createClientHandler = async (req, res, next) => {
     if (!client) {
       throw new Error("Client creation failed")
     }
+
+    await recordActivity({
+      tenantId: req.tenantId,
+      type: "client.created",
+      category: ACTIVITY_CATEGORIES.CLIENT,
+      summary: `${getActorLabel(req.user)} created client ${client.email}`,
+      actor: buildActorSnapshot(req.user),
+      targetUser: buildTargetUserSnapshot(client),
+      visibility: ACTIVITY_VISIBILITY.ADMIN
+    })
 
     return res.status(201).json({
       message: "Client created successfully",
@@ -54,6 +73,16 @@ const deleteClientHandler = async (req, res, next) => {
       clientId,
       tenantId: req.tenantId
 
+    })
+
+    await recordActivity({
+      tenantId: req.tenantId,
+      type: "client.removed",
+      category: ACTIVITY_CATEGORIES.CLIENT,
+      summary: `${getActorLabel(req.user)} removed client ${result.client.email}`,
+      actor: buildActorSnapshot(req.user),
+      targetUser: buildTargetUserSnapshot(result.client),
+      visibility: ACTIVITY_VISIBILITY.ADMIN
     })
     
     res.json(result)

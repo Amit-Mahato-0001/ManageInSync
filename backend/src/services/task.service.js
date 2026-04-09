@@ -137,7 +137,10 @@ const createTask = async (data) => {
 
     })
 
-    return newTask
+    return {
+        task: newTask,
+        project
+    }
 }
 
 const getTasks = async ({ tenantId, projectId, user, page, limit, assigneeId, status, priority }) => {
@@ -206,7 +209,7 @@ const getTasks = async ({ tenantId, projectId, user, page, limit, assigneeId, st
 
 const deleteTask = async ({ tenantId, projectId, taskId, user }) => {
 
-    await getProject({
+    const project = await getProject({
 
         tenantId,
         projectId,
@@ -245,12 +248,15 @@ const deleteTask = async ({ tenantId, projectId, taskId, user }) => {
         
     }
 
-    return task
+    return {
+        task,
+        project
+    }
 }
 
 const updateTask = async({ tenantId, projectId, taskId, user, status, priority, description, targetDate }) => {
 
-    await getProject({tenantId, projectId, user })
+    const project = await getProject({tenantId, projectId, user })
 
     if(!taskId || !mongoose.Types.ObjectId.isValid(taskId)) {
 
@@ -265,21 +271,31 @@ const updateTask = async({ tenantId, projectId, taskId, user, status, priority, 
     if(description !== undefined) updates.description = description.trim()
     if(targetDate !== undefined) updates.targetDate = targetDate
 
-    const task = await Task.findOneAndUpdate(
-
-        {
-            _id: new mongoose.Types.ObjectId(taskId),
-            tenantId: new mongoose.Types.ObjectId(tenantId),
-            projectId: new mongoose.Types.ObjectId(projectId),
-            deletedAt: null
-        },
-        updates,
-        {new: true}
-    )
+    const task = await Task.findOne({
+        _id: new mongoose.Types.ObjectId(taskId),
+        tenantId: new mongoose.Types.ObjectId(tenantId),
+        projectId: new mongoose.Types.ObjectId(projectId),
+        deletedAt: null
+    })
 
     if(!task) throw new Error("Task not found")
 
-    return task
+    const previousTask = {
+        title: task.title,
+        status: task.status,
+        priority: task.priority,
+        description: task.description,
+        targetDate: task.targetDate
+    }
+
+    Object.assign(task, updates)
+    await task.save()
+
+    return {
+        task,
+        previousTask,
+        project
+    }
 
 }
 

@@ -67,6 +67,7 @@ const inviteUser = async ({email, tenantId, role, invitedByRole}) => {
 
     return{
 
+        _id: user._id,
         email: user.email,
         role: user.role
     }

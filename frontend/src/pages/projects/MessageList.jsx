@@ -31,7 +31,7 @@ const MessageList = ({
             type="button"
             onClick={onLoadOlder}
             disabled={loadingOlder}
-            className="text-xs text-white/50 transition hover:text-white disabled:cursor-not-allowed disabled:opacity-60"
+            className="text-2xl text-white/50 transition hover:text-white disabled:cursor-not-allowed disabled:opacity-60"
           >
             {loadingOlder ? "Loading..." : "Load older messages"}
           </button>
@@ -39,12 +39,12 @@ const MessageList = ({
       )}
 
       {loading ? (
-        <div className="px-4 py-8 text-center text-sm text-white/50">
+        <div className="px-4 py-8 text-center text-2xl text-white/50">
           Loading conversation...
         </div>
       ) : messages.length === 0 ? (
         <div className="px-4 py-12 text-center">
-          <p className="text-sm text-white/50">No messages yet</p>
+          <p className="text-2xl text-white/50">No messages yet</p>
         </div>
       ) : (
         messages.map((message) => {

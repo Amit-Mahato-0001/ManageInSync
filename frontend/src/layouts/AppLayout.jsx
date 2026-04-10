@@ -5,6 +5,7 @@ import {
   FolderKanban,
   Users,
   User,
+  CreditCard,
   FileText,
   LogOut,
 } from "lucide-react";
@@ -22,26 +23,27 @@ export default function AppLayout({ children }) {
   const navItems = [
     { name: "Dashboard", to: "/", icon: LayoutDashboard, roles: ["owner", "admin", "member", "client"] },
     { name: "Projects", to: "/projects", icon: FolderKanban, roles: ["owner", "admin", "member", "client"] },
+    { name: "Billing", to: "/billing", icon: CreditCard, roles: ["owner", "client"] },
     { name: "Clients", to: "/clients", icon: User, roles: ["owner", "admin"] },
     { name: "Members", to: "/members", icon: Users, roles: ["owner", "admin"] },
     { name: "Activity Feed", to: "/activity-feed", icon: FileText, roles: ["owner", "admin", "member"] },
   ];
 
   return (
-    <div className="h-screen flex flex-col bg-[#0B0F19] text-white">
+    <div className="app-shell h-screen flex flex-col bg-[#0B0F19] text-2xl text-white">
 
       {/* NAVBAR */}
-      <header className="h-14 flex items-center justify-between px-6 border-b border-white/10 bg-[#18181B]">
+      <header className="h-20 flex items-center justify-between px-6 border-b border-white/10 bg-[#18181B]">
         <div className="flex items-center gap-3">
-          <img src="/Union.png" className="h-6" />
+          <img src="/Union.png" className="h-12" />
         </div>
 
         <button
           onClick={handleLogout}
-          className="inline-flex items-center gap-2 rounded-lg border border-white/10 bg-gradient-to-br from-[#18181B] to-blue-500 px-2 py-1 text-sm font-medium text-white"
+          className="inline-flex items-center gap-4 rounded-lg border border-white/10 bg-gradient-to-br from-[#18181B] to-blue-500 px-4 py-2 text-2xl"
         >
           Logout
-          <LogOut size={16}/>
+          <LogOut className="h-6 w-6"/>
         </button>
       </header>
 
@@ -51,7 +53,7 @@ export default function AppLayout({ children }) {
         {/* SIDEBAR */}
         <aside className="w-60 border-r border-white/10 p-4 bg-[#18181B]">
 
-          <nav className="flex flex-col gap-2">
+          <nav className="flex flex-col gap-4">
             {navItems
               .filter(item => item.roles.includes(user?.role))
               .map((item) => {
@@ -67,7 +69,7 @@ export default function AppLayout({ children }) {
                     key={item.name}
                     to={item.to}
                     className={`
-                      px-3 py-2 text-sm rounded-md flex items-center gap-3
+                      px-3 py-2 text-2xl rounded-md flex items-center gap-3
                       transition-colors
                       ${
                         isActive
@@ -76,7 +78,7 @@ export default function AppLayout({ children }) {
                       }
                     `}
                   >
-                    <Icon className="w-4 h-4" />
+                    <Icon className="w-6 h-6" />
                     {item.name}
                   </Link>
                 );
@@ -87,7 +89,7 @@ export default function AppLayout({ children }) {
 
         {/* CONTENT */}
         <main className="flex-1 overflow-auto bg-[#09090B] p-6">
-          <div className="max-w-7xl mx-auto">
+          <div className="max-w-8xl mx-auto">
             <div className="p-6 min-h-[70vh]">
               {children}
             </div>

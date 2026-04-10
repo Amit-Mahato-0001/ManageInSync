@@ -15,4 +15,9 @@ const acceptInviteApi = (data) => {
     return api.post("/user-invite/accept-invite", data)
 }
 
-export default {loginApi, signupApi, acceptInviteApi}
+const meApi = () => {
+
+    return api.get("/me")
+}
+
+export default {loginApi, signupApi, acceptInviteApi, meApi}

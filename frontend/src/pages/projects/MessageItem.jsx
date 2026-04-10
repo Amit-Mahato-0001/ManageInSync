@@ -44,14 +44,14 @@ const MessageItem = ({
       >
         <div className="space-y-2">
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <div className="flex flex-wrap items-center gap-2 text-xs">
+            <div className="flex flex-wrap items-center gap-2 text-2xl">
               <span className="font-medium text-white">{senderEmail}</span>
               <span className="text-white/35">{formatTimestamp(message.createdAt)}</span>
               {message.editedAt && <span className="text-white/35">edited</span>}
             </div>
 
             {isOwnMessage && !isEditing && (
-              <div className="flex items-center gap-3 text-xs">
+              <div className="flex items-center gap-3 text-2xl">
                 <button
                   type="button"
                   onClick={() => onStartEdit(message)}
@@ -80,7 +80,7 @@ const MessageItem = ({
                 value={editText}
                 onChange={(event) => setEditText(event.target.value)}
                 aria-invalid={Boolean(editError)}
-                className={`w-full resize-none rounded-xl border bg-black/20 px-4 py-3 text-sm outline-none transition ${
+                className={`w-full resize-none rounded-xl border bg-black/20 px-4 py-3 text-2xl outline-none transition ${
                   editError
                     ? "border-red-400/80 focus:border-red-400"
                     : "border-white/10 focus:border-blue-500"
@@ -88,7 +88,7 @@ const MessageItem = ({
               />
 
               {editError && (
-                <p className="text-sm text-red-200">
+                <p className="text-2xl text-red-200">
                   {editError}
                 </p>
               )}
@@ -98,7 +98,7 @@ const MessageItem = ({
                   <button
                     type="button"
                     onClick={onCancelEdit}
-                    className="text-xs text-white/60 transition hover:text-white"
+                    className="text-2xl text-white/60 transition hover:text-white"
                   >
                     Cancel
                   </button>
@@ -107,7 +107,7 @@ const MessageItem = ({
                     type="button"
                     onClick={() => onSubmitEdit(message._id)}
                     disabled={savingEdit || !editText.trim()}
-                    className="text-xs text-white/60 transition hover:text-white disabled:cursor-not-allowed disabled:opacity-60"
+                    className="text-2xl text-white/60 transition hover:text-white disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     {savingEdit ? "Saving..." : "Save"}
                   </button>
@@ -115,7 +115,7 @@ const MessageItem = ({
               </div>
             </div>
           ) : (
-            <p className="whitespace-pre-wrap break-words text-sm leading-6 text-white/85">
+            <p className="whitespace-pre-wrap break-words text-2xl leading-6 text-white/85">
               {message.text}
             </p>
           )}

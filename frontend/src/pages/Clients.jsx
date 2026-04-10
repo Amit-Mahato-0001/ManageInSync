@@ -132,9 +132,9 @@ const Clients = () => {
       {/* header */}
       <div>
 
-        <h1 className="text-2xl font-semibold">Clients</h1>
+        <h1 className="text-5xl font-semibold">Clients</h1>
 
-        <p className="text-sm text-white/60">
+        <p className="text-2xl text-white/60">
           Manage and invite your clients
         </p>
 
@@ -147,7 +147,7 @@ const Clients = () => {
         onSubmit={handleSubmit}
       />
 
-      {error && <p className="text-red-500 text-sm">{error}</p>}
+      {error && <p className="text-red-500 text-2xl">{error}</p>}
 
       {/* client list */}
 
@@ -161,9 +161,9 @@ const Clients = () => {
           >
 
             {/* left */}
-            <div className="flex items-center gap-2 text-sm">
+            <div className="flex items-center gap-4 text-2xl">
 
-              <User2 className="w-4 h-4" />
+              <User2 className="w-6 h-6" />
 
               <span>{c.email}</span>
 
@@ -178,7 +178,7 @@ const Clients = () => {
             >
 
               <div className="p-2 rounded-lg border border-white/10 bg-gradient-to-br from-[#18181B] to-red-500">
-                <Trash2 size={16} />
+                <Trash2 className="h-6 w-6" />
               </div>
 
             </button>
@@ -189,7 +189,7 @@ const Clients = () => {
 
         {clients.length === 0 && (
 
-          <p className="text-sm text-white/40">
+          <p className="text-2xl text-white/40">
             No clients invited yet
           </p>
 

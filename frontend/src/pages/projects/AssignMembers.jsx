@@ -75,11 +75,11 @@ const AssignMembers = ({
 
     <div className="absolute mt-3 w-72 rounded-lg bg-[#18181B] border border-white/10 p-3 z-10">
 
-      <div className="max-h-40 overflow-y-auto space-y-2">
+      <div className="max-h-40 overflow-y-auto no-scrollbar space-y-2">
 
         {members.map((m) => (
 
-          <label key={m._id} className="flex gap-2 text-sm">
+          <label key={m._id} className="flex gap-2 text-2xl">
 
             <input
               type="checkbox"
@@ -116,7 +116,7 @@ const AssignMembers = ({
 
       <button
       
-        className="text-xs mt-3 w-full py-2 rounded-md border border-white/10 bg-gradient-to-br from-[#18181B] to-blue-500 disabled:cursor-not-allowed disabled:opacity-60"
+        className="text-2xl mt-3 w-full py-2 rounded-md border border-white/10 bg-gradient-to-br from-[#18181B] to-blue-500 disabled:cursor-not-allowed disabled:opacity-60"
         disabled={saving}
         onClick={async () => {
           const finalMembers = getValidSelectedIds(selectedMembers[p._id], members)
@@ -166,7 +166,7 @@ const AssignMembers = ({
       </button>
 
       {formError && (
-        <p className="mt-2 text-xs text-red-400">
+        <p className="mt-2 text-2xl text-red-400">
           {formError}
         </p>
       )}

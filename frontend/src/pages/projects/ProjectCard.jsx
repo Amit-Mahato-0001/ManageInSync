@@ -61,13 +61,13 @@ const ProjectCard = ({
     >
       <div className="flex justify-between items-start gap-4">
         <div className="space-y-2 flex-1 min-w-0">
-          <h2 className="font-medium text-white text-lg truncate">{p.name}</h2>
-          <p className="text-sm text-white/40 line-clamp-2">
+          <h2 className="font-medium text-white text-2xl truncate">{p.name}</h2>
+          <p className="text-2xl text-white/40 line-clamp-2">
             {p.description || "No description"}
           </p>
 
           {formattedTargetDate && (
-            <p className="pt-1 text-sm text-white/60">
+            <p className="pt-1 text-2xl text-white/60">
               Target Date: {formattedTargetDate}
             </p>
           )}
@@ -83,7 +83,7 @@ const ProjectCard = ({
             className="disabled:cursor-not-allowed disabled:opacity-60 shrink-0"
           >
             <div className="p-2 rounded-lg border border-white/10 bg-gradient-to-br from-[#18181B] to-red-500">
-              <Trash2 size={16} />
+              <Trash2 className="h-6 w-6" />
             </div>
           </button>
         )}
@@ -94,7 +94,7 @@ const ProjectCard = ({
         disabled={updatingProjectId === p._id}
         onClick={(e) => e.stopPropagation()}
         onChange={(e) => handleStatusChange(p._id, e.target.value)}
-        className="border border-white/10 text-xs px-2 py-1 rounded-md bg-transparent disabled:cursor-not-allowed disabled:opacity-60"
+        className="border border-white/10 text-2xl px-2 py-1 rounded-md bg-transparent disabled:cursor-not-allowed disabled:opacity-60"
       >
         <option value="active">Active</option>
         <option value="on-hold">On Hold</option>
@@ -102,34 +102,34 @@ const ProjectCard = ({
       </select>
 
       {updatingProjectId === p._id && (
-        <p className="text-xs text-white/40">
+        <p className="text-2xl text-white/40">
           Updating status...
         </p>
       )}
 
       {canAssign && (
-        <div className="text-sm text-white/60 flex gap-2">
-          <User2 className="w-4 h-4" />
+        <div className="text-white/60 flex items-center gap-4">
+          <User2 className="h-6 w-6" />
           {formatResolvedAssignments(p.clients, clients, "No clients")}
         </div>
       )}
 
       {canAssign && (
-        <div className="text-sm text-white/60 flex gap-2">
-          <Users className="w-4 h-4" />
+        <div className="text-white/60 flex items-center gap-4">
+          <Users className="h-6 w-6" />
           {formatResolvedAssignments(p.members, members, "No members")}
         </div>
       )}
 
       {canAssign && (
-        <div className="flex gap-2">
+        <div className="flex gap-4">
           <button
             onClick={(e) => {
               e.stopPropagation()
               setOpenClientDropdown(openClientDropdown === p._id ? null : p._id)
               setOpenMemberDropdown(null)
             }}
-            className="text-xs px-3 py-1 rounded-md border border-white/10 bg-gradient-to-br from-[#18181B] to-blue-500"
+            className="text-2xl px-3 py-1 rounded-md border border-white/10 bg-gradient-to-br from-[#18181B] to-blue-500"
           >
             Clients
           </button>
@@ -140,7 +140,7 @@ const ProjectCard = ({
               setOpenMemberDropdown(openMemberDropdown === p._id ? null : p._id)
               setOpenClientDropdown(null)
             }}
-            className="text-xs px-3 py-1 rounded-md border border-white/10 bg-gradient-to-br from-[#18181B] to-blue-500"
+            className="text-2xl px-3 py-1 rounded-md border border-white/10 bg-gradient-to-br from-[#18181B] to-blue-500"
           >
             Members
           </button>
@@ -149,7 +149,7 @@ const ProjectCard = ({
 
       {p.unreadCount > 0 && (
         <div className="flex justify-end">
-          <span className="rounded-lg bg-gradient-to-br from-[#18181B] to-green-500 px-2 py-1 text-xs font-medium">
+          <span className="rounded-lg bg-gradient-to-br from-[#18181B] to-green-500 px-2 py-1 text-2xl font-medium">
             {p.unreadCount} unread
           </span>
         </div>

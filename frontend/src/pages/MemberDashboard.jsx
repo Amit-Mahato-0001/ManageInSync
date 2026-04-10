@@ -43,11 +43,11 @@ const MemberDashboard = () => {
 
       {/* HEADER */}
       <div>
-        <h1 className="text-2xl font-semibold">
+        <h1 className="text-5xl font-semibold">
           Your Projects
         </h1>
 
-        <p className="text-sm text-white/60">
+        <p className="text-2xl text-white/60">
           Projects you're currently working on
         </p>
       </div>
@@ -55,7 +55,7 @@ const MemberDashboard = () => {
       {/* PROJECT LIST */}
       {projects.length === 0 ? (
 
-        <p className="text-sm text-white/40">
+        <p className="text-2xl text-white/40">
           No projects assigned yet
         </p>
 
@@ -76,7 +76,7 @@ const MemberDashboard = () => {
               </p>
 
               {/* STATUS */}
-              <span className={`text-xs px-2 py-1 rounded-lg ${
+              <span className={`text-2xl px-2 py-1 rounded-lg ${
                 p.status === "active"
                   ? "bg-gradient-to-br from-[#18181B] to-green-500"
                   : p.status === "on-hold"
@@ -87,7 +87,7 @@ const MemberDashboard = () => {
               </span>
 
               {/* OPTIONAL SUBTEXT */}
-              <p className="text-xs font-medium text-white/40 mt-2">
+              <p className="text-2xl font-medium text-white/40 mt-2">
                 Assigned project
               </p>
 

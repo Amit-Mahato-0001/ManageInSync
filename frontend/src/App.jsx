@@ -14,6 +14,10 @@ import AcceptInvite from './pages/AcceptInvite'
 import Members from './pages/Members'
 import ProjectTasks from './pages/projects/ProjectTasks'
 import ProjectConversation from './pages/projects/ProjectConversation'
+import Billing from './pages/billing'
+import CreateInvoice from './pages/billing/CreateInvoice'
+import InvoiceDetails from './pages/billing/InvoiceDetails'
+import InvoicePrint from './pages/billing/InvoicePrint'
 
 const App = () => {
   return (
@@ -32,6 +36,10 @@ const App = () => {
           <Route path='/clients' element={<ProtectedRoute allowedRoles={["owner", "admin"]}><AppLayout><Clients /></AppLayout></ProtectedRoute>} />
           <Route path='/members' element={<ProtectedRoute allowedRoles={["owner", "admin"]}><AppLayout><Members /></AppLayout></ProtectedRoute>} />
           <Route path='/activity-feed' element={<ProtectedRoute allowedRoles={["owner", "admin", "member"]}><AppLayout><ActivityFeed /></AppLayout></ProtectedRoute>} />
+          <Route path='/billing' element={<ProtectedRoute allowedRoles={["owner", "client"]}><AppLayout><Billing /></AppLayout></ProtectedRoute>} />
+          <Route path='/billing/new' element={<ProtectedRoute allowedRoles={["owner"]}><AppLayout><CreateInvoice /></AppLayout></ProtectedRoute>} />
+          <Route path='/billing/:invoiceId' element={<ProtectedRoute allowedRoles={["owner", "client"]}><AppLayout><InvoiceDetails /></AppLayout></ProtectedRoute>} />
+          <Route path='/billing/invoices/:invoiceId/print' element={<ProtectedRoute allowedRoles={["owner", "client"]}><InvoicePrint /></ProtectedRoute>} />
         </Routes>
       </BrowserRouter>
     </>

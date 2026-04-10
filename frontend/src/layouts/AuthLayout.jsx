@@ -2,7 +2,7 @@ import React from "react";
 
 const AuthLayout = ({ children }) => {
   return (
-    <div className="min-h-screen flex">
+    <div className="auth-shell min-h-screen flex text-2xl">
 
       <div className="relative w-1/2 overflow-hidden">
 

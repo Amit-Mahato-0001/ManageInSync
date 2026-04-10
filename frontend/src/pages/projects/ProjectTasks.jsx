@@ -30,8 +30,8 @@ const getPriorityStyle = (priority) => {
 
 const getTabClassName = (active) => {
   return active
-    ? "rounded-lg bg-white px-4 py-2 text-sm font-medium border border-white/10 bg-gradient-to-br from-[#18181B] to-blue-500"
-    : "px-4 py-2 text-sm font-medium"
+    ? "rounded-lg bg-white px-4 py-2 text-2xl font-medium border border-white/10 bg-gradient-to-br from-[#18181B] to-blue-500"
+    : "px-4 py-2 text-2xl font-medium"
 }
 
 const ProjectTasks = () => {
@@ -299,12 +299,12 @@ const ProjectTasks = () => {
               to="/projects"
               className="inline-flex items-center gap-2"
             >
-              <ArrowLeft size={30} />
+              <ArrowLeft className="h-12 w-12" />
             </Link>
 
             <div>
-              <h1 className="text-2xl font-semibold">{projectName}</h1>
-              <p className="text-sm text-white/60">
+              <h1 className="text-5xl font-semibold">{projectName}</h1>
+              <p className="text-2xl text-white/60">
                 Track progress and manage project tasks
               </p>
             </div>
@@ -341,24 +341,24 @@ const ProjectTasks = () => {
                 type="button"
                 onClick={handleOpenCreateModal}
                 disabled={isCompletedProject}
-                className="inline-flex items-center gap-2 rounded-lg border border-white/10 bg-gradient-to-br from-[#18181B] to-blue-500 px-4 py-2 text-sm font-medium text-white disabled:cursor-not-allowed disabled:opacity-60"
+                className="inline-flex items-center gap-4 rounded-lg border border-white/10 bg-gradient-to-br from-[#18181B] to-blue-500 px-4 py-2 text-2xl font-medium text-white disabled:cursor-not-allowed disabled:opacity-60"
               >
                 Create Task
-                <Rocket size={16} />
+                <Rocket className="h-6 w-6" />
               </button>
             ) : (
-              <p className="text-sm text-white/40">
+              <p className="text-2xl text-white/40">
                 Only owner/admin can create tasks. Members can update status and priority.
               </p>
             )}
           </div>
         </div>
 
-        {pageError && <p className="text-sm text-red-500">{pageError}</p>}
+        {pageError && <p className="text-2xl text-red-500">{pageError}</p>}
 
         <div className="space-y-3">
           {loading && (
-            <p className="text-sm text-white/50">
+            <p className="text-2xl text-white/50">
               Loading tasks...
             </p>
           )}
@@ -374,22 +374,22 @@ const ProjectTasks = () => {
                 >
                   <div className="space-y-3 flex-1 min-w-0">
                     <div className="space-y-2">
-                      <h2 className="font-medium text-white text-lg">{task.title}</h2>
+                      <h2 className="font-medium text-white text-2xl">{task.title}</h2>
 
                       {task.description && (
-                        <p className="text-sm text-white/55">
+                        <p className="text-2xl text-white/55">
                           {task.description}
                         </p>
                       )}
                     </div>
 
                     {formattedTaskTargetDate && (
-                      <p className="pt-1 text-sm text-white/60">
+                      <p className="pt-1 text-2xl text-white/60">
                         Target Date: {formattedTaskTargetDate}
                       </p>
                     )}
 
-                    <div className="flex flex-wrap gap-2 text-xs">
+                    <div className="flex flex-wrap gap-2 text-2xl">
                       <span className={`px-2 py-1 rounded-md ${getStatusStyle(task.status)}`}>
                         {task.status}
                       </span>
@@ -407,7 +407,7 @@ const ProjectTasks = () => {
                           value={task.status}
                           disabled={updatingTaskId === task._id || isCompletedProject}
                           onChange={(e) => handleUpdateTask(task, { status: e.target.value })}
-                          className="border border-white/10 px-3 py-2 rounded-md text-sm bg-transparent"
+                          className="border border-white/10 px-3 py-2 rounded-md text-2xl bg-transparent"
                         >
                           <option value="todo" className="bg-[#0B0F19]">Todo</option>
                           <option value="in-progress" className="bg-[#0B0F19]">In Progress</option>
@@ -418,7 +418,7 @@ const ProjectTasks = () => {
                           value={task.priority}
                           disabled={updatingTaskId === task._id || isCompletedProject}
                           onChange={(e) => handleUpdateTask(task, { priority: e.target.value })}
-                          className="border border-white/10 px-3 py-2 rounded-md text-sm bg-transparent"
+                          className="border border-white/10 px-3 py-2 rounded-md text-2xl bg-transparent"
                         >
                           <option value="low" className="bg-[#0B0F19]">Low</option>
                           <option value="medium" className="bg-[#0B0F19]">Medium</option>
@@ -434,13 +434,13 @@ const ProjectTasks = () => {
                         className="disabled:cursor-not-allowed disabled:opacity-60"
                       >
                         <div className="p-2 rounded-lg border border-white/10 bg-gradient-to-br from-[#18181B] to-red-500">
-                          <Trash2 size={16} />
+                          <Trash2 className="h-6 w-6" />
                         </div>
                       </button>
                     )}
 
                     {updatingTaskId === task._id && (
-                      <span className="text-xs text-white/50">
+                      <span className="text-2xl text-white/50">
                         Updating...
                       </span>
                     )}
@@ -450,7 +450,7 @@ const ProjectTasks = () => {
             })}
 
           {!loading && tasks.length === 0 && (
-            <p className="text-sm text-white/40">No tasks in this project</p>
+            <p className="text-2xl text-white/40">No tasks in this project</p>
           )}
 
           <TasksPagination page={page} totalPages={totalPages} onPageChange={setPage} />
@@ -459,11 +459,11 @@ const ProjectTasks = () => {
 
       {isCreateModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
-          <div className="w-full max-w-md rounded-lg border border-white/10 bg-gradient-to-br from-[#18181B] to-[#09090B] p-6">
+          <div className="w-full max-w-3xl rounded-lg border border-white/10 bg-gradient-to-br from-[#18181B] to-[#09090B] p-6">
             <div className="mb-5 flex items-center justify-between">
               <div>
-                <h2 className="text-xl font-semibold text-white">Create Task</h2>
-                <p className="mt-1 text-sm text-white/50">
+                <h2 className="text-2xl font-semibold text-white">Create Task</h2>
+                <p className="mt-1 text-2xl text-white/50">
                   Add a new task for this project
                 </p>
               </div>
@@ -472,13 +472,13 @@ const ProjectTasks = () => {
                 type="button"
                 onClick={handleCloseCreateModal}
               >
-                <X size={30} />
+                <X className="w-12 h-12" />
               </button>
             </div>
 
             <form onSubmit={handleCreateTask} className="space-y-4" noValidate>
               <div>
-                <label className="mb-2 block text-sm font-medium text-white/80">
+                <label className="mb-2 block text-2xl font-medium text-white/80">
                   Task Title
                 </label>
                 <input
@@ -490,7 +490,7 @@ const ProjectTasks = () => {
                   }}
                   placeholder="Enter task title..."
                   aria-invalid={Boolean(fieldErrors.title)}
-                  className={`w-full rounded-lg border px-4 py-3 text-sm text-white outline-none transition bg-transparent ${
+                  className={`w-full rounded-lg border px-4 py-3 text-2xl text-white outline-none transition bg-transparent ${
                     fieldErrors.title
                       ? "border-red-400/80 focus:border-red-400"
                       : "border-white/10 focus:border-blue-500"
@@ -498,14 +498,14 @@ const ProjectTasks = () => {
                 />
 
                 {fieldErrors.title && (
-                  <p className="mt-2 text-sm text-red-400">
+                  <p className="mt-2 text-2xl text-red-400">
                     {fieldErrors.title}
                   </p>
                 )}
               </div>
 
               <div>
-                <label className="mb-2 block text-sm font-medium text-white/80">
+                <label className="mb-2 block text-2xl font-medium text-white/80">
                   Description
                 </label>
                 <textarea
@@ -518,7 +518,7 @@ const ProjectTasks = () => {
                   placeholder="Write a short task description..."
                   rows={4}
                   aria-invalid={Boolean(fieldErrors.description)}
-                  className={`w-full rounded-lg border px-4 py-3 text-sm text-white outline-none transition bg-transparent ${
+                  className={`w-full rounded-lg border px-4 py-3 text-2xl text-white outline-none transition bg-transparent ${
                     fieldErrors.description
                       ? "border-red-400/80 focus:border-red-400"
                       : "border-white/10 focus:border-blue-500"
@@ -526,14 +526,14 @@ const ProjectTasks = () => {
                 />
 
                 {fieldErrors.description && (
-                  <p className="mt-2 text-sm text-red-400">
+                  <p className="mt-2 text-2xl text-red-400">
                     {fieldErrors.description}
                   </p>
                 )}
               </div>
 
               <div>
-                <label className="mb-2 block text-sm font-medium text-white/80">
+                <label className="mb-2 block text-2xl font-medium text-white/80">
                   Target Date
                 </label>
                 <input
@@ -545,7 +545,7 @@ const ProjectTasks = () => {
                     setFormError("")
                   }}
                   aria-invalid={Boolean(fieldErrors.targetDate)}
-                  className={`w-full rounded-lg border px-4 py-3 text-sm text-white outline-none transition bg-transparent ${
+                  className={`w-full rounded-lg border px-4 py-3 text-2xl text-white outline-none transition bg-transparent ${
                     fieldErrors.targetDate
                       ? "border-red-400/80 focus:border-red-400"
                       : "border-white/10 focus:border-blue-500"
@@ -553,14 +553,14 @@ const ProjectTasks = () => {
                 />
 
                 {fieldErrors.targetDate && (
-                  <p className="mt-2 text-sm text-red-400">
+                  <p className="mt-2 text-2xl text-red-400">
                     {fieldErrors.targetDate}
                   </p>
                 )}
               </div>
 
               <div>
-                <label className="mb-2 block text-sm font-medium text-white/80">
+                <label className="mb-2 block text-2xl font-medium text-white/80">
                   Status
                 </label>
                 <select
@@ -571,7 +571,7 @@ const ProjectTasks = () => {
                     setFormError("")
                   }}
                   aria-invalid={Boolean(fieldErrors.status)}
-                  className={`w-full rounded-lg border px-4 py-3 text-sm text-white outline-none transition bg-transparent ${
+                  className={`w-full rounded-lg border px-4 py-3 text-2xl text-white outline-none transition bg-transparent ${
                     fieldErrors.status
                       ? "border-red-400/80 focus:border-red-400"
                       : "border-white/10 focus:border-blue-500"
@@ -583,14 +583,14 @@ const ProjectTasks = () => {
                 </select>
 
                 {fieldErrors.status && (
-                  <p className="mt-2 text-sm text-red-400">
+                  <p className="mt-2 text-2xl text-red-400">
                     {fieldErrors.status}
                   </p>
                 )}
               </div>
 
               <div>
-                <label className="mb-2 block text-sm font-medium text-white/80">
+                <label className="mb-2 block text-2xl font-medium text-white/80">
                   Priority
                 </label>
                 <select
@@ -601,7 +601,7 @@ const ProjectTasks = () => {
                     setFormError("")
                   }}
                   aria-invalid={Boolean(fieldErrors.priority)}
-                  className={`w-full rounded-lg border px-4 py-3 text-sm text-white outline-none transition bg-transparent ${
+                  className={`w-full rounded-lg border px-4 py-3 text-2xl text-white outline-none transition bg-transparent ${
                     fieldErrors.priority
                       ? "border-red-400/80 focus:border-red-400"
                       : "border-white/10 focus:border-blue-500"
@@ -613,14 +613,14 @@ const ProjectTasks = () => {
                 </select>
 
                 {fieldErrors.priority && (
-                  <p className="mt-2 text-sm text-red-400">
+                  <p className="mt-2 text-2xl text-red-400">
                     {fieldErrors.priority}
                   </p>
                 )}
               </div>
 
               {formError && (
-                <p className="text-sm text-red-400">
+                <p className="text-2xl text-red-400">
                   {formError}
                 </p>
               )}
@@ -629,9 +629,9 @@ const ProjectTasks = () => {
                 <button
                   type="submit"
                   disabled={submitting || isCompletedProject}
-                  className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-gradient-to-br from-[#18181B] to-blue-500 px-4 py-2 text-sm font-medium text-white transition hover:opacity-90 disabled:opacity-60"
+                  className="inline-flex items-center gap-4 rounded-xl border border-white/10 bg-gradient-to-br from-[#18181B] to-blue-500 px-4 py-2 text-2xl font-medium text-white transition hover:opacity-90 disabled:opacity-60"
                 >
-                  <Rocket size={16} />
+                  <Rocket className="w-6 h-6" />
                   {submitting ? "Creating..." : "Create Task"}
                 </button>
               </div>

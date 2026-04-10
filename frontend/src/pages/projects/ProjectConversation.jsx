@@ -41,8 +41,8 @@ const mergeMessages = (currentMessages, incomingMessages) => {
 
 const getTabClassName = (active) => {
   return active
-    ? "rounded-lg bg-white px-4 py-2 text-sm font-medium border border-white/10 bg-gradient-to-br from-[#18181B] to-blue-500"
-    : "px-4 py-2 text-sm font-medium"
+    ? "rounded-lg bg-white px-4 py-2 text-2xl font-medium border border-white/10 bg-gradient-to-br from-[#18181B] to-blue-500"
+    : "px-4 py-2 text-2xl font-medium"
 }
 
 const ProjectConversation = () => {
@@ -396,12 +396,12 @@ const ProjectConversation = () => {
             to="/projects"
             className="inline-flex items-center gap-2 "
           >
-            <ArrowLeft size={30} />
+            <ArrowLeft className="h-12 w-12" />
           </Link>
 
           <div>
-            <h1 className="text-2xl font-semibold">{projectName}</h1>
-            <p className="text-sm text-white/60">Collaborate, share updates, and stay aligned with your team</p>
+            <h1 className="text-5xl font-semibold">{projectName}</h1>
+            <p className="text-2xl text-white/60">Collaborate, share updates, and stay aligned with your team</p>
           </div>
         </div>
 
@@ -426,7 +426,7 @@ const ProjectConversation = () => {
         </div>
       </div>
 
-      {error && <p className="text-sm text-red-400">{error}</p>}
+      {error && <p className="text-2xl text-red-400">{error}</p>}
 
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
         <MessageList

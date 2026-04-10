@@ -1,0 +1,341 @@
+import { useCallback, useEffect, useState } from "react"
+import { Link, useParams } from "react-router-dom"
+import toast from "react-hot-toast"
+
+import authApi from "../../api/auth"
+import {
+  fetchInvoiceDetail,
+  issueInvoice,
+  payInvoice
+} from "../../api/billing"
+import { useAuth } from "../../context/AuthContext"
+import {
+  formatCurrency,
+  formatInvoiceDate,
+  formatInvoiceStatus,
+  getBillingErrorMessage,
+  getInvoiceStatusClasses
+} from "./billingUtils"
+
+const InfoCard = ({ title, children }) => {
+  return (
+    <section className="rounded-2xl border border-white/10 bg-[#11131D] p-6">
+      <h2 className="text-2xl font-semibold">{title}</h2>
+      <div className="mt-4">{children}</div>
+    </section>
+  )
+}
+
+const SummaryRow = ({ label, value, emphasized }) => {
+  return (
+    <div className="flex items-center justify-between gap-4">
+      <span className="text-2xl text-white/55">{label}</span>
+      <span className={emphasized ? "text-2xl font-semibold text-white" : "text-2xl text-white"}>
+        {value}
+      </span>
+    </div>
+  )
+}
+
+const InvoiceDetails = () => {
+  const { invoiceId } = useParams()
+  const { user } = useAuth()
+  const [invoice, setInvoice] = useState(null)
+  const [tenantName, setTenantName] = useState("")
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState("")
+  const [actionLoading, setActionLoading] = useState("")
+
+  const loadInvoice = useCallback(async ({ showLoader = true } = {}) => {
+    try {
+      if (showLoader) {
+        setLoading(true)
+      }
+
+      const [invoiceResult, meResult] = await Promise.allSettled([
+        fetchInvoiceDetail(invoiceId),
+        authApi.meApi()
+      ])
+
+      if (invoiceResult.status !== "fulfilled") {
+        throw invoiceResult.reason
+      }
+
+      setInvoice(invoiceResult.value.data.invoice)
+      setTenantName(
+        meResult.status === "fulfilled"
+          ? meResult.value.data?.tenant?.name || ""
+          : ""
+      )
+      setError("")
+    } catch (requestError) {
+      console.error(requestError)
+      setError(getBillingErrorMessage(requestError, "Failed to load invoice"))
+    } finally {
+      if (showLoader) {
+        setLoading(false)
+      }
+    }
+  }, [invoiceId])
+
+  useEffect(() => {
+    loadInvoice()
+  }, [loadInvoice])
+
+  const handleIssueInvoice = async () => {
+    if (!window.confirm("Issue this invoice now?")) {
+      return
+    }
+
+    const toastId = toast.loading("Issuing invoice...")
+
+    try {
+      setActionLoading("issue")
+      const response = await issueInvoice(invoiceId)
+      setInvoice(response.data.invoice)
+      toast.success("Invoice issued", { id: toastId })
+    } catch (requestError) {
+      console.error(requestError)
+      toast.error(
+        getBillingErrorMessage(requestError, "Failed to issue invoice"),
+        { id: toastId }
+      )
+    } finally {
+      setActionLoading("")
+    }
+  }
+
+  const handlePayInvoice = async () => {
+    if (!window.confirm("Proceed with payment for this invoice?")) {
+      return
+    }
+
+    const toastId = toast.loading("Recording payment...")
+
+    try {
+      setActionLoading("pay")
+      const response = await payInvoice(invoiceId, {
+        gateway: "demo-checkout"
+      })
+      setInvoice(response.data.invoice)
+      toast.success("Payment recorded", { id: toastId })
+    } catch (requestError) {
+      console.error(requestError)
+      toast.error(
+        getBillingErrorMessage(requestError, "Failed to process payment"),
+        { id: toastId }
+      )
+    } finally {
+      setActionLoading("")
+    }
+  }
+
+  if (loading) {
+    return <p>Loading invoice...</p>
+  }
+
+  if (error) {
+    return <p className="text-red-500">{error}</p>
+  }
+
+  if (!invoice) {
+    return <p className="text-white/50">Invoice not found</p>
+  }
+
+  const canIssue = user?.role === "owner" && invoice.status === "draft"
+  const canPay =
+    user?.role === "client" &&
+    invoice.status !== "draft" &&
+    Number(invoice.amountDue) > 0
+  const companyLabel = tenantName || "Agency Workspace"
+
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
+        <div>
+          <Link
+            to="/billing"
+            className="text-2xl text-white/45 transition hover:text-white"
+          >
+            Back to Billing
+          </Link>
+
+          <div className="mt-3 flex flex-wrap items-center gap-3">
+            <h1 className="text-5xl font-semibold">{invoice.invoiceNumber}</h1>
+            <span
+              className={`inline-flex rounded-full px-3 py-1 text-2xl font-medium ${getInvoiceStatusClasses(invoice.status)}`}
+            >
+              {formatInvoiceStatus(invoice.status)}
+            </span>
+          </div>
+
+          <p className="mt-2 text-2xl text-white/60">
+            Issued by {companyLabel} on {formatInvoiceDate(invoice.issueDate)}
+          </p>
+        </div>
+
+        <div className="flex flex-wrap gap-3">
+          <Link
+            to={`/billing/invoices/${invoice._id}/print`}
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex rounded-lg border border-white/10 bg-white/5 px-4 py-2 text-2xl font-medium text-white transition hover:bg-white/10"
+          >
+            Download PDF
+          </Link>
+
+          {canIssue && (
+            <button
+              onClick={handleIssueInvoice}
+              disabled={actionLoading === "issue"}
+              className="rounded-lg border border-white/10 bg-gradient-to-br from-[#18181B] to-amber-500 px-4 py-2 text-2xl font-medium text-white disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {actionLoading === "issue" ? "Issuing..." : "Issue Invoice"}
+            </button>
+          )}
+
+          {canPay && (
+            <button
+              onClick={handlePayInvoice}
+              disabled={actionLoading === "pay"}
+              className="rounded-lg border border-white/10 bg-gradient-to-br from-[#18181B] to-emerald-500 px-4 py-2 text-2xl font-medium text-white disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {actionLoading === "pay" ? "Processing..." : "Pay Now"}
+            </button>
+          )}
+        </div>
+      </div>
+
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_320px]">
+        <div className="space-y-6">
+          <section className="grid gap-4 md:grid-cols-2">
+            <InfoCard title="Company Info">
+              <p className="font-medium text-white">{companyLabel}</p>
+              <p className="mt-2 text-2xl text-white/55">
+                Owner-managed billing workspace
+              </p>
+              <p className="mt-1 text-2xl text-white/55">
+                Reference: {invoice.reference || "Not provided"}
+              </p>
+            </InfoCard>
+
+            <InfoCard title="Bill To">
+              <p className="font-medium text-white">
+                {invoice.contactSnapshot?.name || "Client contact"}
+              </p>
+              <p className="mt-2 text-2xl text-white/60">
+                {invoice.contactSnapshot?.email}
+              </p>
+              {invoice.contactSnapshot?.companyName && (
+                <p className="mt-1 text-2xl text-white/60">
+                  {invoice.contactSnapshot.companyName}
+                </p>
+              )}
+              {invoice.contactSnapshot?.phone && (
+                <p className="mt-1 text-2xl text-white/60">
+                  {invoice.contactSnapshot.phone}
+                </p>
+              )}
+              {invoice.contactSnapshot?.address && (
+                <p className="mt-1 whitespace-pre-line text-2xl text-white/60">
+                  {invoice.contactSnapshot.address}
+                </p>
+              )}
+            </InfoCard>
+          </section>
+
+          <section className="overflow-hidden rounded-2xl border border-white/10 bg-[#11131D]">
+            <div className="border-b border-white/10 px-6 py-4">
+              <h2 className="text-2xl font-semibold">Line Items</h2>
+            </div>
+
+            <div className="overflow-x-auto">
+              <table className="min-w-full text-left text-2xl">
+                <thead className="bg-white/[0.03] text-white/55">
+                  <tr>
+                    <th className="px-6 py-4 font-medium">Item</th>
+                    <th className="px-6 py-4 font-medium">Qty</th>
+                    <th className="px-6 py-4 font-medium">Unit Price</th>
+                    <th className="px-6 py-4 font-medium">Tax</th>
+                    <th className="px-6 py-4 font-medium">Line Total</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {(invoice.items || []).map((item) => (
+                    <tr key={item._id} className="border-t border-white/5 text-white/85">
+                      <td className="px-6 py-4 font-medium">{item.itemName}</td>
+                      <td className="px-6 py-4">{item.quantity}</td>
+                      <td className="px-6 py-4">{formatCurrency(item.unitPrice)}</td>
+                      <td className="px-6 py-4">{item.taxRate}%</td>
+                      <td className="px-6 py-4">
+                        {formatCurrency(item.lineTotal)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+          <section className="rounded-2xl border border-white/10 bg-[#11131D] p-6">
+            <h2 className="text-2xl font-semibold">Payment Activity</h2>
+
+            {(invoice.payments || []).length === 0 ? (
+              <p className="mt-4 text-2xl text-white/45">No payments recorded yet.</p>
+            ) : (
+              <div className="mt-4 space-y-3">
+                {invoice.payments.map((payment) => (
+                  <div
+                    key={payment._id}
+                    className="rounded-xl border border-white/10 bg-[#18181B] p-4"
+                  >
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                      <div>
+                        <p className="font-medium text-white">
+                          {formatCurrency(payment.amount)} via {payment.gateway}
+                        </p>
+                        <p className="mt-1 text-2xl text-white/45">
+                          {payment.transactionId}
+                        </p>
+                      </div>
+                      <p className="text-2xl text-white/45">
+                        {payment.paidAt
+                          ? new Date(payment.paidAt).toLocaleString()
+                          : "Pending"}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </section>
+
+          {invoice.notes && (
+            <section className="rounded-2xl border border-white/10 bg-[#11131D] p-6">
+              <h2 className="text-2xl font-semibold">Notes</h2>
+              <p className="mt-4 whitespace-pre-line text-2xl text-white/65">
+                {invoice.notes}
+              </p>
+            </section>
+          )}
+        </div>
+
+        <aside className="rounded-2xl border border-white/10 bg-[#11131D] p-6">
+          <h2 className="text-2xl font-semibold">Summary</h2>
+
+          <div className="mt-5 space-y-4">
+            <SummaryRow label="Issue Date" value={formatInvoiceDate(invoice.issueDate)} />
+            <SummaryRow label="Due Date" value={formatInvoiceDate(invoice.dueDate)} />
+            <SummaryRow label="Subtotal" value={formatCurrency(invoice.subtotal)} />
+            <SummaryRow label="Tax Total" value={formatCurrency(invoice.taxTotal)} />
+            <SummaryRow label="Total" value={formatCurrency(invoice.total)} emphasized />
+            <SummaryRow label="Amount Paid" value={formatCurrency(invoice.amountPaid)} />
+            <SummaryRow label="Amount Due" value={formatCurrency(invoice.amountDue)} emphasized />
+          </div>
+        </aside>
+      </div>
+    </div>
+  )
+}
+
+export default InvoiceDetails

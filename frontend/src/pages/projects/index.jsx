@@ -176,9 +176,9 @@ const Projects = () => {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold">Projects</h1>
+        <h1 className="text-5xl font-semibold">Projects</h1>
 
-        <p className="text-sm text-white/60">
+        <p className="text-2xl text-white/60">
           Manage and track your projects
         </p>
       </div>
@@ -189,7 +189,7 @@ const Projects = () => {
         />
       )}
 
-      {error && <p className="text-sm text-red-500">{error}</p>}
+      {error && <p className="text-2xl text-red-500">{error}</p>}
 
       <div className="grid md:grid-cols-2 gap-4">
         {projects.map((p) => (
@@ -222,7 +222,7 @@ const Projects = () => {
       </div>
 
       {!error && projects.length === 0 && (
-        <p className="text-sm text-white/40">
+        <p className="text-2xl text-white/40">
           No projects found
         </p>
       )}

@@ -79,27 +79,27 @@ const InviteEntityModal = ({
       <button
         type="button"
         onClick={handleOpenModal}
-        className="inline-flex items-center gap-2 rounded-lg border border-white/10 bg-gradient-to-br from-[#18181B] to-blue-500 px-4 py-2 text-sm font-medium text-white"
+        className="inline-flex items-center gap-4 rounded-lg border border-white/10 bg-gradient-to-br from-[#18181B] to-blue-500 px-4 py-2 text-2xl font-medium text-white"
       >
         {`Add ${entityLabel}`}
-        <Rocket size={16} />
+        <Rocket className="h-6 w-6" />
       </button>
 
       {isModalOpen && (
 
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
-          <div className="w-full max-w-md rounded-lg border border-white/10 bg-gradient-to-br from-[#18181B] to-[#09090B] p-6">
+          <div className="w-full max-w-xl rounded-lg border border-white/10 bg-gradient-to-br from-[#18181B] to-[#09090B] p-6">
             <div className="mb-5 flex items-center justify-between">
               <div>
-                <h2 className="text-xl font-semibold text-white">{`Add ${entityLabel}`}</h2>
-                <p className="mt-1 text-sm text-white/50">{description}</p>
+                <h2 className="text-2xl font-semibold text-white">{`Add ${entityLabel}`}</h2>
+                <p className="mt-1 text-2xl text-white/50">{description}</p>
               </div>
 
               <button
                 type="button"
                 onClick={handleCloseModal}
               >
-                <X size={30} />
+                <X className="h-12 w-12" />
               </button>
             </div>
 
@@ -107,7 +107,7 @@ const InviteEntityModal = ({
 
               <div>
 
-                <label className="mb-2 block text-sm font-medium text-white/80">
+                <label className="mb-2 block text-2xl font-medium text-white/80">
                   {`${entityLabel} Email`}
                 </label>
 
@@ -123,21 +123,21 @@ const InviteEntityModal = ({
                   }}
                   placeholder={placeholder}
                   autoFocus
-                  className="w-full rounded-lg border border-white/10 px-4 py-3 text-sm text-white outline-none transition focus:border-blue-500"
+                  className="w-full rounded-lg border border-white/10 px-4 py-3 text-2xl text-white outline-none transition focus:border-blue-500"
                 />
 
               </div>
 
-              {error && <p className="text-sm text-red-400">{error}</p>}
+              {error && <p className="text-2xl text-red-400">{error}</p>}
 
               <div className="flex items-center justify-end pt-2">
 
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-gradient-to-br from-[#18181B] to-blue-500 px-4 py-2 text-sm font-medium text-white transition hover:opacity-90 disabled:opacity-60"
+                  className="inline-flex items-center gap-4 rounded-xl border border-white/10 bg-gradient-to-br from-[#18181B] to-blue-500 px-4 py-2 text-2xl font-medium text-white transition hover:opacity-90 disabled:opacity-60"
                 >
-                  <Rocket size={16} />
+                  <Rocket className="h-6 w-6" />
                   {submitting ? "Adding..." : `Add ${entityLabel}`}
                 </button>
 

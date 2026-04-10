@@ -50,13 +50,13 @@ const ActivityFeed = () => {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold">Activity Feed</h1>
-        <p className="text-sm text-white/60">
+        <h1 className="text-5xl font-semibold">Activity Feed</h1>
+        <p className="text-2xl text-white/60">
           Recent updates across your workspace
         </p>
       </div>
 
-      {error && <p className="text-sm text-red-500">{error}</p>}
+      {error && <p className="text-2xl text-red-500">{error}</p>}
 
       <div className="space-y-3">
         {activities.map((activity) => {
@@ -65,11 +65,11 @@ const ActivityFeed = () => {
               key={activity._id}
               className="flex items-start justify-between gap-4 rounded-xl border border-white/10 bg-gradient-to-br from-[#18181B] to-[#09090B] p-5"
             >
-              <p className="min-w-0 flex-1 text-sm font-medium text-white">
+              <p className="min-w-0 flex-1 text-2xl font-medium text-white">
                 {activity.summary}
               </p>
 
-              <p className="shrink-0 text-xs text-white/45">
+              <p className="shrink-0 text-2xl text-white/45">
                 {formatActivityTime(activity.createdAt)}
               </p>
             </div>
@@ -77,7 +77,7 @@ const ActivityFeed = () => {
         })}
 
         {activities.length === 0 && (
-          <p className="text-sm text-white/40">
+          <p className="text-2xl text-white/40">
             No activity yet
           </p>
         )}

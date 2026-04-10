@@ -17,9 +17,9 @@ const sendInviteEmail = async ({ to, inviteToken}) => {
 
     await transporter.sendMail({
 
-        from: `"AgencyOS" <${process.env.EMAIL_USER}>`,
+        from: `"ManageInSync" <${process.env.EMAIL_USER}>`,
         to,
-        subject: "You're invited to AgencyOS",
+        subject: "You're invited to ManageInSync",
         html: `
         <p>You have been invited to join an agency.</p>
         <p>Click the link below to set your password:</p>

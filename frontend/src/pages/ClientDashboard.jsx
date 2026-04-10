@@ -42,11 +42,11 @@ const ClientDashboard = () => {
 
       {/* HEADER */}
       <div>
-        <h1 className="text-2xl font-semibold">
+        <h1 className="text-5xl font-semibold">
           Your Projects
         </h1>
 
-        <p className="text-sm text-white/60">
+        <p className="text-2xl text-white/60">
           View all projects assigned to you
         </p>
       </div>
@@ -54,7 +54,7 @@ const ClientDashboard = () => {
       {/* PROJECT LIST */}
       {projects.length === 0 ? (
 
-        <p className="text-sm text-white/40">
+        <p className="text-2xl text-white/40">
           No projects assigned yet
         </p>
 
@@ -75,7 +75,7 @@ const ClientDashboard = () => {
               </p>
 
               {/* STATUS */}
-              <span className={`text-xs px-2 py-1 rounded-md ${
+              <span className={`text-2xl px-2 py-1 rounded-md ${
                 p.status === "active"
                   ? "bg-green-500/10 text-green-400"
                   : p.status === "on-hold"

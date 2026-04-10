@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { Rocket, X } from "lucide-react"
+import { Plus, X } from "lucide-react"
 import {
   isValidationError,
   runAsyncToast,
@@ -83,33 +83,33 @@ const CreateProjectForm = ({ onSubmit }) => {
       <button
         type="button"
         onClick={handleOpenCreateModal}
-        className="inline-flex items-center gap-2 rounded-lg border border-white/10 bg-gradient-to-br from-[#18181B] to-blue-500 px-4 py-2 text-sm font-medium text-white"
+        className="inline-flex items-center gap-4 rounded-lg border border-white/10 bg-gradient-to-br from-[#18181B] to-blue-500 px-4 py-2 font-medium text-white"
       >
         Create Project
-        <Rocket size={16} />
+        <Plus className="h-6 w-6" />
       </button>
 
       {isCreateModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
-          <div className="w-full max-w-md rounded-lg border border-white/10 bg-gradient-to-br from-[#18181B] to-[#09090B] p-6">
+        <div className="h-full fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
+          <div className="w-full max-w-3xl rounded-lg border border-white/10 bg-gradient-to-br from-[#18181B] to-[#09090B] p-6">
             <div className="mb-5 flex items-center justify-between">
               <div>
-                <h2 className="text-xl font-semibold text-white">
+                <h2 className="text-2xl font-semibold text-white">
                   Create Project
                 </h2>
-                <p className="mt-1 text-sm text-white/50">
+                <p className="mt-1 text-2xl text-white/50">
                   Add a new project to plan and manage your work
                 </p>
               </div>
 
               <button type="button" onClick={handleCloseCreateModal}>
-                <X size={30} />
+                <X className="h-12 w-12" />
               </button>
             </div>
 
             <form onSubmit={handleCreateProject} className="space-y-4" noValidate>
               <div>
-                <label className="mb-2 block text-sm font-medium text-white/80">
+                <label className="mb-2 block text-2xl font-medium text-white/80">
                   Project Name
                 </label>
                 <input
@@ -121,7 +121,7 @@ const CreateProjectForm = ({ onSubmit }) => {
                   }}
                   placeholder="Enter project name..."
                   aria-invalid={Boolean(fieldErrors.name)}
-                  className={`w-full rounded-lg border px-4 py-3 text-sm text-white outline-none transition bg-transparent ${
+                  className={`w-full rounded-lg border px-4 py-3 text-2xl text-white outline-none transition bg-transparent ${
                     fieldErrors.name
                       ? "border-red-400/80 focus:border-red-400"
                       : "border-white/10 focus:border-blue-500"
@@ -129,14 +129,14 @@ const CreateProjectForm = ({ onSubmit }) => {
                 />
 
                 {fieldErrors.name && (
-                  <p className="mt-2 text-sm text-red-400">
+                  <p className="mt-2 text-2xl text-red-400">
                     {fieldErrors.name}
                   </p>
                 )}
               </div>
 
               <div>
-                <label className="mb-2 block text-sm font-medium text-white/80">
+                <label className="mb-2 block text-2xl font-medium text-white/80">
                   Description
                 </label>
                 <textarea
@@ -149,7 +149,7 @@ const CreateProjectForm = ({ onSubmit }) => {
                   placeholder="Write a short project description..."
                   rows={4}
                   aria-invalid={Boolean(fieldErrors.description)}
-                  className={`w-full rounded-lg border px-4 py-3 text-sm text-white outline-none transition bg-transparent ${
+                  className={`w-full rounded-lg border px-4 py-3 text-2xl text-white outline-none transition bg-transparent ${
                     fieldErrors.description
                       ? "border-red-400/80 focus:border-red-400"
                       : "border-white/10 focus:border-blue-500"
@@ -157,14 +157,14 @@ const CreateProjectForm = ({ onSubmit }) => {
                 />
 
                 {fieldErrors.description && (
-                  <p className="mt-2 text-sm text-red-400">
+                  <p className="mt-2 text-2xl text-red-400">
                     {fieldErrors.description}
                   </p>
                 )}
               </div>
 
               <div>
-                <label className="mb-2 block text-sm font-medium text-white/80">
+                <label className="mb-2 block text-2xl font-medium text-white/80">
                   Target Date
                 </label>
                 <input
@@ -176,7 +176,7 @@ const CreateProjectForm = ({ onSubmit }) => {
                     setFormError("")
                   }}
                   aria-invalid={Boolean(fieldErrors.targetDate)}
-                  className={`w-full rounded-lg border px-4 py-3 text-sm text-white outline-none transition bg-transparent ${
+                  className={`w-full rounded-lg border px-4 py-3 text-2xl text-white outline-none transition bg-transparent ${
                     fieldErrors.targetDate
                       ? "border-red-400/80 focus:border-red-400"
                       : "border-white/10 focus:border-blue-500"
@@ -184,14 +184,14 @@ const CreateProjectForm = ({ onSubmit }) => {
                 />
 
                 {fieldErrors.targetDate && (
-                  <p className="mt-2 text-sm text-red-400">
+                  <p className="mt-2 text-2xl text-red-400">
                     {fieldErrors.targetDate}
                   </p>
                 )}
               </div>
 
               {formError && (
-                <p className="text-sm text-red-400">
+                <p className="text-2xl text-red-400">
                   {formError}
                 </p>
               )}
@@ -200,9 +200,9 @@ const CreateProjectForm = ({ onSubmit }) => {
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-gradient-to-br from-[#18181B] to-blue-500 px-4 py-2 text-sm font-medium text-white transition hover:opacity-90 disabled:opacity-60"
+                  className="inline-flex items-center gap-4 rounded-xl border border-white/10 bg-gradient-to-br from-[#18181B] to-blue-500 px-4 py-2 text-2xl font-medium text-white transition hover:opacity-90 disabled:opacity-60"
                 >
-                  <Rocket size={16} />
+                  <Plus className="h-6 w-6" />
                   {submitting ? "Creating..." : "Create Project"}
                 </button>
               </div>

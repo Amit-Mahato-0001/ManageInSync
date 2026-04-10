@@ -76,11 +76,11 @@ const Dashboard = () => {
     <div>
 
       {/* header */}
-      <h1 className="text-2xl font-semibold">
+      <h1 className="text-5xl font-semibold">
         Welcome back{tenantName ? `, ${tenantName}` : ""}
       </h1>
 
-      <p className="text-sm text-white/60 mt-1">
+      <p className="text-2xl text-white/60 mt-1">
         Here's what's happening with your projects today
       </p>
 
@@ -149,17 +149,17 @@ function Stat({ label, value, icon: Icon, color, sub }) {
 
   return (
 
-    <div className="relative rounded-xl p-5 border border-white/10 bg-gradient-to-br from-[#18181B] to-[#09090B]">
+    <div className="relative rounded-lg p-5 border border-white/10 bg-gradient-to-br from-[#18181B] to-[#09090B]">
 
-      <p className="text-sm text-white/60">{label}</p>
+      <p className="text-2xl text-white/60">{label}</p>
 
-      <p className="text-3xl font-semibold mt-2">
+      <p className="text-5xl font-bold mt-2">
 
         {value ?? 0}
 
       </p>
 
-      <p className="text-xs text-white/40 mt-1">
+      <p className="text-2xl text-white/40 mt-1">
 
         {sub}
 
@@ -167,7 +167,7 @@ function Stat({ label, value, icon: Icon, color, sub }) {
 
       <div className={`absolute top-4 right-4 p-2 rounded-lg ${color}`}>
 
-        <Icon className="w-5 h-5" />
+        <Icon className="w-6 h-6" />
 
       </div>
 

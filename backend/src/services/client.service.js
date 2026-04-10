@@ -2,6 +2,7 @@ const mongoose = require('mongoose')
 const bcrypt = require('bcrypt')
 const User = require('../models/user.model')
 const Project = require('../models/project.model')
+const Invoice = require('../models/invoice.model')
 
 const createClient = async ({ email, name, tenantId}) => {
 
@@ -64,6 +65,17 @@ const deleteClient = async ({ clientId, tenantId }) => {
     if(!mongoose.Types.ObjectId.isValid(clientId)){
 
         throw new Error("Invalid clientId")
+    }
+
+    const existingInvoice = await Invoice.exists({
+        tenantId,
+        clientUserId: clientId
+    })
+
+    if (existingInvoice) {
+        const error = new Error("Client has billing records and cannot be deleted")
+        error.status = 400
+        throw error
     }
 
     const client = await User.findOneAndDelete({

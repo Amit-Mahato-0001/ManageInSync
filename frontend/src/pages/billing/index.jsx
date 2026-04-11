@@ -151,7 +151,7 @@ const Billing = () => {
       <div className="overflow-hidden rounded-2xl border border-white/10">
         <div className="">
           <table className="min-w-full text-left text-2xl">
-            <thead className="bg-white/[0.03] text-white/55">
+            <thead className="bg-gradient-to-br from-[#18181B] to-[#09090B] text-white/55">
               <tr>
                 <th className="px-5 py-4 font-medium">Invoice #</th>
                 <th className="px-5 py-4 font-medium">Status</th>

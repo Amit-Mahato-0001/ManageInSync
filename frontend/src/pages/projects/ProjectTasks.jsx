@@ -12,20 +12,35 @@ import {
   splitValidationErrors
 } from "./projectModuleUtils"
 
-const getStatusStyle = (status) => {
-  if (status === "todo") return "bg-gradient-to-br from-[#18181B] to-yellow-500"
-  if (status === "in-progress") return "bg-gradient-to-br from-[#18181B] to-purple-500"
-  if (status === "done") return "bg-gradient-to-br from-[#18181B] to-green-500"
+const formatTaskBadgeLabel = (value = "") =>
+  value
+    .split("-")
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ")
 
-  return "bg-white/10 text-white/60"
+const getTaskStatusClasses = (status) => {
+  if (status === "done") {
+    return "bg-emerald-500/15 text-emerald-300 border border-emerald-500/20"
+  }
+
+  if (status === "in-progress") {
+    return "bg-amber-500/15 text-amber-300 border border-amber-500/20"
+  }
+
+  return "bg-white/10 text-white/70 border border-white/10"
 }
 
-const getPriorityStyle = (priority) => {
-  if (priority === "low") return "bg-gradient-to-br from-[#18181B] to-gray-500"
-  if (priority === "medium") return "bg-gradient-to-br from-[#18181B] to-orange-500"
-  if (priority === "high") return "bg-gradient-to-br from-[#18181B] to-red-500"
+const getTaskPriorityClasses = (priority) => {
+  if (priority === "high") {
+    return "bg-rose-500/15 text-rose-300 border border-rose-500/20"
+  }
 
-  return "bg-white/10 text-white/60"
+  if (priority === "medium") {
+    return "bg-amber-500/15 text-amber-300 border border-amber-500/20"
+  }
+
+  return "bg-white/10 text-white/70 border border-white/10"
 }
 
 const getTabClassName = (active) => {
@@ -390,12 +405,16 @@ const ProjectTasks = () => {
                     )}
 
                     <div className="flex flex-wrap gap-2 text-2xl">
-                      <span className={`px-2 py-1 rounded-md ${getStatusStyle(task.status)}`}>
-                        {task.status}
+                      <span
+                        className={`inline-flex rounded-lg px-3 py-1 text-2xl font-medium ${getTaskStatusClasses(task.status)}`}
+                      >
+                        {formatTaskBadgeLabel(task.status)}
                       </span>
 
-                      <span className={`px-2 py-1 rounded-md ${getPriorityStyle(task.priority)}`}>
-                        {task.priority}
+                      <span
+                        className={`inline-flex rounded-lg px-3 py-1 text-2xl font-medium ${getTaskPriorityClasses(task.priority)}`}
+                      >
+                        {formatTaskBadgeLabel(task.priority)}
                       </span>
                     </div>
                   </div>
@@ -409,9 +428,9 @@ const ProjectTasks = () => {
                           onChange={(e) => handleUpdateTask(task, { status: e.target.value })}
                           className="border border-white/10 px-3 py-2 rounded-md text-2xl bg-transparent"
                         >
-                          <option value="todo" className="bg-[#0B0F19]">Todo</option>
-                          <option value="in-progress" className="bg-[#0B0F19]">In Progress</option>
-                          <option value="done" className="bg-[#0B0F19]">Done</option>
+                          <option value="todo">Todo</option>
+                          <option value="in-progress">In Progress</option>
+                          <option value="done">Done</option>
                         </select>
 
                         <select
@@ -420,9 +439,9 @@ const ProjectTasks = () => {
                           onChange={(e) => handleUpdateTask(task, { priority: e.target.value })}
                           className="border border-white/10 px-3 py-2 rounded-md text-2xl bg-transparent"
                         >
-                          <option value="low" className="bg-[#0B0F19]">Low</option>
-                          <option value="medium" className="bg-[#0B0F19]">Medium</option>
-                          <option value="high" className="bg-[#0B0F19]">High</option>
+                          <option value="low">Low</option>
+                          <option value="medium">Medium</option>
+                          <option value="high">High</option>
                         </select>
                       </>
                     )}
@@ -577,9 +596,9 @@ const ProjectTasks = () => {
                       : "border-white/10 focus:border-blue-500"
                   }`}
                 >
-                  <option value="todo" className="bg-[#0B0F19]">Todo</option>
-                  <option value="in-progress" className="bg-[#0B0F19]">In Progress</option>
-                  <option value="done" className="bg-[#0B0F19]">Done</option>
+                  <option value="todo">Todo</option>
+                  <option value="in-progress">In Progress</option>
+                  <option value="done">Done</option>
                 </select>
 
                 {fieldErrors.status && (
@@ -607,9 +626,9 @@ const ProjectTasks = () => {
                       : "border-white/10 focus:border-blue-500"
                   }`}
                 >
-                  <option value="low" className="bg-[#0B0F19]">Low</option>
-                  <option value="medium" className="bg-[#0B0F19]">Medium</option>
-                  <option value="high" className="bg-[#0B0F19]">High</option>
+                  <option value="low">Low</option>
+                  <option value="medium">Medium</option>
+                  <option value="high">High</option>
                 </select>
 
                 {fieldErrors.priority && (

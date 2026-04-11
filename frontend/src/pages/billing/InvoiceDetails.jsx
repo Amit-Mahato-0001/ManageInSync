@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react"
 import { Link, useParams } from "react-router-dom"
 import toast from "react-hot-toast"
+import { ArrowLeft } from "lucide-react"
 
 import authApi from "../../api/auth"
 import {
@@ -19,7 +20,7 @@ import {
 
 const InfoCard = ({ title, children }) => {
   return (
-    <section className="rounded-2xl border border-white/10 bg-[#11131D] p-6">
+    <section className="rounded-2xl border border-white/10 bg-gradient-to-br from-[#18181B] to-[#09090B] p-6">
       <h2 className="text-2xl font-semibold">{title}</h2>
       <div className="mt-4">{children}</div>
     </section>
@@ -152,26 +153,28 @@ const InvoiceDetails = () => {
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
-        <div>
+        <div className="flex items-start gap-4">
           <Link
             to="/billing"
-            className="text-2xl text-white/45 transition hover:text-white"
+            className="inline-flex items-center gap-2 shrink-0"
           >
-            Back to Billing
+            <ArrowLeft className="h-12 w-12" />
           </Link>
 
-          <div className="mt-3 flex flex-wrap items-center gap-3">
-            <h1 className="text-5xl font-semibold">{invoice.invoiceNumber}</h1>
-            <span
-              className={`inline-flex rounded-full px-3 py-1 text-2xl font-medium ${getInvoiceStatusClasses(invoice.status)}`}
-            >
-              {formatInvoiceStatus(invoice.status)}
-            </span>
-          </div>
+          <div>
+            <div className="flex flex-wrap items-center gap-3">
+              <h1 className="text-5xl font-semibold">{invoice.invoiceNumber}</h1>
+              <span
+                className={`inline-flex rounded-lg px-3 py-1 text-2xl font-medium ${getInvoiceStatusClasses(invoice.status)}`}
+              >
+                {formatInvoiceStatus(invoice.status)}
+              </span>
+            </div>
 
-          <p className="mt-2 text-2xl text-white/60">
-            Issued by {companyLabel} on {formatInvoiceDate(invoice.issueDate)}
-          </p>
+            <p className="mt-2 text-2xl text-white/60">
+              Issued by {companyLabel} on {formatInvoiceDate(invoice.issueDate)}
+            </p>
+          </div>
         </div>
 
         <div className="flex flex-wrap gap-3">
@@ -179,7 +182,7 @@ const InvoiceDetails = () => {
             to={`/billing/invoices/${invoice._id}/print`}
             target="_blank"
             rel="noreferrer"
-            className="inline-flex rounded-lg border border-white/10 bg-white/5 px-4 py-2 text-2xl font-medium text-white transition hover:bg-white/10"
+            className="inline-flex rounded-lg border border-white/10 bg-gradient-to-br from-[#18181B] to-blue-500 px-4 py-2 text-2xl font-medium text-white transition hover:bg-white/10"
           >
             Download PDF
           </Link>
@@ -188,7 +191,7 @@ const InvoiceDetails = () => {
             <button
               onClick={handleIssueInvoice}
               disabled={actionLoading === "issue"}
-              className="rounded-lg border border-white/10 bg-gradient-to-br from-[#18181B] to-amber-500 px-4 py-2 text-2xl font-medium text-white disabled:cursor-not-allowed disabled:opacity-60"
+              className="rounded-lg border border-white/10 bg-gradient-to-br from-[#18181B] to-[#09090B] px-4 py-2 text-2xl font-medium text-white disabled:cursor-not-allowed disabled:opacity-60"
             >
               {actionLoading === "issue" ? "Issuing..." : "Issue Invoice"}
             </button>
@@ -198,7 +201,7 @@ const InvoiceDetails = () => {
             <button
               onClick={handlePayInvoice}
               disabled={actionLoading === "pay"}
-              className="rounded-lg border border-white/10 bg-gradient-to-br from-[#18181B] to-emerald-500 px-4 py-2 text-2xl font-medium text-white disabled:cursor-not-allowed disabled:opacity-60"
+              className="rounded-lg border border-white/10 bg-gradient-to-br from-[#18181B] to-[#09090B] px-4 py-2 text-2xl font-medium text-white disabled:cursor-not-allowed disabled:opacity-60"
             >
               {actionLoading === "pay" ? "Processing..." : "Pay Now"}
             </button>
@@ -244,7 +247,7 @@ const InvoiceDetails = () => {
             </InfoCard>
           </section>
 
-          <section className="overflow-hidden rounded-2xl border border-white/10 bg-[#11131D]">
+          <section className="overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-br from-[#18181B] to-[#09090B]">
             <div className="border-b border-white/10 px-6 py-4">
               <h2 className="text-2xl font-semibold">Line Items</h2>
             </div>
@@ -277,7 +280,7 @@ const InvoiceDetails = () => {
             </div>
           </section>
 
-          <section className="rounded-2xl border border-white/10 bg-[#11131D] p-6">
+          <section className="rounded-2xl border border-white/10 bg-gradient-to-br from-[#18181B] to-[#09090B] p-6">
             <h2 className="text-2xl font-semibold">Payment Activity</h2>
 
             {(invoice.payments || []).length === 0 ? (
@@ -287,7 +290,7 @@ const InvoiceDetails = () => {
                 {invoice.payments.map((payment) => (
                   <div
                     key={payment._id}
-                    className="rounded-xl border border-white/10 bg-[#18181B] p-4"
+                    className="rounded-xl border border-white/10 p-4"
                   >
                     <div className="flex flex-wrap items-center justify-between gap-3">
                       <div>
@@ -311,7 +314,7 @@ const InvoiceDetails = () => {
           </section>
 
           {invoice.notes && (
-            <section className="rounded-2xl border border-white/10 bg-[#11131D] p-6">
+            <section className="rounded-2xl border border-white/10 bg-gradient-to-br from-[#18181B] to-[#09090B] p-6">
               <h2 className="text-2xl font-semibold">Notes</h2>
               <p className="mt-4 whitespace-pre-line text-2xl text-white/65">
                 {invoice.notes}
@@ -320,7 +323,7 @@ const InvoiceDetails = () => {
           )}
         </div>
 
-        <aside className="rounded-2xl border border-white/10 bg-[#11131D] p-6">
+        <aside className="rounded-2xl border border-white/10 bg-gradient-to-br from-[#18181B] to-[#09090B] p-6">
           <h2 className="text-2xl font-semibold">Summary</h2>
 
           <div className="mt-5 space-y-4">

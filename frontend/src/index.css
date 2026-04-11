@@ -12,6 +12,12 @@
     width: 0;
     height: 0;
   }
+
+  select option,
+  select optgroup {
+    background-color: #09090B;
+    color: #ffffff;
+  }
 }
 
 /* Global font apply */

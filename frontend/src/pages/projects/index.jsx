@@ -175,19 +175,21 @@ const Projects = () => {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-5xl font-semibold">Projects</h1>
+      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+        <div>
+          <h1 className="text-5xl font-semibold">Projects</h1>
 
-        <p className="text-2xl text-white/60">
-          Manage and track your projects
-        </p>
+          <p className="text-2xl text-white/60">
+            Manage and track your projects
+          </p>
+        </div>
+
+        {user?.role !== "client" && (
+          <CreateProjectForm
+            onSubmit={handleCreate}
+          />
+        )}
       </div>
-
-      {user?.role !== "client" && (
-        <CreateProjectForm
-          onSubmit={handleCreate}
-        />
-      )}
 
       {error && <p className="text-2xl text-red-500">{error}</p>}
 

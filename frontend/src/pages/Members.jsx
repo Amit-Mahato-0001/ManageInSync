@@ -125,22 +125,26 @@ const Members = () => {
 
       {/* header */}
 
-      <div>
+      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
 
-        <h1 className="text-5xl font-semibold">Members</h1>
+        <div>
 
-        <p className="text-2xl text-white/60">
-          Manage your team members
-        </p>
-        
+          <h1 className="text-5xl font-semibold">Members</h1>
+
+          <p className="text-2xl text-white/60">
+            Manage your team members
+          </p>
+          
+        </div>
+
+        <InviteEntityModal
+          entityLabel="Member"
+          description="Send an invite to add a new team member"
+          placeholder="Enter member email..."
+          onSubmit={handleSubmit}
+        />
+
       </div>
-
-      <InviteEntityModal
-        entityLabel="Member"
-        description="Send an invite to add a new team member"
-        placeholder="Enter member email..."
-        onSubmit={handleSubmit}
-      />
 
       {error && <p className="text-red-500 text-2xl">{error}</p>}
 

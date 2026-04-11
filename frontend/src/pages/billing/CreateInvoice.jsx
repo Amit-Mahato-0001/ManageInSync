@@ -22,7 +22,14 @@ const createEmptyItem = () => ({
 })
 
 const fieldBaseClassName =
-  "w-full rounded-xl border border-white/10 bg-[#18181B] px-4 py-3 text-2xl text-white outline-none placeholder:text-white/30"
+  "w-full rounded-xl border px-4 py-3 text-2xl text-white outline-none transition bg-transparent placeholder:text-white/30"
+
+const getFieldClassName = (hasError) =>
+  `${fieldBaseClassName} ${
+    hasError
+      ? "border-red-400/80 hover:border-red-400 focus:border-red-400"
+      : "border-white/10 hover:border-blue-500 focus:border-blue-500"
+  }`
 
 const TextField = ({
   label,
@@ -40,7 +47,7 @@ const TextField = ({
       <input
         value={value}
         onChange={(event) => onChange(event.target.value)}
-        className={fieldBaseClassName}
+        className={getFieldClassName(Boolean(error))}
         {...props}
       />
       {error && <p className="text-2xl text-red-500">{error}</p>}
@@ -64,7 +71,7 @@ const TextAreaField = ({
       <textarea
         value={value}
         onChange={(event) => onChange(event.target.value)}
-        className={`${fieldBaseClassName} min-h-28 resize-y`}
+        className={`${getFieldClassName(Boolean(error))} min-h-28 resize-y`}
         {...props}
       />
       {error && <p className="text-2xl text-red-500">{error}</p>}
@@ -278,7 +285,7 @@ const CreateInvoice = () => {
       {loadingClients ? (
         <p>Loading clients...</p>
       ) : clients.length === 0 ? (
-        <div className="rounded-2xl border border-white/10 bg-[#11131D] p-6">
+        <div className="rounded-2xl border border-white/10 p-6">
           <p className="text-2xl text-white/70">
             Invite at least one client before creating invoices.
           </p>
@@ -295,7 +302,7 @@ const CreateInvoice = () => {
           className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_340px]"
         >
           <div className="space-y-6">
-            <section className="rounded-2xl border border-white/10 bg-[#11131D] p-6">
+            <section className="rounded-2xl border border-white/10 bg-gradient-to-br from-[#18181B] to-[#09090B] p-6">
               <h2 className="text-2xl font-semibold">Billing Contact</h2>
               <p className="mt-1 text-2xl text-white/55">
                 The selected client will be the only client account allowed to pay this invoice.
@@ -309,7 +316,7 @@ const CreateInvoice = () => {
                   <select
                     value={form.clientUserId}
                     onChange={handleClientChange}
-                    className="w-full rounded-xl border border-white/10 bg-[#18181B] px-4 py-3 text-2xl text-white outline-none"
+                    className={getFieldClassName(Boolean(fieldErrors.clientUserId))}
                   >
                     <option value="">Select a client</option>
                     {clients.map((client) => (
@@ -366,7 +373,7 @@ const CreateInvoice = () => {
               </div>
             </section>
 
-            <section className="rounded-2xl border border-white/10 bg-[#11131D] p-6">
+            <section className="rounded-2xl border border-white/10 bg-gradient-to-br from-[#18181B] to-[#09090B] p-6">
               <h2 className="text-2xl font-semibold">Invoice Details</h2>
 
               <div className="mt-5 grid gap-4 md:grid-cols-2">
@@ -401,7 +408,7 @@ const CreateInvoice = () => {
                   <select
                     value={form.status}
                     onChange={(event) => setFieldValue("status", event.target.value)}
-                    className="w-full rounded-xl border border-white/10 bg-[#18181B] px-4 py-3 text-2xl text-white outline-none"
+                    className={getFieldClassName(Boolean(fieldErrors.status))}
                   >
                     <option value="draft">Draft</option>
                     <option value="unpaid">Unpaid</option>
@@ -422,7 +429,7 @@ const CreateInvoice = () => {
               </div>
             </section>
 
-            <section className="rounded-2xl border border-white/10 bg-[#11131D] p-6">
+            <section className="rounded-2xl border border-white/10 bg-gradient-to-br from-[#18181B] to-[#09090B] p-6">
               <div className="flex items-center justify-between gap-4">
                 <div>
                   <h2 className="text-2xl font-semibold">Line Items</h2>
@@ -434,9 +441,8 @@ const CreateInvoice = () => {
                 <button
                   type="button"
                   onClick={addItem}
-                  className="inline-flex items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-4 py-2 text-2xl font-medium text-white transition hover:bg-white/10"
+                  className="rounded-lg border border-white/10 bg-white/5 px-4 py-2 text-2xl"
                 >
-                  <PlusCircle className="h-4 w-4" />
                   Add Item
                 </button>
               </div>
@@ -470,7 +476,7 @@ const CreateInvoice = () => {
 
                       <TextField
                         type="number"
-                        label="Unit Price"
+                        label="Price"
                         value={item.unitPrice}
                         onChange={(value) => handleItemChange(index, "unitPrice", value)}
                         min="0"
@@ -504,7 +510,7 @@ const CreateInvoice = () => {
           </div>
 
           <aside className="space-y-6">
-            <section className="rounded-2xl border border-white/10 bg-[#11131D] p-6">
+            <section className="rounded-2xl border border-white/10 bg-gradient-to-br from-[#18181B] to-[#09090B] p-6">
               <h2 className="text-2xl font-semibold">Invoice Summary</h2>
 
               <div className="mt-5 space-y-4">

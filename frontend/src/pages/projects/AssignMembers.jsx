@@ -73,7 +73,7 @@ const AssignMembers = ({
 
   return (
 
-    <div className="absolute mt-3 w-72 rounded-lg bg-[#18181B] border border-white/10 p-3 z-10">
+    <div className="absolute mt-3 w-[calc(100vw-2rem)] max-w-[28rem] rounded-lg bg-[#18181B] border border-white/10 p-3 z-10">
 
       <div className="max-h-40 overflow-y-auto no-scrollbar space-y-2">
 

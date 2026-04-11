@@ -130,22 +130,26 @@ const Clients = () => {
     <div className="space-y-6">
 
       {/* header */}
-      <div>
+      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
 
-        <h1 className="text-5xl font-semibold">Clients</h1>
+        <div>
 
-        <p className="text-2xl text-white/60">
-          Manage and invite your clients
-        </p>
+          <h1 className="text-5xl font-semibold">Clients</h1>
+
+          <p className="text-2xl text-white/60">
+            Manage and invite your clients
+          </p>
+
+        </div>
+
+        <InviteEntityModal
+          entityLabel="Client"
+          description="Send an invite to add a new client"
+          placeholder="Enter client email..."
+          onSubmit={handleSubmit}
+        />
 
       </div>
-
-      <InviteEntityModal
-        entityLabel="Client"
-        description="Send an invite to add a new client"
-        placeholder="Enter client email..."
-        onSubmit={handleSubmit}
-      />
 
       {error && <p className="text-red-500 text-2xl">{error}</p>}
 

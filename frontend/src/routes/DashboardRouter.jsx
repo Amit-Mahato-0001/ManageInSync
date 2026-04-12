@@ -1,14 +1,18 @@
-import { useAuth } from "../context/AuthContext"
+import { useAuth } from "../context/useAuth"
 import Dashboard from "../pages/Dashboard"
 import ClientDashboard from "../pages/ClientDashboard"
 import MemberDashboard from "../pages/MemberDashboard"
 
 const DashboardRouter = () => {
 
-    const { user } = useAuth()
+    const { status, user } = useAuth()
+
+    if(status === "loading"){
+        return <p>Loading dashboard...</p>
+    }
 
     if(!user){
-        return <p>Loading dashboard...</p>
+        return null
     }
 
     if(user.role === "client"){

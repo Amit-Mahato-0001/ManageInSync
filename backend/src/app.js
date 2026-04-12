@@ -2,6 +2,7 @@ require('dotenv').config()
 const express = require('express')
 const connectDB = require('./config/db')
 const router = require('./routes/auth.route')
+const { serializeAuthUser } = require("./utils/authUser")
 
 const authenticate = require('./middleware/auth.middleware')
 const resolveTenant = require('./middleware/tenant.middleware')
@@ -23,8 +24,18 @@ const taskRoutes = require('./routes/task.route')
 const app = express()
 connectDB()
 
+const allowedOrigins = Array.from(
+    new Set(
+        [
+            process.env.FRONTEND_URL,
+            "http://localhost:5173"
+        ].filter(Boolean)
+    )
+)
+
 app.use(cors({
-    origin: "http://localhost:5173"
+    origin: allowedOrigins,
+    credentials: true
 }))
 app.use(express.json())
 
@@ -37,7 +48,8 @@ app.use(resolveTenant)
 
 app.get("/api/me", (req, res) => {
     res.json({
-        user: req.user,
+        user: serializeAuthUser(req.user),
+        sessionId: req.auth?.session?._id,
         tenant: {
             id: req.tenantId,
             name: req.tenant.name,

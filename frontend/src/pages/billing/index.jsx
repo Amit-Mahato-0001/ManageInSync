@@ -4,7 +4,7 @@ import { Plus, RotateCcw, Search } from "lucide-react"
 
 import { fetchInvoices } from "../../api/billing"
 import ProjectsPagination from "../../components/ProjectsPagination"
-import { useAuth } from "../../context/AuthContext"
+import { useAuth } from "../../context/useAuth"
 import {
   formatCurrency,
   formatInvoiceDate,

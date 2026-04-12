@@ -6,7 +6,7 @@ export const decodeToken = (token) => {
 
         return payload
 
-    } catch (error) {
+    } catch {
         
         return null
     }

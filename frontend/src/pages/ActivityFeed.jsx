@@ -20,28 +20,28 @@ const ActivityFeed = () => {
   const [pagination, setPagination] = useState({})
 
   useEffect(() => {
+    const loadActivityFeed = async () => {
+      try {
+        setLoading(true)
+
+        const res = await fetchActivityFeed({
+          page,
+          limit: 5
+        })
+
+        setActivities(res.data.activities.data)
+        setPagination(res.data.activities.pagination)
+        setError("")
+      } catch (requestError) {
+        console.error(requestError)
+        setError("Failed to load activity feed")
+      } finally {
+        setLoading(false)
+      }
+    }
+
     loadActivityFeed()
   }, [page])
-
-  const loadActivityFeed = async () => {
-    try {
-      setLoading(true)
-
-      const res = await fetchActivityFeed({
-        page,
-        limit: 5
-      })
-
-      setActivities(res.data.activities.data)
-      setPagination(res.data.activities.pagination)
-      setError("")
-    } catch (requestError) {
-      console.error(requestError)
-      setError("Failed to load activity feed")
-    } finally {
-      setLoading(false)
-    }
-  }
 
   const totalPages = pagination.totalPages || 1
 

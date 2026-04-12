@@ -1,4 +1,5 @@
-import { useAuth } from "../context/AuthContext";
+import { useState } from "react";
+import { useAuth } from "../context/useAuth";
 import { useNavigate, useLocation, Link } from "react-router-dom";
 import {
   LayoutDashboard,
@@ -14,10 +15,17 @@ export default function AppLayout({ children }) {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
-  const handleLogout = () => {
-    logout();
-    navigate("/login");
+  const handleLogout = async () => {
+    setIsLoggingOut(true);
+
+    try {
+      await logout();
+      navigate("/login");
+    } finally {
+      setIsLoggingOut(false);
+    }
   };
 
   const navItems = [
@@ -40,9 +48,10 @@ export default function AppLayout({ children }) {
 
         <button
           onClick={handleLogout}
+          disabled={isLoggingOut}
           className="inline-flex items-center gap-4 rounded-lg border border-white/10 bg-gradient-to-br from-[#18181B] to-blue-500 px-4 py-2 text-2xl"
         >
-          Logout
+          {isLoggingOut ? "Logging out..." : "Logout"}
           <LogOut className="h-6 w-6"/>
         </button>
       </header>

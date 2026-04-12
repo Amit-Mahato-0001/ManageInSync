@@ -1,13 +1,23 @@
-import api from "./axios"
+import api, { authClient } from "./axios"
 
 const loginApi = (data) => {
-
-    return api.post("/auth/login", data)
+    return authClient.post("/auth/login", data)
 }
 
 const signupApi = (data) => {
+    return authClient.post("/auth/signup", data)
+}
 
-    return api.post("/auth/signup", data)
+const refreshApi = () => {
+    return authClient.post("/auth/refresh")
+}
+
+const logoutApi = () => {
+    return authClient.post("/auth/logout")
+}
+
+const logoutAllApi = () => {
+    return api.post("/auth/logout-all")
 }
 
 const acceptInviteApi = (data) => {
@@ -20,4 +30,12 @@ const meApi = () => {
     return api.get("/me")
 }
 
-export default {loginApi, signupApi, acceptInviteApi, meApi}
+export default {
+    acceptInviteApi,
+    loginApi,
+    logoutAllApi,
+    logoutApi,
+    meApi,
+    refreshApi,
+    signupApi
+}

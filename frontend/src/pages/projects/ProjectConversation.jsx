@@ -9,7 +9,7 @@ import {
   markConversationRead,
   sendMessage as sendConversationMessage
 } from "../../api/conversations"
-import { useAuth } from "../../context/AuthContext"
+import { useAuth } from "../../context/useAuth"
 import MessageComposer from "./MessageComposer"
 import MessageList from "./MessageList"
 import {

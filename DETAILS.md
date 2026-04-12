@@ -1,404 +1,452 @@
-# Billing Project — Structured MVP Scope
-
-## 1) Invoice Core System
-
-This is the core of the billing system.
-
-### Required Features
-
-* Create invoice
-* Invoice list
-* Invoice detail page
-* Invoice status:
-
-  * Draft
-  * Unpaid
-  * Paid
-  * Overdue
-* Line items
-* Tax calculation
-* Total and amount due
-* PDF download
-* Payment link / payment button
-
-### Notes
+# Refresh Token / Session Lifecycle Security Plan
 
-* UI and flow should match the provided billing/invoice design/screens as closely as possible.
+## Goal
 
----
+Current auth flow me sirf ek long-lived access JWT use ho raha hai. Better security ke liye mujhe auth ko is direction me complete karna hai:
 
-## 2) Minimal but Correct Database Schema
+- access token short-lived hoga
+- refresh token alag hoga
+- refresh token browser cookie me rahega, `localStorage` me nahi
+- har login ka server-side session record hoga
+- logout, logout-all, revoke, rotation, reuse-detection supported hoga
+- disabled user / role change / password reset ke baad session turant invalidate ki ja sakegi
 
-For a small-to-medium scale billing system (~500 users), a simple but properly structured schema is sufficient.
+Ye file implementation nahi hai. Ye exact roadmap hai ki codebase me kya kya change karna hai.
 
-### Required Tables
+## Current State In Repo
 
-#### `users`
+Abhi jo flow code me dikh raha hai:
+
+- `backend/src/services/auth.service.js`
+  `signup` aur `login` dono sirf ek JWT return kar rahe hain.
+- Access token `1d` expiry ke sath sign ho raha hai.
+- `frontend/src/context/AuthContext.jsx`
+  token `localStorage` me persist ho raha hai.
+- `frontend/src/api/axios.js`
+  har request me `Authorization: Bearer <token>` localStorage se attach ho raha hai.
+- `backend/src/middleware/auth.middleware.js`
+  JWT verify karke user load kar raha hai, lekin active server-side session check nahi kar raha.
+- `backend/src/routes/auth.route.js`
+  sirf `signup` aur `login` endpoints hain.
+- `backend/src/app.js`
+  CORS me `credentials: true` enable nahi hai.
 
-* `id`
-* `name`
-* `email`
-* `password_hash`
-* `role`
-* `created_at`
+## Current Security Gaps
 
-#### `contacts`
+- `localStorage` me token rakhna XSS ke case me risky hai.
+- Single `1d` bearer token chori ho gaya to expiry tak reuse ho sakta hai.
+- Refresh endpoint hi nahi hai, isliye safe session renewal possible nahi hai.
+- Session store nahi hai, isliye device-level revoke possible nahi hai.
+- Logout abhi sirf frontend token delete karta hai, backend session invalidate nahi hoti.
+- Reuse detection nahi hai, to stolen refresh token ka signal miss ho jayega.
+- Middleware disabled users aur revoked sessions ko consistently reject nahi karta.
+- Frontend `decodeToken()` se role read karta hai, but real session validity server se bootstrap nahi hoti.
+- Cookie-based auth use nahi ho raha, isliye secure refresh flow incomplete hai.
 
-* `id`
-* `user_id`
-* `name`
-* `email`
-* `phone`
-* `company_name`
-* `address`
-* `created_at`
+## Target Security Design
 
-#### `invoices`
+### 1. Token Strategy
 
-* `id`
-* `user_id`
-* `contact_id`
-* `invoice_number`
-* `reference`
-* `status` (`draft`, `unpaid`, `paid`, `overdue`)
-* `issue_date`
-* `due_date`
-* `subtotal`
-* `tax_total`
-* `total`
-* `amount_paid`
-* `amount_due`
-* `notes`
-* `created_at`
-* `updated_at`
+- Access token:
+  short-lived JWT, `10m` to `15m`.
+- Refresh token:
+  long-lived opaque random token, `7d` to `30d`.
+- Access token frontend memory me rahega, `localStorage` me nahi.
+- Refresh token `HttpOnly` cookie me rahega.
+- Refresh token raw form me database me store nahi karna.
+- Database me sirf refresh token ka hash store karna.
 
-#### `invoice_items`
+Reason:
 
-* `id`
-* `invoice_id`
-* `item_name`
-* `quantity`
-* `unit_price`
-* `tax_rate`
-* `line_total`
-* `tax_amount`
+- Access token short-lived hone se bearer token leak impact kam hota hai.
+- Refresh token browser JS se hidden rahega.
+- Hashed refresh token store karne se DB leak me token direct usable nahi rahega.
 
-#### `payments`
+### 2. Session Model
 
-* `id`
-* `invoice_id`
-* `user_id`
-* `gateway`
-* `transaction_id`
-* `amount`
-* `status`
-* `paid_at`
-* `raw_response_json`
-* `created_at`
+Ek dedicated session collection add karni hogi, for example:
 
-### Recommended Optional Table
+- `backend/src/models/session.model.js`
 
-#### `audit_logs`
+Session document me minimum ye fields honi chahiye:
 
-Basic version:
+- `userId`
+- `tenantId`
+- `refreshTokenHash`
+- `expiresAt`
+- `lastUsedAt`
+- `revokedAt`
+- `revokeReason`
+- `createdByIp`
+- `lastUsedIp`
+- `userAgent`
+- `rotatedFromSessionId` ya equivalent trace field
 
-* `id`
-* `user_id`
-* `action`
-* `entity_type`
-* `entity_id`
-* `created_at`
+Optional useful fields:
 
-### Use Case
+- `deviceLabel`
+- `passwordVersionAtIssue`
+- `roleSnapshot`
 
-Helpful for tracking:
+Indexes:
 
-* invoice created
-* invoice updated
-* payment received
-* status changed
+- `expiresAt` TTL cleanup ke liye
+- `userId + revokedAt`
+- `tenantId`
 
----
+## Lifecycle Jo Implement Karna Hai
 
-## 3) Security Requirements (Minimum Safe Standard)
+### Login
 
-Even for 500 users, billing data must be protected properly.
+`POST /api/auth/login`
 
-### Authentication
+- credentials validate honge
+- user active status check hoga
+- new session document create hoga
+- random refresh token generate hoga
+- uska hash session me store hoga
+- refresh token `HttpOnly` cookie me set hoga
+- short-lived access token response body me return hoga
+- audit/activity log create hoga
 
-* Login-protected system
-* Session-based auth or JWT
-* All billing APIs must be protected
+Access token payload me minimum:
 
-### Authorization
+- `sub` or `userId`
+- `tenantId`
+- `role`
+- `sid` session id
+- `iat`
+- `exp`
 
-Each user should only access their own invoices and billing data.
+### Signup
 
-#### Required Rule
+`POST /api/auth/signup`
 
-```ts
-invoice.user_id === currentUser.id
-```
+- signup ke baad same login lifecycle follow hoga
+- direct long-lived bearer token return nahi karna
+- new session create karke refresh cookie + access token issue karna
 
-#### This must apply to:
+### Refresh
 
-* invoice list
-* invoice detail
-* invoice edit
-* payment records
-* PDF download
-* payment links
+`POST /api/auth/refresh`
 
-### Input Validation
+- request cookie se refresh token read hoga
+- raw token ka hash niklega
+- active session lookup hoga
+- session revoked / expired / missing hua to reject
+- user active status dobara check hoga
+- refresh token rotate hoga
+- old refresh token immediately invalid hoga
+- new refresh cookie set hogi
+- new access token return hoga
+- `lastUsedAt`, IP, userAgent update honge
 
-All invoice-related inputs should be validated.
+Important:
 
-#### Required validations
+- har refresh par rotation mandatory hogi
+- same refresh token dobara use hone par reuse-detection trigger hoga
 
-* `quantity > 0`
-* `unit_price >= 0`
-* valid email format
-* valid `due_date`
-* valid `issue_date`
-* valid tax values
+### Refresh Token Reuse Detection
 
-#### Recommended Libraries
+Agar rotated refresh token dobara aata hai:
 
-* **Zod** (best for Next.js / React stack)
+- us session ko compromised treat karna hai
+- current session revoke karni hai
+- optionally user ki saari active sessions revoke karni hain
+- security audit log create karna hai
+- client ko forced re-login dena hai
 
-### Backend-Only Calculations
+Ye step security ke liye bahut important hai. Sirf refresh endpoint banana enough nahi hoga.
 
-Never trust frontend totals.
+### Logout
 
-All calculations must be done on the server:
+`POST /api/auth/logout`
 
-* subtotal
-* tax
-* total
-* amount due
+- current session identify hogi using access token `sid` ya refresh cookie lookup
+- server-side session revoke hogi
+- refresh cookie clear hogi
+- frontend in-memory access token clear karega
 
-This prevents:
+### Logout All Devices
 
-* tampered invoice totals
-* payment mismatches
-* invalid billing records
+`POST /api/auth/logout-all`
 
-### Webhook Verification
+- current user ki sab active sessions revoke hongi
+- current browser ki refresh cookie clear hogi
+- password change / suspicious activity ke baad ye endpoint useful rahega
 
-If using **Stripe** or **Razorpay**, webhook signatures must be verified.
+### Session Bootstrap On App Load
 
-#### Required for:
+Frontend app reload ke baad direct `localStorage` token trust nahi karega.
 
-* payment success
-* payment failure
-* invoice status update
+New flow:
 
----
+- app mount par silent refresh try karega
+- agar valid refresh cookie hai to naya access token milega
+- uske baad `/api/me` call hoga
+- agar refresh fail hota hai to user anonymous state me chala jayega
 
-## 4) Payment Integration
+Isse stale token UI state aur actual server auth state sync me rahegi.
 
-Keep payment flow simple and production-safe.
+## Backend Changes Planned
 
-### Recommended Gateway Option
+### New / Updated Auth Routes
 
-#### Razorpay
+`backend/src/routes/auth.route.js` me ye routes add/update karne honge:
 
-Best for:
+- `POST /signup`
+- `POST /login`
+- `POST /refresh`
+- `POST /logout`
+- `POST /logout-all`
+- optional `GET /session` ya existing `/api/me` ko bootstrap ke liye use karna
 
-* India-focused billing
-* local payment methods
-* easier India-first setup
+### Auth Service Split
 
-### Required Payment Flow
+`backend/src/services/auth.service.js` ko sirf credential check tak limited rakhna better hoga. Session-specific helper functions alag karne honge, for example:
 
-1. User opens invoice
-2. Clicks **Pay Now**
-3. Backend creates payment order / checkout session
-4. User completes payment
-5. Payment gateway webhook is triggered
-6. Invoice status updates to **paid**
-7. `amount_due = 0`
-8. Payment record is saved
+- `createSession`
+- `rotateSession`
+- `revokeSession`
+- `revokeAllUserSessions`
+- `issueAccessToken`
+- `setRefreshCookie`
+- `clearRefreshCookie`
 
----
+Isse auth flow readable aur testable rahega.
 
-## 5) Billing Calculation Rules
+### Middleware Hardening
 
-These rules should be defined clearly from the beginning to avoid bugs.
+`backend/src/middleware/auth.middleware.js` me ye checks add karne honge:
 
-### Formula Rules
+- access token verify using dedicated access secret
+- `sid` required hoga
+- session active honi chahiye
+- user exist aur `status === "active"` hona chahiye
+- tenant consistency validate karni hogi
+- revoked/expired session par clear `401` error code dena hoga
 
-```ts
-line_total = quantity * unit_price
-tax_amount = line_total * tax_rate
-subtotal = sum(line totals)
-tax_total = sum(tax amounts)
-total = subtotal + tax_total
-amount_due = total - amount_paid
-```
+Current middleware sirf JWT signature + user existence check karta hai. Better security ke liye server-side session validation mandatory hai.
 
-### Supported in MVP
+### Cookie / CORS Changes
 
-* Flat quantity
-* Flat unit price
-* Per-line tax
+`backend/src/app.js` me:
 
-### Excluded from MVP
+- `credentials: true`
+- fixed trusted origin list
+- wildcard origin avoid karna
 
-These can be added later if needed:
+Refresh cookie config:
 
-* complex tax slabs
-* tax inclusive / exclusive dual modes
-* stacked discounts
-* invoice-level coupons
-* advanced discount combinations
+- `httpOnly: true`
+- `secure: true` in production
+- `sameSite: "strict"` preferred if frontend/backend same-site deployment me hain
+- `sameSite: "none"` sirf tab jab truly cross-site deployment required ho
+- narrow `path`, preferably `/api/auth`
 
----
+### Error Codes
 
-## 6) Frontend Scope
+Frontend ko predictable behavior dene ke liye plain message ke sath error codes bhi dene honge:
 
-The frontend should focus only on the most useful billing screens.
+- `access_token_expired`
+- `session_revoked`
+- `refresh_token_invalid`
+- `refresh_token_reused`
+- `account_disabled`
+- `auth_required`
 
-### A) Invoice List Page
+Isse axios interceptor correct logout vs retry behavior decide kar sakega.
 
-#### Required Features
+### Audit Logging
 
-* Search
-* Status filter
-* Reset button
-* Table view
-* Pagination
-* View details action/button
+Existing audit/activity infrastructure ko auth events ke liye extend karna hai:
 
-#### Recommended Columns
+- login success
+- login failure threshold
+- refresh success
+- refresh denied
+- refresh reuse detected
+- logout
+- logout all
+- account disabled forced revoke
 
-* Invoice #
-* Status
-* Due Date
-* Contact
-* Total
-* Amount Due
+## Frontend Changes Planned
 
-### B) Invoice Detail Page
+### Auth State Strategy
 
-#### Required Sections
+`frontend/src/context/AuthContext.jsx` ko localStorage-based token store se memory-based auth state me move karna hai.
 
-* Invoice header
-* Status badge
-* Company info
-* Bill To section
-* Line items table
-* Summary box
-* Payment button
-* PDF download button
+New auth state:
 
-### C) Create Invoice Page
+- `accessToken`
+- `user`
+- `status` = `loading | authenticated | anonymous`
+- `login()`
+- `logout()`
+- `refreshSession()`
 
-#### Required Fields
+Important:
 
-* Customer select
-* Issue date
-* Due date
-* Reference
-* Notes
+- access token page reload ke baad memory se chala jayega
+- refresh cookie silent refresh ke through new access token laayegi
 
-#### Line Items Fields
+### Axios Strategy
 
-* Item name
-* Quantity
-* Unit price
-* Tax %
+`frontend/src/api/axios.js` me:
 
-#### Required Actions
+- `withCredentials: true`
+- request interceptor memory token use karega
+- response interceptor `401` par single refresh attempt karega
+- refresh in-flight dedupe hoga, taaki parallel 401 requests multiple refresh calls na karein
+- refresh fail hua to clean logout hoga
 
-* Add item
-* Remove item
+### Route Protection
 
----
+`frontend/src/components/ProtectedRoute.jsx` abhi sirf token presence check karta hai.
 
-## 7) PDF Invoice
+Isko update karna hoga taaki:
 
-PDF invoice support should be included in MVP.
+- app bootstrap complete hone tak loading state dikhe
+- anonymous state me hi redirect ho
+- role check server-synced user object par ho
 
-### PDF Should Include
+### Login / Signup Pages
 
-* Company logo / company name
-* Invoice number
-* Issue date
-* Due date
-* Customer details
-* Line items
-* Tax breakdown
-* Total
-* Payment status
+`frontend/src/pages/Login.jsx` aur `frontend/src/pages/Signup.jsx` me:
 
-### Recommended Approach
+- response se direct `localStorage` write nahi hoga
+- login helper new access token ko memory me set karega
+- refresh cookie backend set karega
 
-**HTML template → PDF generation**
+### Logout UX
 
-#### Why this is better
+`frontend/src/layouts/AppLayout.jsx`
 
-* easier to maintain design
-* easier to match frontend layout
-* easier print-friendly formatting
+- current local logout ko API-backed logout me convert karna hoga
+- backend revoke ke baad hi local auth state clear karni hogi
 
----
+## Additional Security Decisions
 
-## 8) Email System (Basic Version)
+### Separate Secrets
 
-A full email automation system is not necessary for MVP.
+Access tokens ke liye alag secret use karna hai:
 
-### Required Email Actions
+- `ACCESS_TOKEN_SECRET`
 
-* Send invoice email when invoice is created
-* Resend invoice email manually
+Agar refresh token JWT-based rakhte to alag `REFRESH_TOKEN_SECRET` chahiye hota, lekin recommended design opaque refresh token ka hai.
 
-### Optional
+### Session Revocation Triggers
 
-* Payment received email
+In cases me active sessions revoke karne honge:
 
-### Recommended Tools
+- user disabled
+- password changed
+- suspicious token reuse
+- manual logout-all
+- role downgrade jahan immediate permission shrink required ho
 
-* **Resend** → easiest DX
+### Invite Flow
 
----
+Invite flow primary auth lifecycle ka part nahi hai, lekin better security ke liye later phase me:
 
-## 9) Performance Requirements (Enough for ~500 Users)
+- invite token plaintext store karne ke bajay hash store karna
+- one-time consumption strict rakhna
 
-Heavy infra is not required at this stage, but a few basics should be implemented.
+Ye refresh/session work ke baad karna sahi rahega.
 
-### Database Indexes
+### Rate Limit
 
-Add indexes on:
+Auth endpoints par stronger rate limit add karni hogi:
 
-* `user_id`
-* `invoice_number`
-* `status`
-* `due_date`
-* `contact_id`
+- `/api/auth/login`
+- `/api/auth/refresh`
+- `/api/auth/logout`
 
-This will improve:
+Refresh endpoint ko unlimited nahi chhodna chahiye.
 
-* invoice list performance
-* filtering
-* search
-* invoice lookup
+### CSRF Consideration
 
-### Pagination
+Kyuki refresh token cookie me hoga, cookie-auth endpoints ke liye CSRF precautions chahiye:
 
-Use paginated APIs.
+- `SameSite=Strict` preferred
+- trusted `Origin` validation
+- only `POST` for refresh/logout/logout-all
+- agar deployment cross-site hua to CSRF token strategy add karni padegi
 
-#### Example
+## Suggested API Contract
 
-```http
-?page=1&limit=10
-```
+### Login Success
 
-### Frontend Search Optimization
+Response body:
 
-Use **debounced search** on invoice list.
+- `accessToken`
+- `user`
 
-#### Recommended debounce
+Cookie:
 
-* `300ms`
+- refresh token
 
+### Refresh Success
+
+Response body:
+
+- `accessToken`
+
+Cookie:
+
+- rotated refresh token
+
+### Logout Success
+
+Response body:
+
+- success message only
+
+Cookie:
+
+- refresh cookie cleared
+
+## Rollout Order
+
+Implementation mujhe is order me karni chahiye:
+
+1. Session model + token utilities
+2. cookie helpers + auth config
+3. login/signup response refactor
+4. refresh endpoint with rotation
+5. logout + logout-all
+6. middleware session validation
+7. frontend memory auth context
+8. axios refresh interceptor
+9. protected route bootstrap flow
+10. audit logs + cleanup polish
+
+## Acceptance Checklist
+
+Kaam complete tab maana jayega jab:
+
+- login ke baad refresh cookie set ho
+- access token `localStorage` me na ho
+- page reload ke baad user silent refresh se restore ho
+- expired access token ke baad first API call auto-refresh kar sake
+- revoked session refresh na kar sake
+- logout current device ko invalidate kare
+- logout-all sab devices ko invalidate kare
+- disabled user active session continue na kar sake
+- reused refresh token detect ho aur forced re-login ho
+- `/api/me` stale client state ke against consistent result de
+
+## Final Direction
+
+Best secure direction is:
+
+- short-lived JWT access token
+- opaque hashed refresh token
+- HttpOnly refresh cookie
+- DB-backed session store
+- rotation on every refresh
+- reuse detection
+- API-backed logout
+- frontend memory auth state
+
+Isi approach par implementation karunga, kyuki ye current codebase ke structure ke sath fit bhi hota hai aur security bhi significantly improve karta hai.

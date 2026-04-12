@@ -66,12 +66,9 @@ const Clients = () => {
 
       setError("")
 
-      const tenantId = localStorage.getItem("tenantId")
-      const role = "client"
-
       await toast.promise(
         (async () => {
-          await inviteClientAPI({ email: safeEmail, tenantId, role })
+          await inviteClientAPI({ email: safeEmail })
           await loadClients({ showLoader: false, throwOnError: true })
           triggerDashboardRefresh()
         })(),

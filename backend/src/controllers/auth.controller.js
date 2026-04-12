@@ -1,10 +1,11 @@
-//input se agencyName, email, password lo
-//ager input missing he toh error show
-// signup krne bolo signup service ko
-//success response
-//error
-
-const {signup, login, acceptInvite} = require('../services/auth.service')
+const {
+    signup,
+    login,
+    refreshSession,
+    logout,
+    logoutAll,
+    acceptInvite
+} = require("../services/auth.service")
 const {
     ACTIVITY_CATEGORIES,
     ACTIVITY_VISIBILITY,
@@ -12,6 +13,12 @@ const {
     buildTargetUserSnapshot,
     recordActivity
 } = require("../services/activity.service")
+const logAction = require("../services/audit.service")
+const {
+    clearRefreshCookie,
+    getRefreshTokenFromRequest,
+    setRefreshCookie
+} = require("../utils/auth")
 
 const formatLabel = (value = "") =>
     value
@@ -20,46 +27,137 @@ const formatLabel = (value = "") =>
         .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
         .join(" ")
 
-const signupHandler = async (req, res, next) => {
+const recordAuthAudit = async ({ user, action, meta }) => {
+    if (!user?._id || !user?.tenantId) {
+        return
+    }
 
     try {
-        const {agencyName, email, password} = req.body
+        await logAction({
+            tenantId: user.tenantId,
+            actorId: user._id,
+            action,
+            meta
+        })
+    } catch (error) {
+        console.log(error.message)
+    }
+}
 
-        const result = await signup({ agencyName, email, password})
+const signupHandler = async (req, res, next) => {
+    try {
+        const { agencyName, email, password } = req.body
+
+        const result = await signup({ agencyName, email, password, req })
+
+        setRefreshCookie(res, result.refreshToken)
+
+        await recordAuthAudit({
+            user: result.user,
+            action: "auth.signup",
+            meta: {
+                email: result.user.email,
+                role: result.user.role
+            }
+        })
 
         return res.status(201).json({
             message: "Signup successful",
-            token: result.token
+            accessToken: result.accessToken,
+            user: result.user
         })
-
     } catch (error) {
-
         next(error)
     }
 }
 
 const loginHandler = async (req, res, next) => {
-
     try {
-        const {email, password} = req.body
+        const { email, password } = req.body
 
-        const result = await login({email, password})
+        const result = await login({ email, password, req })
+
+        setRefreshCookie(res, result.refreshToken)
+
+        await recordAuthAudit({
+            user: result.user,
+            action: "auth.login",
+            meta: {
+                email: result.user.email,
+                role: result.user.role
+            }
+        })
 
         return res.status(200).json({
             message: "Login successful",
-            token: result.token
+            accessToken: result.accessToken,
+            user: result.user
+        })
+    } catch (error) {
+        next(error)
+    }
+}
+
+const refreshHandler = async (req, res, next) => {
+    try {
+        const refreshToken = getRefreshTokenFromRequest(req)
+
+        const result = await refreshSession({ refreshToken, req })
+
+        setRefreshCookie(res, result.refreshToken)
+
+        return res.status(200).json({
+            message: "Session refreshed",
+            accessToken: result.accessToken,
+            user: result.user
+        })
+    } catch (error) {
+        clearRefreshCookie(res)
+        next(error)
+    }
+}
+
+const logoutHandler = async (req, res, next) => {
+    try {
+        const refreshToken = getRefreshTokenFromRequest(req)
+
+        await logout({ refreshToken })
+
+        clearRefreshCookie(res)
+
+        return res.status(200).json({
+            message: "Logout successful"
+        })
+    } catch (error) {
+        clearRefreshCookie(res)
+        next(error)
+    }
+}
+
+const logoutAllHandler = async (req, res, next) => {
+    try {
+        await logoutAll({ userId: req.user._id })
+
+        clearRefreshCookie(res)
+
+        await recordAuthAudit({
+            user: req.user,
+            action: "auth.logout_all",
+            meta: {
+                email: req.user.email
+            }
         })
 
+        return res.status(200).json({
+            message: "Logged out from all devices"
+        })
     } catch (error) {
-        
         next(error)
     }
 }
 
 const acceptInviteHandler = async (req, res, next) => {
-
     try {
-        
         const { token, password } = req.body
 
         const result = await acceptInvite({ token, password })
@@ -79,12 +177,16 @@ const acceptInviteHandler = async (req, res, next) => {
         }
 
         return res.status(200).json(result)
-
     } catch (error) {
-        
         next(error)
     }
 }
 
-
-module.exports = {signupHandler, loginHandler, acceptInviteHandler}
+module.exports = {
+    acceptInviteHandler,
+    loginHandler,
+    logoutAllHandler,
+    logoutHandler,
+    refreshHandler,
+    signupHandler
+}

@@ -7,7 +7,7 @@ import {
   assignMember,
   updateProjectStatus,
 } from "../../api/projects"
-import { useAuth } from "../../context/AuthContext"
+import { useAuth } from "../../context/useAuth"
 import { fetchClients } from "../../api/clients"
 import { fetchMembers } from "../../api/members"
 import { triggerDashboardRefresh } from "../../utils/dashboardRefresh"

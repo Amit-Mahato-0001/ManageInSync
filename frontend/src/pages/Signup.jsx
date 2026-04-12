@@ -2,7 +2,7 @@ import { useState } from "react"
 import { Link, useNavigate } from "react-router-dom"
 import toast from "react-hot-toast"
 import authApi from "../api/auth"
-import { useAuth } from "../context/AuthContext"
+import { useAuth } from "../context/useAuth"
 
 const EMAIL_PATTERN = /^\S+@\S+\.\S+$/
 const MIN_PASSWORD_LENGTH = 8
@@ -61,7 +61,7 @@ const Signup = () => {
         }
       )
 
-      login(res.data.token)
+      login(res.data)
       navigate("/")
     } catch {
       return

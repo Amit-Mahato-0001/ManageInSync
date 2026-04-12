@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from "react"
 import { Link, useLocation, useParams } from "react-router-dom"
 import { ArrowLeft, Rocket, Trash2, X } from "lucide-react"
 import { createTask, deleteTask, fetchTasks, updateTask } from "../../api/tasks"
-import { useAuth } from "../../context/AuthContext"
+import { useAuth } from "../../context/useAuth"
 import TasksPagination from "../../components/TasksPagination"
 import { formatDate } from "../../utils/formatDate"
 import {

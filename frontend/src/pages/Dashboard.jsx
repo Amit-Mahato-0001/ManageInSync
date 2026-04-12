@@ -145,7 +145,7 @@ const Dashboard = () => {
 
 /* stats components */
 
-function Stat({ label, value, icon: Icon, color, sub }) {
+function Stat({ label, value, icon, color, sub }) {
 
   return (
 
@@ -167,7 +167,7 @@ function Stat({ label, value, icon: Icon, color, sub }) {
 
       <div className={`absolute top-4 right-4 p-2 rounded-lg ${color}`}>
 
-        <Icon className="w-6 h-6" />
+        {React.createElement(icon, { className: "w-6 h-6" })}
 
       </div>
 

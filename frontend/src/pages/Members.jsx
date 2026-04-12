@@ -60,12 +60,9 @@ const Members = () => {
 
       setError("")
 
-      const tenantId = localStorage.getItem("tenantId")
-      const role = "member"
-
       await toast.promise(
         (async () => {
-          await inviteMember({ email: safeEmail, tenantId, role })
+          await inviteMember({ email: safeEmail })
           await loadMembers({ showLoader: false, throwOnError: true })
           triggerDashboardRefresh()
         })(),

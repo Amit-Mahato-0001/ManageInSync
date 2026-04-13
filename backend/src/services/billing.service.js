@@ -4,6 +4,13 @@ const Contact = require("../models/contact.model")
 const Invoice = require("../models/invoice.model")
 const InvoiceItem = require("../models/invoiceItem.model")
 const Payment = require("../models/payment.model")
+const {
+    capturePayment,
+    createOrder,
+    fetchPayment,
+    getRazorpayPublicConfig,
+    verifyPaymentSignature
+} = require("../utils/razorpay")
 
 const createHttpError = (message, status = 400) => {
     const error = new Error(message)
@@ -16,6 +23,9 @@ const normalizeText = (value) =>
 
 const roundMoney = (value) =>
     Math.round((Number(value) + Number.EPSILON) * 100) / 100
+
+const toCurrencySubunits = (value) =>
+    Math.round((Number(value) + Number.EPSILON) * 100)
 
 const getTodayKey = () => {
     const now = new Date()
@@ -200,6 +210,252 @@ const ensureInvoiceAccess = (invoice, user) => {
     }
 
     throw createHttpError("Access denied", 403)
+}
+
+const buildInvoiceReceipt = (invoice) => {
+    const invoiceId = getResolvedId(invoice).slice(-10)
+    const timestamp = Date.now().toString().slice(-8)
+
+    return `inv_${invoiceId}_${timestamp}`.slice(0, 40)
+}
+
+const getRazorpayPendingPayment = ({ tenantId, invoiceId, orderId }) =>
+    Payment.findOne({
+        tenantId,
+        invoiceId,
+        transactionId: orderId,
+        gateway: "razorpay",
+        status: "pending"
+    })
+
+const getPaidRazorpayPayment = ({ tenantId, invoiceId, paymentId }) =>
+    Payment.findOne({
+        tenantId,
+        invoiceId,
+        transactionId: paymentId,
+        gateway: /^razorpay/,
+        status: "paid"
+    })
+
+const createInvoiceCheckoutOrder = async ({ tenantId, invoiceId, user }) => {
+    ensureObjectId(tenantId, "tenantId")
+    ensureObjectId(invoiceId, "invoiceId")
+
+    await syncInvoiceStatuses({
+        tenantId,
+        invoiceId
+    })
+
+    const invoice = await Invoice.findOne({
+        _id: invoiceId,
+        tenantId
+    }).populate("clientUserId", "email")
+
+    ensureInvoiceAccess(invoice, user)
+
+    if (invoice.status === "draft") {
+        throw createHttpError("Draft invoices cannot be paid")
+    }
+
+    if (invoice.amountDue <= 0) {
+        throw createHttpError("Invoice is already fully paid")
+    }
+
+    await Payment.updateMany(
+        {
+            tenantId,
+            invoiceId,
+            gateway: "razorpay",
+            status: "pending"
+        },
+        {
+            $set: {
+                status: "failed",
+                rawResponseJson: {
+                    reason: "superseded_by_new_order"
+                }
+            }
+        }
+    )
+
+    const amountInSubunits = toCurrencySubunits(invoice.amountDue)
+
+    const order = await createOrder({
+        amount: amountInSubunits,
+        currency: "INR",
+        receipt: buildInvoiceReceipt(invoice),
+        notes: {
+            invoiceId: getResolvedId(invoice),
+            invoiceNumber: invoice.invoiceNumber
+        }
+    })
+
+    await Payment.create({
+        tenantId,
+        invoiceId,
+        userId: user._id,
+        gateway: "razorpay",
+        transactionId: order.id,
+        amount: roundMoney(invoice.amountDue),
+        status: "pending",
+        rawResponseJson: {
+            orderId: order.id,
+            amount: order.amount,
+            amountDue: order.amount_due,
+            currency: order.currency,
+            receipt: order.receipt,
+            orderStatus: order.status
+        }
+    })
+
+    const { keyId } = getRazorpayPublicConfig()
+
+    return {
+        keyId,
+        orderId: order.id,
+        amount: order.amount,
+        currency: order.currency || "INR",
+        name: invoice.contactSnapshot?.companyName || "Agency Workspace",
+        description: `Invoice ${invoice.invoiceNumber}`,
+        prefill: {
+            name: invoice.contactSnapshot?.name || "",
+            email: invoice.contactSnapshot?.email || invoice.clientUserId?.email || ""
+        },
+        notes: {
+            invoiceNumber: invoice.invoiceNumber
+        },
+        invoice: serializeInvoice(invoice)
+    }
+}
+
+const verifyInvoiceCheckoutPayment = async ({
+    tenantId,
+    invoiceId,
+    user,
+    data
+}) => {
+    ensureObjectId(tenantId, "tenantId")
+    ensureObjectId(invoiceId, "invoiceId")
+
+    const razorpayOrderId = data.razorpay_order_id?.trim()
+    const razorpayPaymentId = data.razorpay_payment_id?.trim()
+    const razorpaySignature = data.razorpay_signature?.trim()
+
+    const existingPayment = await getPaidRazorpayPayment({
+        tenantId,
+        invoiceId,
+        paymentId: razorpayPaymentId
+    })
+
+    if (existingPayment) {
+        return {
+            payment: existingPayment.toObject(),
+            invoice: await getInvoiceDetail({
+                tenantId,
+                invoiceId,
+                user
+            })
+        }
+    }
+
+    const invoice = await Invoice.findOne({
+        _id: invoiceId,
+        tenantId
+    }).populate("clientUserId", "email")
+
+    ensureInvoiceAccess(invoice, user)
+
+    const pendingPayment = await getRazorpayPendingPayment({
+        tenantId,
+        invoiceId,
+        orderId: razorpayOrderId
+    })
+
+    if (!pendingPayment) {
+        throw createHttpError("Payment session not found or expired", 400)
+    }
+
+    const isSignatureValid = verifyPaymentSignature({
+        orderId: pendingPayment.transactionId,
+        paymentId: razorpayPaymentId,
+        razorpaySignature
+    })
+
+    if (!isSignatureValid) {
+        pendingPayment.status = "failed"
+        pendingPayment.rawResponseJson = {
+            ...(pendingPayment.rawResponseJson || {}),
+            verification: {
+                status: "failed",
+                reason: "invalid_signature"
+            }
+        }
+        await pendingPayment.save()
+
+        throw createHttpError("Payment signature verification failed", 400)
+    }
+
+    let paymentDetails = await fetchPayment(razorpayPaymentId)
+
+    if (paymentDetails.order_id !== pendingPayment.transactionId) {
+        throw createHttpError("Payment does not belong to the expected Razorpay order", 400)
+    }
+
+    if (paymentDetails.status === "authorized") {
+        paymentDetails = await capturePayment({
+            paymentId: razorpayPaymentId,
+            amount: paymentDetails.amount,
+            currency: paymentDetails.currency || "INR"
+        })
+    }
+
+    if (paymentDetails.status !== "captured") {
+        throw createHttpError("Payment was not captured by Razorpay", 400)
+    }
+
+    const paidAmount = roundMoney(paymentDetails.amount / 100)
+
+    if (roundMoney(pendingPayment.amount) !== paidAmount) {
+        throw createHttpError("Captured payment amount does not match invoice amount", 400)
+    }
+
+    if (paidAmount > roundMoney(invoice.amountDue)) {
+        throw createHttpError("Payment amount exceeds the current invoice due", 409)
+    }
+
+    pendingPayment.transactionId = razorpayPaymentId
+    pendingPayment.status = "paid"
+    pendingPayment.paidAt = new Date()
+    pendingPayment.gateway = paymentDetails.method
+        ? `razorpay:${paymentDetails.method}`
+        : "razorpay"
+    pendingPayment.amount = paidAmount
+    pendingPayment.rawResponseJson = {
+        ...(pendingPayment.rawResponseJson || {}),
+        verification: {
+            status: "verified",
+            orderId: razorpayOrderId,
+            paymentId: razorpayPaymentId,
+            signature: razorpaySignature
+        },
+        payment: paymentDetails
+    }
+
+    await pendingPayment.save()
+
+    invoice.amountPaid = roundMoney(invoice.amountPaid + paidAmount)
+    invoice.amountDue = roundMoney(Math.max(invoice.total - invoice.amountPaid, 0))
+    invoice.status = getPayableStatus(invoice.dueDate, invoice.amountDue)
+    await invoice.save()
+
+    return {
+        payment: pendingPayment.toObject(),
+        invoice: await getInvoiceDetail({
+            tenantId,
+            invoiceId,
+            user
+        })
+    }
 }
 
 const serializeInvoice = (invoice, { items, payments } = {}) => {
@@ -489,8 +745,10 @@ const createInvoicePayment = async ({ tenantId, invoiceId, user, data }) => {
 
 module.exports = {
     createInvoice,
+    createInvoiceCheckoutOrder,
     listInvoices,
     getInvoiceDetail,
     issueInvoice,
-    createInvoicePayment
+    createInvoicePayment,
+    verifyInvoiceCheckoutPayment
 }

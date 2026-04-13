@@ -88,6 +88,21 @@ const invoiceParamsSchema = z.object({
     invoiceId: objectId("invoiceId")
 })
 
+const verifyRazorpayPaymentSchema = z.object({
+    razorpay_order_id: z
+        .string()
+        .trim()
+        .min(1, "Razorpay order id is required"),
+    razorpay_payment_id: z
+        .string()
+        .trim()
+        .min(1, "Razorpay payment id is required"),
+    razorpay_signature: z
+        .string()
+        .trim()
+        .min(1, "Razorpay signature is required")
+})
+
 const createInvoicePaymentSchema = z.object({
     gateway: z
         .string()
@@ -104,5 +119,6 @@ module.exports = {
     createInvoiceSchema,
     invoiceListQuerySchema,
     invoiceParamsSchema,
+    verifyRazorpayPaymentSchema,
     createInvoicePaymentSchema
 }

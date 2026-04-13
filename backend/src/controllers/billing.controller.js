@@ -3,7 +3,9 @@ const {
     listInvoices,
     getInvoiceDetail,
     issueInvoice,
-    createInvoicePayment
+    createInvoicePayment,
+    createInvoiceCheckoutOrder,
+    verifyInvoiceCheckoutPayment
 } = require("../services/billing.service")
 
 const createInvoiceHandler = async (req, res, next) => {
@@ -75,6 +77,41 @@ const issueInvoiceHandler = async (req, res, next) => {
     }
 }
 
+const createInvoiceCheckoutOrderHandler = async (req, res, next) => {
+    try {
+        const checkout = await createInvoiceCheckoutOrder({
+            tenantId: req.tenantId,
+            invoiceId: req.params.invoiceId,
+            user: req.user
+        })
+
+        return res.status(200).json({
+            checkout
+        })
+    } catch (error) {
+        next(error)
+    }
+}
+
+const verifyInvoiceCheckoutPaymentHandler = async (req, res, next) => {
+    try {
+        const result = await verifyInvoiceCheckoutPayment({
+            tenantId: req.tenantId,
+            invoiceId: req.params.invoiceId,
+            user: req.user,
+            data: req.body
+        })
+
+        return res.status(200).json({
+            message: "Payment verified successfully",
+            payment: result.payment,
+            invoice: result.invoice
+        })
+    } catch (error) {
+        next(error)
+    }
+}
+
 const createInvoicePaymentHandler = async (req, res, next) => {
     try {
         const result = await createInvoicePayment({
@@ -96,8 +133,10 @@ const createInvoicePaymentHandler = async (req, res, next) => {
 
 module.exports = {
     createInvoiceHandler,
+    createInvoiceCheckoutOrderHandler,
     listInvoicesHandler,
     getInvoiceDetailHandler,
     issueInvoiceHandler,
+    verifyInvoiceCheckoutPaymentHandler,
     createInvoicePaymentHandler
 }

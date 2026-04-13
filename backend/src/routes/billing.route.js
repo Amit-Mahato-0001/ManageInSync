@@ -3,15 +3,18 @@ const requireRole = require("../middleware/rbac.middleware")
 const validate = require("../middleware/validate.middleware")
 const {
     createInvoiceHandler,
+    createInvoiceCheckoutOrderHandler,
     listInvoicesHandler,
     getInvoiceDetailHandler,
     issueInvoiceHandler,
+    verifyInvoiceCheckoutPaymentHandler,
     createInvoicePaymentHandler
 } = require("../controllers/billing.controller")
 const {
     createInvoiceSchema,
     invoiceListQuerySchema,
     invoiceParamsSchema,
+    verifyRazorpayPaymentSchema,
     createInvoicePaymentSchema
 } = require("../validators/billing.validator")
 
@@ -46,8 +49,23 @@ router.post(
 )
 
 router.post(
-    "/invoices/:invoiceId/payments",
+    "/invoices/:invoiceId/checkout-order",
     requireRole(["owner", "client"]),
+    validate(invoiceParamsSchema, "params"),
+    createInvoiceCheckoutOrderHandler
+)
+
+router.post(
+    "/invoices/:invoiceId/payments/verify",
+    requireRole(["owner", "client"]),
+    validate(invoiceParamsSchema, "params"),
+    validate(verifyRazorpayPaymentSchema, "body"),
+    verifyInvoiceCheckoutPaymentHandler
+)
+
+router.post(
+    "/invoices/:invoiceId/payments",
+    requireRole(["owner"]),
     validate(invoiceParamsSchema, "params"),
     validate(createInvoicePaymentSchema, "body"),
     createInvoicePaymentHandler

@@ -5,9 +5,10 @@ import { ArrowLeft } from "lucide-react"
 
 import authApi from "../../api/auth"
 import {
+  createInvoiceCheckoutOrder,
   fetchInvoiceDetail,
   issueInvoice,
-  payInvoice
+  verifyInvoicePayment
 } from "../../api/billing"
 import { useAuth } from "../../context/useAuth"
 import {
@@ -37,6 +38,36 @@ const SummaryRow = ({ label, value, emphasized }) => {
     </div>
   )
 }
+
+const loadRazorpayCheckout = () =>
+  new Promise((resolve, reject) => {
+    if (window.Razorpay) {
+      resolve(window.Razorpay)
+      return
+    }
+
+    const existingScript = document.querySelector('script[data-razorpay-checkout="true"]')
+
+    if (existingScript) {
+      existingScript.addEventListener("load", () => resolve(window.Razorpay), {
+        once: true
+      })
+      existingScript.addEventListener(
+        "error",
+        () => reject(new Error("Failed to load Razorpay checkout")),
+        { once: true }
+      )
+      return
+    }
+
+    const script = document.createElement("script")
+    script.src = "https://checkout.razorpay.com/v1/checkout.js"
+    script.async = true
+    script.dataset.razorpayCheckout = "true"
+    script.onload = () => resolve(window.Razorpay)
+    script.onerror = () => reject(new Error("Failed to load Razorpay checkout"))
+    document.body.appendChild(script)
+  })
 
 const InvoiceDetails = () => {
   const { invoiceId } = useParams()
@@ -107,27 +138,75 @@ const InvoiceDetails = () => {
   }
 
   const handlePayInvoice = async () => {
-    if (!window.confirm("Proceed with payment for this invoice?")) {
-      return
-    }
-
-    const toastId = toast.loading("Recording payment...")
-
     try {
       setActionLoading("pay")
-      const response = await payInvoice(invoiceId, {
-        gateway: "demo-checkout"
+
+      await loadRazorpayCheckout()
+
+      const orderResponse = await createInvoiceCheckoutOrder(invoiceId)
+      const checkout = orderResponse.data?.checkout
+
+      if (!checkout?.orderId || !checkout?.keyId || !window.Razorpay) {
+        throw new Error("Unable to initialize Razorpay checkout")
+      }
+
+      const razorpay = new window.Razorpay({
+        key: checkout.keyId,
+        amount: checkout.amount,
+        currency: checkout.currency,
+        name: checkout.name,
+        description: checkout.description,
+        order_id: checkout.orderId,
+        prefill: checkout.prefill,
+        notes: checkout.notes,
+        theme: {
+          color: "#2563EB"
+        },
+        modal: {
+          ondismiss: () => {
+            setActionLoading("")
+          }
+        },
+        handler: async (paymentResponse) => {
+          const toastId = toast.loading("Verifying payment...")
+
+          try {
+            const verificationResponse = await verifyInvoicePayment(
+              invoiceId,
+              paymentResponse
+            )
+
+            setInvoice(verificationResponse.data.invoice)
+            toast.success("Payment successful", { id: toastId })
+          } catch (requestError) {
+            console.error(requestError)
+            toast.error(
+              getBillingErrorMessage(requestError, "Payment verification failed"),
+              { id: toastId }
+            )
+          } finally {
+            setActionLoading("")
+          }
+        }
       })
-      setInvoice(response.data.invoice)
-      toast.success("Payment recorded", { id: toastId })
+
+      razorpay.on("payment.failed", (event) => {
+        const failureDescription =
+          event?.error?.description ||
+          event?.error?.reason ||
+          "Payment failed. Please try again."
+
+        toast.error(failureDescription)
+        setActionLoading("")
+      })
+
+      razorpay.open()
     } catch (requestError) {
       console.error(requestError)
-      toast.error(
-        getBillingErrorMessage(requestError, "Failed to process payment"),
-        { id: toastId }
-      )
-    } finally {
+      toast.error(getBillingErrorMessage(requestError, "Failed to start Razorpay checkout"))
       setActionLoading("")
+    } finally {
+      // Checkout stays open asynchronously, so action state is cleared by handler/ondismiss.
     }
   }
 
@@ -203,7 +282,7 @@ const InvoiceDetails = () => {
               disabled={actionLoading === "pay"}
               className="rounded-lg border border-white/10 bg-gradient-to-br from-[#18181B] to-[#09090B] px-4 py-2 text-2xl font-medium text-white disabled:cursor-not-allowed disabled:opacity-60"
             >
-              {actionLoading === "pay" ? "Processing..." : "Pay Now"}
+              {actionLoading === "pay" ? "Opening Razorpay..." : "Pay with Razorpay"}
             </button>
           )}
         </div>

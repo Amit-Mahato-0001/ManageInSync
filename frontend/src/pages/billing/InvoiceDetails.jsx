@@ -19,6 +19,14 @@ import {
   getInvoiceStatusClasses
 } from "./billingUtils"
 
+const getRazorpayMode = (checkout) => {
+  if (checkout?.mode === "live" || checkout?.mode === "test") {
+    return checkout.mode
+  }
+
+  return String(checkout?.keyId || "").startsWith("rzp_live_") ? "live" : "test"
+}
+
 const InfoCard = ({ title, children }) => {
   return (
     <section className="rounded-2xl border border-white/10 bg-gradient-to-br from-[#18181B] to-[#09090B] p-6">
@@ -150,6 +158,14 @@ const InvoiceDetails = () => {
         throw new Error("Unable to initialize Razorpay checkout")
       }
 
+      const razorpayMode = getRazorpayMode(checkout)
+
+      if (razorpayMode === "test") {
+        toast(
+          "Razorpay test mode is active. Use Razorpay test UPI or card details. Real payments require live keys."
+        )
+      }
+
       const razorpay = new window.Razorpay({
         key: checkout.keyId,
         amount: checkout.amount,
@@ -195,8 +211,17 @@ const InvoiceDetails = () => {
           event?.error?.description ||
           event?.error?.reason ||
           "Payment failed. Please try again."
+        const errorText = String(failureDescription).trim()
+        const errorCode = String(event?.error?.code || "").trim()
+        const isAuthenticationFailure =
+          /authentication failed/i.test(errorText) ||
+          /BAD_REQUEST_ERROR/i.test(errorCode)
+        const message =
+          razorpayMode === "test" && isAuthenticationFailure
+            ? `${errorText} Real payments do not work in test mode. Use Razorpay test payment details or configure live keys.`
+            : errorText
 
-        toast.error(failureDescription)
+        toast.error(message)
         setActionLoading("")
       })
 

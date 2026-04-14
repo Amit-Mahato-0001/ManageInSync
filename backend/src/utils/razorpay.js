@@ -142,8 +142,12 @@ const verifyPaymentSignature = ({
 
 const getRazorpayPublicConfig = () => {
     const { keyId } = getRazorpayCredentials()
+    const mode = keyId.startsWith("rzp_live_") ? "live" : "test"
 
-    return { keyId }
+    return {
+        keyId,
+        mode
+    }
 }
 
 module.exports = {

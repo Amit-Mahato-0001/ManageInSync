@@ -308,10 +308,11 @@ const createInvoiceCheckoutOrder = async ({ tenantId, invoiceId, user }) => {
         }
     })
 
-    const { keyId } = getRazorpayPublicConfig()
+    const { keyId, mode } = getRazorpayPublicConfig()
 
     return {
         keyId,
+        mode,
         orderId: order.id,
         amount: order.amount,
         currency: order.currency || "INR",

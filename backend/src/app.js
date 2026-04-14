@@ -1,6 +1,5 @@
 require('dotenv').config()
 const express = require('express')
-const connectDB = require('./config/db')
 const router = require('./routes/auth.route')
 const { serializeAuthUser } = require("./utils/authUser")
 
@@ -22,7 +21,6 @@ const userRoutes = require('./routes/user.route')
 const taskRoutes = require('./routes/task.route')
 
 const app = express()
-connectDB()
 
 const allowedOrigins = Array.from(
     new Set(

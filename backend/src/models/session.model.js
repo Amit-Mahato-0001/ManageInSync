@@ -11,8 +11,7 @@ const sessionSchema = new mongoose.Schema(
         tenantId: {
             type: mongoose.Schema.Types.ObjectId,
             ref: "Tenant",
-            required: true,
-            index: true
+            required: true
         },
         refreshTokenHash: {
             type: String,
@@ -21,8 +20,7 @@ const sessionSchema = new mongoose.Schema(
         },
         expiresAt: {
             type: Date,
-            required: true,
-            index: true
+            required: true
         },
         lastUsedAt: {
             type: Date

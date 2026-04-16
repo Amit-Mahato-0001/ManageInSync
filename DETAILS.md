@@ -1,22 +1,82 @@
-## Backend startup fail-fast update
+# Deployment & Runtime Changes
 
-### What was wrong
+## 1. Single Container Deployment (Frontend + Backend)
 
-- The backend tried to connect to MongoDB when the app loaded.
-- If the database connection failed, it only printed a message.
-- The server could still continue starting in a bad state.
+**What:**
+- Docker multi-stage build added.
+- Frontend is built inside container.
+- Backend serves frontend static files.
+- Both run in a single container on port 3000.
 
-### Changes made
+**Why:**
+- Simplifies deployment (one service instead of two).
+- Ensures consistent environment across systems.
 
-- The database connection now throws an error if `MONGO_URI` is missing.
-- The database connection now throws an error if MongoDB connection fails.
-- The app no longer connects to the database inside `app.js`.
-- The server now connects to the database first in `server.js`.
-- The server starts listening only after the database connection is successful.
-- If the database connection fails, the server stops immediately with exit code `1`.
+---
 
-### Result
+## 2. Root Deployment Setup
 
-- The backend now fails fast on database problems.
-- The server will not start if MongoDB is not available.
-- This makes startup safer and easier to debug.
+**What:**
+- Added root `package.json` with:
+  - install, build, and start scripts
+- Standardized entrypoint for deployment platforms.
+
+**Why:**
+- Makes project deployable without custom setup.
+
+---
+
+## 3. Docker Support
+
+**What:**
+- Added `Dockerfile` and `.dockerignore`.
+- Production dependencies only included.
+- Secrets excluded from image.
+
+**Why:**
+- Clean, secure, and reproducible builds.
+
+---
+
+## 4. Backend Serving Frontend
+
+**What:**
+- Backend serves `frontend/dist` as static files.
+- SPA fallback route added (non-API routes → `index.html`).
+
+**Why:**
+- Supports React/Vite routing in production.
+- Avoids 404 on page refresh.
+
+---
+
+## 5. API Routing Cleanup
+
+**What:**
+- Introduced `protectedApi` router.
+- Separated public and authenticated routes.
+
+**Why:**
+- Prevents auth middleware from affecting frontend routes.
+- Cleaner structure.
+
+---
+
+## 6. Frontend API URL Fix
+
+**What:**
+- Default API URL:
+  - Dev → `http://localhost:3000/api`
+  - Prod → `/api`
+
+**Why:**
+- Avoids hardcoded localhost in production.
+- Supports same-origin deployment.
+
+---
+
+## Result
+
+- Frontend + backend run in one container  
+- Project is fully deployable with Docker  
+- No environment-specific breakage  

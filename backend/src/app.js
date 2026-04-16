@@ -1,4 +1,6 @@
 require('dotenv').config()
+const fs = require("fs")
+const path = require("path")
 const express = require('express')
 const router = require('./routes/auth.route')
 const { serializeAuthUser } = require("./utils/authUser")
@@ -21,6 +23,10 @@ const userRoutes = require('./routes/user.route')
 const taskRoutes = require('./routes/task.route')
 
 const app = express()
+const protectedApi = express.Router()
+const frontendDistPath = path.resolve(__dirname, "../../frontend/dist")
+const frontendIndexPath = path.join(frontendDistPath, "index.html")
+const hasFrontendBuild = fs.existsSync(frontendIndexPath)
 
 const allowedOrigins = Array.from(
     new Set(
@@ -41,10 +47,10 @@ app.use(express.json())
 app.use("/api/auth", router)
 app.use("/api/user-invite", inviteRoutes)
 
-app.use(authenticate)
-app.use(resolveTenant)
+protectedApi.use(authenticate)
+protectedApi.use(resolveTenant)
 
-app.get("/api/me", (req, res) => {
+protectedApi.get("/me", (req, res) => {
     res.json({
         user: serializeAuthUser(req.user),
         sessionId: req.auth?.session?._id,
@@ -56,27 +62,37 @@ app.get("/api/me", (req, res) => {
     })
 })
 
-app.get("/api/owner-only", requireRole(["owner"]), (req, res) => {
+protectedApi.get("/owner-only", requireRole(["owner"]), (req, res) => {
     res.json({ message: "Welcome owner"})
 })
 
-app.get("/api/admin-only", requireRole(["owner", "admin"]), (req, res) => {
+protectedApi.get("/admin-only", requireRole(["owner", "admin"]), (req, res) => {
     res.json({ message: "Welcome admin or owner"})
 })
 
-app.get("/api/member-only", requireRole(["owner", "admin", "member"]), (req, res) => {
+protectedApi.get("/member-only", requireRole(["owner", "admin", "member"]), (req, res) => {
     res.json({ message: "Welcome team member"})
 })
 
-app.use("/api/projects", projectRoutes)
-app.use("/api/clients", clientRoutes)
-app.use("/api/activity-feed", activityRoutes)
-app.use("/api/dashboard", dashboardRoutes)
-app.use("/api/billing", billingRoutes)
-app.use("/api/members", memberRoutes)
-app.use("/api/tenants", tenantRoutes)
-app.use("/api/users", userRoutes)
-app.use("/api", taskRoutes)
+protectedApi.use("/projects", projectRoutes)
+protectedApi.use("/clients", clientRoutes)
+protectedApi.use("/activity-feed", activityRoutes)
+protectedApi.use("/dashboard", dashboardRoutes)
+protectedApi.use("/billing", billingRoutes)
+protectedApi.use("/members", memberRoutes)
+protectedApi.use("/tenants", tenantRoutes)
+protectedApi.use("/users", userRoutes)
+protectedApi.use(taskRoutes)
+
+app.use("/api", protectedApi)
+
+if (hasFrontendBuild) {
+    app.use(express.static(frontendDistPath))
+
+    app.get(/^\/(?!api(?:\/|$)).*/, (req, res) => {
+        res.sendFile(frontendIndexPath)
+    })
+}
 
 app.use(errorHandler)
 

@@ -1,82 +1,84 @@
 # Deployment & Runtime Changes
 
-## 1. Single Container Deployment (Frontend + Backend)
-
-**What:**
-- Docker multi-stage build added.
-- Frontend is built inside container.
-- Backend serves frontend static files.
-- Both run in a single container on port 3000.
-
-**Why:**
-- Simplifies deployment (one service instead of two).
-- Ensures consistent environment across systems.
+## Objective
+Move from a Docker-ready setup to a repeatable, production-grade CI/CD deployment flow.
 
 ---
 
-## 2. Root Deployment Setup
-
-**What:**
-- Added root `package.json` with:
-  - install, build, and start scripts
-- Standardized entrypoint for deployment platforms.
-
-**Why:**
-- Makes project deployable without custom setup.
+## Current Gap
+- Deployment was manual (Docker only)
+- No automated validation, image publishing, or release pipeline
 
 ---
 
-## 3. Docker Support
+## What Was Implemented
 
-**What:**
-- Added `Dockerfile` and `.dockerignore`.
-- Production dependencies only included.
-- Secrets excluded from image.
+### Runtime & Health
+- Added `/api/health` endpoint for uptime checks  
+- Added Docker `HEALTHCHECK` for container monitoring  
 
-**Why:**
-- Clean, secure, and reproducible builds.
+### Configuration
+- Added `backend/.env.example` with required variables:
+  - `MONGO_URI`
+  - `JWT_SECRET` / `ACCESS_TOKEN_SECRET`
+  - `FRONTEND_URL`
+  - email/payment keys  
 
----
+### Local Validation
+- Added `docker-compose.yml` for production-like local testing  
 
-## 4. Backend Serving Frontend
+### CI (Continuous Integration)
+- Runs on PRs and `main` pushes:
+  - install dependencies  
+  - lint frontend  
+  - build frontend  
+  - run backend tests (when available)  
+  - build Docker image (deployment validation)  
 
-**What:**
-- Backend serves `frontend/dist` as static files.
-- SPA fallback route added (non-API routes → `index.html`).
-
-**Why:**
-- Supports React/Vite routing in production.
-- Avoids 404 on page refresh.
-
----
-
-## 5. API Routing Cleanup
-
-**What:**
-- Introduced `protectedApi` router.
-- Separated public and authenticated routes.
-
-**Why:**
-- Prevents auth middleware from affecting frontend routes.
-- Cleaner structure.
+### CD (Continuous Deployment)
+- Builds Docker image on `main` / release  
+- Pushes image to container registry (GHCR)  
+- Optional deploy trigger via webhook  
+- Post-deploy health check verification 
 
 ---
 
-## 6. Frontend API URL Fix
+## Remaining Setup
 
-**What:**
-- Default API URL:
-  - Dev → `http://localhost:3000/api`
-  - Prod → `/api`
-
-**Why:**
-- Avoids hardcoded localhost in production.
-- Supports same-origin deployment.
+- Configure GitHub Secrets (DB, JWT, API keys)  
+- Connect CD pipeline to hosting platform (Render / AWS / etc.)  
+- Define rollback strategy (redeploy previous stable image)  
 
 ---
 
-## Result
+## Deployment Flow
 
-- Frontend + backend run in one container  
-- Project is fully deployable with Docker  
-- No environment-specific breakage  
+1. Push code → CI runs (lint, build, test, Docker build)  
+2. Merge to `main` → Docker image built & pushed  
+3. CD triggers deployment  
+4. Health check verifies successful release  
+
+---
+
+## Why This Matters
+
+- Removes manual deployment errors  
+- Ensures every build is validated before release  
+- Enables fast, consistent, and reliable deployments  
+
+---
+
+## Status
+
+### Completed
+- Health endpoint  
+- Docker healthcheck  
+- `.env.example`  
+- `docker-compose` setup  
+- CI workflow  
+- CD workflow (GHCR + optional deploy trigger)  
+
+### Pending
+- Production secrets configuration  
+- Hosting integration  
+- Rollback process definition  

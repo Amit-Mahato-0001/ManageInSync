@@ -16,4 +16,4 @@ Audit logging tracks critical actions like project creation, deletion, and clien
 
 The backend is built with **Node.js, Express, MongoDB, and JWT authentication**, while the frontend uses **React, Vite, Axios, and Tailwind CSS**.
 
-AgencyOS demonstrates a production-style SaaS architecture with modular backend services, secure middleware pipelines, and role-aware frontend routing.
+ManageInSync demonstrates a production-style SaaS architecture with modular backend services, secure middleware pipelines, and role-aware frontend routing.

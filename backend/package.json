@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "main": "server.js",
   "scripts": {
-    "test": "node test/health.test.js",
+    "test": "node test/health.test.js && node test/env.test.js && node test/security.test.js && node test/auth-utils.test.js && node test/email.test.js && node test/access-control.test.js && node test/razorpay.test.js && node test/auth-controller.test.js",
     "start": "node server.js",
     "dev": "nodemon server.js"
   },

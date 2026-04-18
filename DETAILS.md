@@ -1,84 +1,14 @@
-# Deployment & Runtime Changes
+## Updates
 
-## Objective
-Move from a Docker-ready setup to a repeatable, production-grade CI/CD deployment flow.
-
----
-
-## Current Gap
-- Deployment was manual (Docker only)
-- No automated validation, image publishing, or release pipeline
-
----
-
-## What Was Implemented
-
-### Runtime & Health
-- Added `/api/health` endpoint for uptime checks  
-- Added Docker `HEALTHCHECK` for container monitoring  
-
-### Configuration
-- Added `backend/.env.example` with required variables:
-  - `MONGO_URI`
-  - `JWT_SECRET` / `ACCESS_TOKEN_SECRET`
-  - `FRONTEND_URL`
-  - email/payment keys  
-
-### Local Validation
-- Added `docker-compose.yml` for production-like local testing  
-
-### CI (Continuous Integration)
-- Runs on PRs and `main` pushes:
-  - install dependencies  
-  - lint frontend  
-  - build frontend  
-  - run backend tests (when available)  
-  - build Docker image (deployment validation)  
-
-### CD (Continuous Deployment)
-- Builds Docker image on `main` / release  
-- Pushes image to container registry (GHCR)  
-- Optional deploy trigger via webhook  
-- Post-deploy health check verification 
-
----
-
-## Remaining Setup
-
-- Configure GitHub Secrets (DB, JWT, API keys)  
-- Connect CD pipeline to hosting platform (Render / AWS / etc.)  
-- Define rollback strategy (redeploy previous stable image)  
-
----
-
-## Deployment Flow
-
-1. Push code → CI runs (lint, build, test, Docker build)  
-2. Merge to `main` → Docker image built & pushed  
-3. CD triggers deployment  
-4. Health check verifies successful release  
-
----
-
-## Why This Matters
-
-- Removes manual deployment errors  
-- Ensures every build is validated before release  
-- Enables fast, consistent, and reliable deployments  
-
----
-
-## Status
-
-### Completed
-- Health endpoint  
-- Docker healthcheck  
-- `.env.example`  
-- `docker-compose` setup  
-- CI workflow  
-- CD workflow (GHCR + optional deploy trigger)  
-
-### Pending
-- Production secrets configuration  
-- Hosting integration  
-- Rollback process definition  
+- App now checks required env variables (DB, auth, email, payment) at startup and fails if missing
+- Restricted API access to allowed frontend domains and added basic security headers
+- Limited request size to prevent large payload abuse
+- Added global rate limit to protect entire API from spam/abuse
+- Added stricter rate limits on login, invite, and payment endpoints
+- Fixed auth cookies for proper cross-site usage (SameSite + domain support)
+- Updated email setup with configurable sender and safer invite links
+- Added timeout to Razorpay requests to avoid hanging payments
+- Hid internal server errors in production for security
+- Added tests for auth, security, email, payments, and env validation
+- Updated env example files with all required production configs
+- CI/CD now runs tests, lint, and build before creating Docker release

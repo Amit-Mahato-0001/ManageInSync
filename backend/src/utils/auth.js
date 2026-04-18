@@ -16,6 +16,9 @@ const REFRESH_TOKEN_COOKIE_NAME =
 const REFRESH_TOKEN_COOKIE_PATH =
     process.env.REFRESH_TOKEN_COOKIE_PATH || "/api/auth"
 
+const REFRESH_TOKEN_COOKIE_DOMAIN =
+    process.env.COOKIE_DOMAIN?.trim() || undefined
+
 const getAccessTokenSecret = () =>
     process.env.ACCESS_TOKEN_SECRET || process.env.JWT_SECRET
 
@@ -59,12 +62,20 @@ const getRefreshTokenFromRequest = (req) => {
     return cookies[REFRESH_TOKEN_COOKIE_NAME] || null
 }
 
+const getRefreshCookieSameSite = () =>
+    (process.env.REFRESH_TOKEN_SAME_SITE || "strict").toLowerCase()
+
 const getRefreshCookieOptions = () => ({
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
-    sameSite: process.env.REFRESH_TOKEN_SAME_SITE || "strict",
+    sameSite: getRefreshCookieSameSite(),
     path: REFRESH_TOKEN_COOKIE_PATH,
-    maxAge: REFRESH_TOKEN_TTL_MS
+    maxAge: REFRESH_TOKEN_TTL_MS,
+    ...(REFRESH_TOKEN_COOKIE_DOMAIN
+        ? {
+              domain: REFRESH_TOKEN_COOKIE_DOMAIN
+          }
+        : {})
 })
 
 const setRefreshCookie = (res, token) => {
@@ -75,8 +86,13 @@ const clearRefreshCookie = (res) => {
     res.clearCookie(REFRESH_TOKEN_COOKIE_NAME, {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
-        sameSite: process.env.REFRESH_TOKEN_SAME_SITE || "strict",
-        path: REFRESH_TOKEN_COOKIE_PATH
+        sameSite: getRefreshCookieSameSite(),
+        path: REFRESH_TOKEN_COOKIE_PATH,
+        ...(REFRESH_TOKEN_COOKIE_DOMAIN
+            ? {
+                  domain: REFRESH_TOKEN_COOKIE_DOMAIN
+              }
+            : {})
     })
 }
 
@@ -100,6 +116,7 @@ module.exports = {
     getAccessTokenTtl,
     getClientIp,
     getRefreshCookieOptions,
+    getRefreshCookieSameSite,
     getRefreshExpiryDate,
     getRefreshTokenFromRequest,
     getRefreshTokenTtlMs,

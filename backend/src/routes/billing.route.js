@@ -1,6 +1,7 @@
 const express = require("express")
 const requireRole = require("../middleware/rbac.middleware")
 const validate = require("../middleware/validate.middleware")
+const { createRateLimiter } = require("../middleware/rateLimit.middleware")
 const {
     createInvoiceHandler,
     createInvoiceCheckoutOrderHandler,
@@ -19,9 +20,16 @@ const {
 } = require("../validators/billing.validator")
 
 const router = express.Router()
+const billingRateLimiter = createRateLimiter({
+    windowMs: Number(process.env.BILLING_RATE_LIMIT_WINDOW_MS) || 5 * 60 * 1000,
+    max: Number(process.env.BILLING_RATE_LIMIT_MAX) || 60,
+    message: "Too many billing requests. Please try again later.",
+    code: "billing_rate_limit_exceeded"
+})
 
 router.post(
     "/invoices",
+    billingRateLimiter,
     requireRole(["owner"]),
     validate(createInvoiceSchema, "body"),
     createInvoiceHandler
@@ -43,6 +51,7 @@ router.get(
 
 router.post(
     "/invoices/:invoiceId/issue",
+    billingRateLimiter,
     requireRole(["owner"]),
     validate(invoiceParamsSchema, "params"),
     issueInvoiceHandler
@@ -50,6 +59,7 @@ router.post(
 
 router.post(
     "/invoices/:invoiceId/checkout-order",
+    billingRateLimiter,
     requireRole(["owner", "client"]),
     validate(invoiceParamsSchema, "params"),
     createInvoiceCheckoutOrderHandler
@@ -57,6 +67,7 @@ router.post(
 
 router.post(
     "/invoices/:invoiceId/payments/verify",
+    billingRateLimiter,
     requireRole(["owner", "client"]),
     validate(invoiceParamsSchema, "params"),
     validate(verifyRazorpayPaymentSchema, "body"),
@@ -65,6 +76,7 @@ router.post(
 
 router.post(
     "/invoices/:invoiceId/payments",
+    billingRateLimiter,
     requireRole(["owner"]),
     validate(invoiceParamsSchema, "params"),
     validate(createInvoicePaymentSchema, "body"),

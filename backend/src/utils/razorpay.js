@@ -26,6 +26,16 @@ const getRazorpayCredentials = () => {
     return { keyId, keySecret }
 }
 
+const getRazorpayTimeoutMs = () => {
+    const parsedTimeout = Number(process.env.RAZORPAY_REQUEST_TIMEOUT_MS)
+
+    if (!Number.isFinite(parsedTimeout) || parsedTimeout < 1000) {
+        return 10000
+    }
+
+    return parsedTimeout
+}
+
 const makeRazorpayRequest = ({ method = "GET", path, body }) => {
     const { keyId, keySecret } = getRazorpayCredentials()
     const serializedBody = body ? JSON.stringify(body) : null
@@ -94,6 +104,17 @@ const makeRazorpayRequest = ({ method = "GET", path, body }) => {
             )
         })
 
+        request.setTimeout(getRazorpayTimeoutMs(), () => {
+            request.destroy()
+            reject(
+                createHttpError(
+                    "Razorpay request timed out",
+                    504,
+                    "razorpay_timeout"
+                )
+            )
+        })
+
         if (serializedBody) {
             request.write(serializedBody)
         }
@@ -155,5 +176,6 @@ module.exports = {
     createOrder,
     fetchPayment,
     getRazorpayPublicConfig,
+    getRazorpayTimeoutMs,
     verifyPaymentSignature
 }

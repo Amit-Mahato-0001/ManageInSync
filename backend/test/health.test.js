@@ -1,6 +1,12 @@
 const assert = require("node:assert/strict")
 const http = require("node:http")
+const {
+    applyTestEnvironment,
+    clearBackendModuleCache
+} = require("./helpers/testEnv")
 
+const restoreEnvironment = applyTestEnvironment()
+clearBackendModuleCache()
 const app = require("../src/app")
 
 const listen = (server) =>
@@ -52,4 +58,8 @@ const run = async () => {
 run().catch((error) => {
     console.error(error)
     process.exit(1)
+})
+
+process.on("exit", () => {
+    restoreEnvironment()
 })

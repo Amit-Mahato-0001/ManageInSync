@@ -1,12 +1,13 @@
-require("./src/config/env")
-const app = require('./src/app')
-const connectDB = require('./src/config/db')
-
-const PORT = process.env.PORT || 3000
-
 const startServer = async () => {
 
     try {
+        const { loadEnvironment } = require("./src/config/env")
+
+        loadEnvironment()
+
+        const app = require('./src/app')
+        const connectDB = require('./src/config/db')
+        const PORT = process.env.PORT || 3000
 
         await connectDB()
 

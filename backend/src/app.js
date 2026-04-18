@@ -1,4 +1,5 @@
-require("./config/env")
+const { loadEnvironment } = require("./config/env")
+loadEnvironment()
 const fs = require("fs")
 const path = require("path")
 const mongoose = require("mongoose")
@@ -22,12 +23,21 @@ const memberRoutes = require('./routes/member.route')
 const tenantRoutes = require('./routes/tenant.route')
 const userRoutes = require('./routes/user.route')
 const taskRoutes = require('./routes/task.route')
+const securityHeaders = require("./middleware/securityHeaders.middleware")
+const { createRateLimiter } = require("./middleware/rateLimit.middleware")
 
 const app = express()
 const protectedApi = express.Router()
 const frontendDistPath = path.resolve(__dirname, "../../frontend/dist")
 const frontendIndexPath = path.join(frontendDistPath, "index.html")
 const hasFrontendBuild = fs.existsSync(frontendIndexPath)
+const isProduction = process.env.NODE_ENV === "production"
+const generalApiRateLimiter = createRateLimiter({
+    windowMs: Number(process.env.GENERAL_RATE_LIMIT_WINDOW_MS) || 60 * 1000,
+    max: Number(process.env.GENERAL_RATE_LIMIT_MAX) || 240,
+    message: "Too many API requests. Please try again shortly.",
+    code: "rate_limit_exceeded"
+})
 const databaseStates = {
     0: "disconnected",
     1: "connected",
@@ -35,20 +45,20 @@ const databaseStates = {
     3: "disconnecting"
 }
 
-const allowedOrigins = Array.from(
-    new Set(
-        [
-            process.env.FRONTEND_URL,
-            "http://localhost:5173"
-        ].filter(Boolean)
-    )
-)
+const corsAllowedOrigins = readAllowedOrigins()
 
-app.use(cors({
-    origin: allowedOrigins,
-    credentials: true
+app.disable("x-powered-by")
+app.set("trust proxy", getTrustProxySetting())
+app.use(securityHeaders())
+
+app.use(cors(buildCorsOptions()))
+app.use(express.json({
+    limit: process.env.JSON_BODY_LIMIT || "100kb"
 }))
-app.use(express.json())
+app.use(express.urlencoded({
+    extended: false,
+    limit: process.env.JSON_BODY_LIMIT || "100kb"
+}))
 
 app.get("/api/health", (req, res) => {
     const readyState = mongoose.connection.readyState
@@ -68,6 +78,8 @@ app.get("/api/health", (req, res) => {
         }
     })
 })
+
+app.use("/api", generalApiRateLimiter)
 
 {/* PUBLIC ROUTES */}
 app.use("/api/auth", router)
@@ -123,3 +135,44 @@ if (hasFrontendBuild) {
 app.use(errorHandler)
 
 module.exports = app
+
+function readAllowedOrigins() {
+    const configuredOrigins = (process.env.CORS_ALLOWED_ORIGINS || "")
+        .split(",")
+        .map((origin) => origin.trim())
+        .filter(Boolean)
+
+    return Array.from(
+        new Set(
+            [
+                process.env.FRONTEND_URL,
+                ...configuredOrigins,
+                !isProduction ? "http://localhost:5173" : null
+            ].filter(Boolean)
+        )
+    )
+}
+
+function buildCorsOptions() {
+    return {
+        origin: (origin, callback) => {
+            if (!origin) {
+                callback(null, true)
+                return
+            }
+
+            callback(null, corsAllowedOrigins.includes(origin))
+        },
+        credentials: true
+    }
+}
+
+function getTrustProxySetting() {
+    const rawValue = process.env.TRUST_PROXY?.trim().toLowerCase()
+
+    if (!rawValue) {
+        return isProduction
+    }
+
+    return rawValue === "true"
+}

@@ -6,7 +6,7 @@ Short-lived JWT access tokens
 Rotating opaque refresh tokens  
 Server-side session tracking (MongoDB)  
 HttpOnly cookie-based refresh mechanism  
-Tenant-aware authentication boundary  
+Tenant-aware authentication boundary
 
 Domain View
 

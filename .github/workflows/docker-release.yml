@@ -14,6 +14,9 @@ jobs:
     permissions:
       contents: read
       packages: write
+    env:
+      DEPLOY_WEBHOOK_URL: ${{ secrets.DEPLOY_WEBHOOK_URL }}
+      DEPLOY_HEALTHCHECK_URL: ${{ secrets.DEPLOY_HEALTHCHECK_URL }}
     concurrency:
       group: docker-release-${{ github.ref }}
       cancel-in-progress: true
@@ -83,15 +86,11 @@ jobs:
           cache-to: type=gha,mode=max
 
       - name: Trigger deployment webhook
-        if: github.ref == 'refs/heads/main' && secrets.DEPLOY_WEBHOOK_URL != ''
-        env:
-          DEPLOY_WEBHOOK_URL: ${{ secrets.DEPLOY_WEBHOOK_URL }}
+        if: github.ref == 'refs/heads/main' && env.DEPLOY_WEBHOOK_URL != ''
         run: curl --fail --show-error --silent --request POST "$DEPLOY_WEBHOOK_URL"
 
       - name: Verify deployed health endpoint
-        if: github.ref == 'refs/heads/main' && secrets.DEPLOY_HEALTHCHECK_URL != ''
-        env:
-          DEPLOY_HEALTHCHECK_URL: ${{ secrets.DEPLOY_HEALTHCHECK_URL }}
+        if: github.ref == 'refs/heads/main' && env.DEPLOY_HEALTHCHECK_URL != ''
         shell: bash
         run: |
           for attempt in {1..10}; do

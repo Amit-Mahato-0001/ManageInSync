@@ -34,9 +34,9 @@ const MessageItem = ({
   const senderEmail = message?.senderId?.email || "Unknown sender"
 
   return (
-    <div className={`flex ${isOwnMessage ? "justify-end" : "justify-start"}`}>
+    <div className={`flex w-full ${isOwnMessage ? "justify-end" : "justify-start"}`}>
       <div
-        className={`w-full max-w-2xl rounded-2xl border p-4 ${
+        className={`max-w-2xl rounded-2xl border p-4 ${
           isOwnMessage
             ? "border border-white/10 bg-gradient-to-br from-[#18181B] to-blue-500"
             : "border border-white/10 bg-gradient-to-br from-[#18181B] to-[#09090B]"

@@ -4,6 +4,7 @@ const MessageList = ({
   messages,
   loading,
   currentUserId,
+  currentUserEmail,
   editingMessageId,
   editText,
   editError,
@@ -20,6 +21,8 @@ const MessageList = ({
   listRef,
   bottomRef
 }) => {
+  const normalizedCurrentUserEmail = currentUserEmail?.trim().toLowerCase()
+
   return (
     <div
       ref={listRef}
@@ -49,13 +52,21 @@ const MessageList = ({
       ) : (
         messages.map((message) => {
           const senderId =
-            typeof message.senderId === "object" ? message.senderId?._id : message.senderId
+            typeof message.senderId === "object"
+              ? message.senderId?._id || message.senderId?.userId || message.senderId?.id
+              : message.senderId
+          const senderEmail = message?.senderId?.email?.trim().toLowerCase()
+          const isOwnMessage =
+            (Boolean(senderId) && Boolean(currentUserId) && String(senderId) === String(currentUserId)) ||
+            (Boolean(senderEmail) &&
+              Boolean(normalizedCurrentUserEmail) &&
+              senderEmail === normalizedCurrentUserEmail)
 
           return (
             <MessageItem
               key={message._id}
               message={message}
-              isOwnMessage={senderId === currentUserId}
+              isOwnMessage={isOwnMessage}
               isEditing={editingMessageId === message._id}
               editText={editText}
               editError={editError}

@@ -70,7 +70,8 @@ const ProjectConversation = () => {
   const messagesRef = useRef([])
   const scrollBehaviorRef = useRef("")
 
-  const currentUserId = user?.userId
+  const currentUserId = user?._id || user?.userId || user?.id
+  const currentUserEmail = user?.email || ""
   const canViewTasks = user?.role !== "client"
   const projectName = state?.projectName || "Project"
   const projectDescription = state?.projectDescription || ""
@@ -433,6 +434,7 @@ const ProjectConversation = () => {
           messages={messages}
           loading={loading}
           currentUserId={currentUserId}
+          currentUserEmail={currentUserEmail}
           editingMessageId={editingMessageId}
           editText={editText}
           editError={editError}

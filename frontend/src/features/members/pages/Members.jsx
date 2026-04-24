@@ -2,8 +2,22 @@ import { useEffect, useState } from "react"
 import toast from "react-hot-toast"
 import { deleteMember, fetchMembers, inviteMember } from "../api/members"
 import { triggerDashboardRefresh } from "@/shared/utils/dashboardRefresh"
-import { Trash2, User2 } from "lucide-react"
+import { RefreshCcw, Trash2, User2 } from "lucide-react"
 import InviteEntityModal from "@/shared/components/InviteEntityModal"
+
+const formatInviteExpiry = (value) => {
+  if (!value) {
+    return ""
+  }
+
+  const date = new Date(value)
+
+  if (Number.isNaN(date.getTime())) {
+    return ""
+  }
+
+  return date.toLocaleDateString()
+}
 
 const Members = () => {
 
@@ -26,7 +40,7 @@ const Members = () => {
         setLoading(true)
       }
 
-      const res = await fetchMembers()
+      const res = await fetchMembers({ includeInvited: true })
       setMembers(res.data.members)
       setError("")
 
@@ -59,6 +73,9 @@ const Members = () => {
     try {
 
       setError("")
+      const existingMember = members.find(
+        (member) => member.email === safeEmail && member.status === "invited"
+      )
 
       await toast.promise(
         (async () => {
@@ -68,7 +85,7 @@ const Members = () => {
         })(),
         {
           loading: "Sending member invite...",
-          success: "Member invite sent",
+          success: existingMember ? "Member invite resent" : "Member invite sent",
           error: (requestError) =>
             requestError?.response?.data?.message || "Failed to send invite",
         }
@@ -82,27 +99,28 @@ const Members = () => {
 
   }
 
-  const handleDelete = async (memberId) => {
+  const handleDelete = async (member) => {
+    const isInvited = member.status === "invited"
 
-    if (!confirm("Delete this member?")) return
+    if (!confirm(isInvited ? "Revoke this member invite?" : "Delete this member?")) return
 
     try {
-      setDeletingMemberId(memberId)
+      setDeletingMemberId(member._id)
 
       await toast.promise(
         (async () => {
-          await deleteMember(memberId)
+          await deleteMember(member._id)
 
           setMembers((prev) =>
-            prev.filter((member) => member._id !== memberId)
+            prev.filter((currentMember) => currentMember._id !== member._id)
           )
 
           triggerDashboardRefresh()
         })(),
         {
-          loading: "Deleting member...",
-          success: "Member deleted",
-          error: "Failed to delete member",
+          loading: isInvited ? "Revoking invite..." : "Deleting member...",
+          success: isInvited ? "Member invite revoked" : "Member deleted",
+          error: isInvited ? "Failed to revoke invite" : "Failed to delete member",
         }
       )
     } catch {
@@ -112,6 +130,25 @@ const Members = () => {
 
     }
 
+  }
+
+  const handleResendInvite = async (memberEmail) => {
+    try {
+      await toast.promise(
+        (async () => {
+          await inviteMember({ email: memberEmail })
+          await loadMembers({ showLoader: false, throwOnError: true })
+        })(),
+        {
+          loading: "Resending invite...",
+          success: "Invite resent",
+          error: (requestError) =>
+            requestError?.response?.data?.message || "Failed to resend invite"
+        }
+      )
+    } catch {
+      return
+    }
   }
 
   if (loading) return <p>Loading members...</p>
@@ -148,45 +185,71 @@ const Members = () => {
       {/* members list */}
       <div className="space-y-3">
 
-        {members.map((m) => (
+        {members.map((m) => {
+          const isInvited = m.status === "invited"
+          const inviteExpiry = formatInviteExpiry(m.inviteTokenExpires)
 
-          <div
-            key={m._id}
-            className="flex items-center justify-between rounded-xl p-5 border border-white/10 bg-gradient-to-br from-[#18181B] to-[#09090B]"
-          >
-
-            {/* left */}
-
-            <div className="flex items-center gap-4 text-2xl">
-
-              <User2 className="w-6 h-6" />
-
-              <span>{m.email}</span>
-
-            </div>
-
-            {/* delete */}
-
-            <button
-              onClick={() => handleDelete(m._id)}
-              disabled={deletingMemberId === m._id}
-              className="disabled:cursor-not-allowed disabled:opacity-60"
+          return (
+            <div
+              key={m._id}
+              className="flex items-center justify-between rounded-xl p-5 border border-white/10 bg-gradient-to-br from-[#18181B] to-[#09090B]"
             >
 
-              <div className="p-2 rounded-lg border border-white/10 bg-gradient-to-br from-[#18181B] to-red-500">
-                <Trash2 className="h-6 w-6" />
+              {/* left */}
+
+              <div className="flex items-center gap-4 text-2xl">
+
+                <User2 className="w-6 h-6" />
+
+                <div className="space-y-1">
+                  <p>{m.email}</p>
+                  <div className="flex flex-wrap items-center gap-2 text-base text-white/50">
+                    <span className={`rounded-full px-2 py-0.5 ${isInvited ? "bg-amber-500/15 text-amber-300" : "bg-emerald-500/15 text-emerald-300"}`}>
+                      {isInvited ? "Invited" : "Active"}
+                    </span>
+
+                    {isInvited && inviteExpiry && (
+                      <span>Expires {inviteExpiry}</span>
+                    )}
+                  </div>
+                </div>
+
               </div>
 
-            </button>
+              {/* delete */}
 
-          </div>
+              <div className="flex items-center gap-3">
+                {isInvited && (
+                  <button
+                    onClick={() => handleResendInvite(m.email)}
+                    className="inline-flex items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-2xl"
+                  >
+                    <RefreshCcw className="h-5 w-5" />
+                    Resend
+                  </button>
+                )}
 
-        ))}
+                <button
+                  onClick={() => handleDelete(m)}
+                  disabled={deletingMemberId === m._id}
+                  className="disabled:cursor-not-allowed disabled:opacity-60"
+                >
+
+                  <div className="p-2 rounded-lg border border-white/10 bg-gradient-to-br from-[#18181B] to-red-500">
+                    <Trash2 className="h-6 w-6" />
+                  </div>
+
+                </button>
+              </div>
+
+            </div>
+          )
+        })}
 
         {members.length === 0 && (
 
           <p className="text-2xl text-white/40">
-            No members invited yet
+            No members or pending invites yet
           </p>
 
         )}

@@ -5,7 +5,7 @@ import authApi from "../api/auth"
 
 const MIN_PASSWORD_LENGTH = 8
 
-export default function AcceptInvite() {
+export default function ResetPassword() {
   const [params] = useSearchParams()
   const token = params.get("token")
   const workspaceFromQuery = params.get("workspace") || ""
@@ -15,13 +15,13 @@ export default function AcceptInvite() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
 
-  const handleSubmit = async (e) => {
-    e.preventDefault()
+  const handleSubmit = async (event) => {
+    event.preventDefault()
 
-    const inviteToken = token?.trim()
+    const resetToken = token?.trim()
 
-    if (!inviteToken) {
-      setError("Invite link is invalid")
+    if (!resetToken) {
+      setError("Reset link is invalid")
       return
     }
 
@@ -35,17 +35,15 @@ export default function AcceptInvite() {
 
     try {
       const response = await toast.promise(
-        authApi.acceptInviteApi({
-          token: inviteToken,
+        authApi.resetPasswordApi({
+          token: resetToken,
           password
         }),
         {
-          loading: "Activating account...",
-          success: "Invite accepted. Please log in.",
+          loading: "Updating password...",
+          success: "Password updated successfully",
           error: (requestError) =>
-            requestError?.response?.data?.error ||
-            requestError?.response?.data?.message ||
-            "Failed to accept invite",
+            requestError?.response?.data?.error || "Failed to reset password"
         }
       )
 
@@ -67,14 +65,14 @@ export default function AcceptInvite() {
   }
 
   return (
-    <div className="w-full">
+    <div className="w-xl">
       <div className="rounded-2xl border border-white/10 bg-gradient-to-br from-[#18181B] to-[#09090B] p-8 text-white shadow-xl">
         <h1 className="text-5xl font-semibold mb-2">
-          Activate your account
+          Choose a new password
         </h1>
 
         <p className="text-2xl text-white/60 mb-7">
-          Set a secure password to complete your invite.
+          Set a new password for your workspace account.
         </p>
 
         <form onSubmit={handleSubmit} className="space-y-4" noValidate>
@@ -86,19 +84,18 @@ export default function AcceptInvite() {
 
           <div className="space-y-1.5">
             <label className="text-2xl text-white/60">New Password</label>
-
             <input
               type="password"
+              className="w-full rounded-md border border-white/10 px-4 py-2.5 text-2xl outline-none focus:border-blue-500/60 focus:ring-2 focus:ring-blue-500/20"
               placeholder="Minimum 8 characters"
               value={password}
-              onChange={(e) => {
-                setPassword(e.target.value)
+              onChange={(event) => {
+                setPassword(event.target.value)
 
                 if (error) {
                   setError("")
                 }
               }}
-              className="w-full rounded-md border border-white/10 px-4 py-2.5 text-2xl outline-none focus:border-blue-500/60 focus:ring-2 focus:ring-blue-500/20"
             />
           </div>
 
@@ -107,12 +104,12 @@ export default function AcceptInvite() {
             disabled={loading}
             className="w-full rounded-lg border border-white/10 bg-gradient-to-br from-[#18181B] to-blue-500 transition-colors text-2xl font-medium py-2.5 disabled:opacity-60 disabled:cursor-not-allowed"
           >
-            {loading ? "Setting password..." : "Set Password"}
+            {loading ? "Saving..." : "Reset Password"}
           </button>
         </form>
 
         <p className="text-2xl text-white/50 mt-6 text-center">
-          Already activated?{" "}
+          Remembered it?{" "}
           <Link
             to={workspaceFromQuery ? `/login?workspace=${encodeURIComponent(workspaceFromQuery)}` : "/login"}
             className="text-blue-400 hover:text-blue-300"

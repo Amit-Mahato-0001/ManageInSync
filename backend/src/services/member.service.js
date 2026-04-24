@@ -1,7 +1,7 @@
 const User = require("../models/user.model")
 const Project = require("../models/project.model")
 
-const getMembers = async (tenantId) => {
+const getMembers = async ({ tenantId, includeInvited = false }) => {
 
   if (!tenantId) {
 
@@ -12,8 +12,10 @@ const getMembers = async (tenantId) => {
   return await User.find({
     tenantId,
     role: "member",
-    status: "active"
-  }).select("email role status")
+    status: includeInvited ? { $in: ["active", "invited"] } : "active"
+  })
+    .select("email role status inviteTokenExpires createdAt")
+    .sort({ createdAt: -1 })
 }
 
 const deleteMember = async ({ memberId, tenantId }) => {
@@ -29,7 +31,7 @@ const deleteMember = async ({ memberId, tenantId }) => {
     _id: memberId,
     tenantId,
     role: "member",
-    status: "active"
+    status: { $in: ["active", "invited"] }
 
   })
 

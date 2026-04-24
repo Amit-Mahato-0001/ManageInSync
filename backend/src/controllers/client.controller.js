@@ -49,7 +49,10 @@ const getClientsHandler = async (req, res, next) => {
 
   try {
 
-    const clients = await getClients(req.tenantId)
+    const clients = await getClients({
+      tenantId: req.tenantId,
+      includeInvited: req.query.includeInvited === "true"
+    })
 
     return res.status(200).json({
       clients

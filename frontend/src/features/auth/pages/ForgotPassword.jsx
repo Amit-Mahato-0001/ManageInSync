@@ -1,24 +1,20 @@
 import { useState } from "react"
-import { Link, useNavigate, useSearchParams } from "react-router-dom"
+import { Link, useSearchParams } from "react-router-dom"
 import toast from "react-hot-toast"
 import authApi from "../api/auth"
-import { useAuth } from "../hooks/useAuth"
 
 const EMAIL_PATTERN = /^\S+@\S+\.\S+$/
 
-const Login = () => {
+export default function ForgotPassword() {
   const [params] = useSearchParams()
   const [workspace, setWorkspace] = useState(() => params.get("workspace") || "")
   const [email, setEmail] = useState("")
-  const [password, setPassword] = useState("")
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
+  const [submitted, setSubmitted] = useState(false)
 
-  const { login } = useAuth()
-  const navigate = useNavigate()
-
-  const handleSubmit = async (e) => {
-    e.preventDefault()
+  const handleSubmit = async (event) => {
+    event.preventDefault()
 
     const safeWorkspace = workspace.trim()
     const safeEmail = email.trim()
@@ -38,27 +34,24 @@ const Login = () => {
       return
     }
 
-    if (!password) {
-      setError("Password is required")
-      return
-    }
-
-    setError("")
     setLoading(true)
+    setError("")
 
     try {
-      const res = await toast.promise(
-        authApi.loginApi({ workspace: safeWorkspace, email: safeEmail, password }),
+      await toast.promise(
+        authApi.forgotPasswordApi({
+          workspace: safeWorkspace,
+          email: safeEmail
+        }),
         {
-          loading: "Logging in...",
-          success: "Logged in successfully",
+          loading: "Sending reset link...",
+          success: "If the account exists, a reset link has been sent",
           error: (requestError) =>
-            requestError?.response?.data?.error || "Invalid workspace, email, or password",
+            requestError?.response?.data?.error || "Failed to send reset link"
         }
       )
 
-      login(res.data)
-      navigate("/")
+      setSubmitted(true)
     } catch {
       return
     } finally {
@@ -70,11 +63,11 @@ const Login = () => {
     <div className="w-xl">
       <div className="rounded-2xl border border-white/10 bg-gradient-to-br from-[#18181B] to-[#09090B] p-8 text-white shadow-xl">
         <h1 className="text-5xl font-semibold mb-2">
-          Welcome back
+          Reset your password
         </h1>
 
         <p className="text-2xl text-white/60 mb-7">
-          Sign in to continue managing your projects, members, and clients.
+          Enter your workspace and email address to receive a reset link.
         </p>
 
         <form onSubmit={handleSubmit} className="space-y-4" noValidate>
@@ -84,14 +77,20 @@ const Login = () => {
             </p>
           )}
 
+          {submitted && (
+            <p className="text-2xl text-emerald-300 bg-emerald-500/10 border border-emerald-500/20 rounded-md px-3 py-2">
+              Check your inbox for a reset link if the workspace and email match an account.
+            </p>
+          )}
+
           <div className="space-y-1.5">
             <label className="text-2xl text-white/60">Workspace</label>
             <input
               className="w-full rounded-md border border-white/10 px-4 py-2.5 text-2xl outline-none focus:border-blue-500/60 focus:ring-2 focus:ring-blue-500/20"
               placeholder="your-workspace"
               value={workspace}
-              onChange={(e) => {
-                setWorkspace(e.target.value)
+              onChange={(event) => {
+                setWorkspace(event.target.value)
 
                 if (error) {
                   setError("")
@@ -105,27 +104,10 @@ const Login = () => {
             <input
               type="email"
               className="w-full rounded-md border border-white/10 px-4 py-2.5 text-2xl outline-none focus:border-blue-500/60 focus:ring-2 focus:ring-blue-500/20"
-              placeholder="your@gmail.com"
+              placeholder="you@example.com"
               value={email}
-              onChange={(e) => {
-                setEmail(e.target.value)
-
-                if (error) {
-                  setError("")
-                }
-              }}
-            />
-          </div>
-
-          <div className="space-y-1.5">
-            <label className="text-2xl text-white/60">Password</label>
-            <input
-              type="password"
-              className="w-full rounded-md border border-white/10 px-4 py-2.5 text-2xl outline-none focus:border-blue-500/60 focus:ring-2 focus:ring-blue-500/20"
-              placeholder="Enter your password"
-              value={password}
-              onChange={(e) => {
-                setPassword(e.target.value)
+              onChange={(event) => {
+                setEmail(event.target.value)
 
                 if (error) {
                   setError("")
@@ -139,25 +121,20 @@ const Login = () => {
             disabled={loading}
             className="w-full rounded-lg border border-white/10 bg-gradient-to-br from-[#18181B] to-blue-500 transition-colors text-2xl font-medium py-2.5 disabled:opacity-60 disabled:cursor-not-allowed"
           >
-            {loading ? "Logging in..." : "Login"}
+            {loading ? "Sending link..." : "Send reset link"}
           </button>
         </form>
 
-        <div className="mt-4 text-right">
-          <Link to={`/forgot-password${workspace.trim() ? `?workspace=${encodeURIComponent(workspace.trim())}` : ""}`} className="text-2xl text-blue-400 hover:text-blue-300">
-            Forgot password?
-          </Link>
-        </div>
-
         <p className="text-2xl text-white/50 mt-6 text-center">
-          Don&apos;t have an account?{" "}
-          <Link to="/signup" className="text-blue-400 hover:text-blue-300">
-            Create one
+          Back to{" "}
+          <Link
+            to={workspace.trim() ? `/login?workspace=${encodeURIComponent(workspace.trim())}` : "/login"}
+            className="text-blue-400 hover:text-blue-300"
+          >
+            Login
           </Link>
         </p>
       </div>
     </div>
   )
 }
-
-export default Login

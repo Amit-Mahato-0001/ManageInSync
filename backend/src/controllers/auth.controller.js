@@ -4,7 +4,10 @@ const {
     refreshSession,
     logout,
     logoutAll,
-    acceptInvite
+    acceptInvite,
+    requestPasswordReset,
+    resetPassword,
+    changePassword
 } = require("../services/auth.service")
 const {
     ACTIVITY_CATEGORIES,
@@ -64,7 +67,8 @@ const signupHandler = async (req, res, next) => {
         return res.status(201).json({
             message: "Signup successful",
             accessToken: result.accessToken,
-            user: result.user
+            user: result.user,
+            tenant: result.tenant
         })
     } catch (error) {
         next(error)
@@ -73,9 +77,9 @@ const signupHandler = async (req, res, next) => {
 
 const loginHandler = async (req, res, next) => {
     try {
-        const { email, password } = req.body
+        const { workspace, email, password } = req.body
 
-        const result = await login({ email, password, req })
+        const result = await login({ workspace, email, password, req })
 
         setRefreshCookie(res, result.refreshToken)
 
@@ -91,9 +95,45 @@ const loginHandler = async (req, res, next) => {
         return res.status(200).json({
             message: "Login successful",
             accessToken: result.accessToken,
-            user: result.user
+            user: result.user,
+            tenant: result.tenant
         })
     } catch (error) {
+        next(error)
+    }
+}
+
+const forgotPasswordHandler = async (req, res, next) => {
+    try {
+        const { workspace, email } = req.body
+
+        await requestPasswordReset({
+            workspace,
+            email
+        })
+
+        return res.status(200).json({
+            message:
+                "If the workspace and email match an account, a reset link has been sent."
+        })
+    } catch (error) {
+        next(error)
+    }
+}
+
+const resetPasswordHandler = async (req, res, next) => {
+    try {
+        const { token, password } = req.body
+        const result = await resetPassword({
+            token,
+            password
+        })
+
+        clearRefreshCookie(res)
+
+        return res.status(200).json(result)
+    } catch (error) {
+        clearRefreshCookie(res)
         next(error)
     }
 }
@@ -109,7 +149,8 @@ const refreshHandler = async (req, res, next) => {
         return res.status(200).json({
             message: "Session refreshed",
             accessToken: result.accessToken,
-            user: result.user
+            user: result.user,
+            tenant: result.tenant
         })
     } catch (error) {
         clearRefreshCookie(res)
@@ -156,6 +197,30 @@ const logoutAllHandler = async (req, res, next) => {
     }
 }
 
+const changePasswordHandler = async (req, res, next) => {
+    try {
+        const result = await changePassword({
+            userId: req.user._id,
+            currentPassword: req.body.currentPassword,
+            newPassword: req.body.newPassword
+        })
+
+        clearRefreshCookie(res)
+
+        await recordAuthAudit({
+            user: req.user,
+            action: "auth.password_changed",
+            meta: {
+                email: req.user.email
+            }
+        })
+
+        return res.status(200).json(result)
+    } catch (error) {
+        next(error)
+    }
+}
+
 const acceptInviteHandler = async (req, res, next) => {
     try {
         const { token, password } = req.body
@@ -184,9 +249,12 @@ const acceptInviteHandler = async (req, res, next) => {
 
 module.exports = {
     acceptInviteHandler,
+    changePasswordHandler,
+    forgotPasswordHandler,
     loginHandler,
     logoutAllHandler,
     logoutHandler,
     refreshHandler,
+    resetPasswordHandler,
     signupHandler
 }

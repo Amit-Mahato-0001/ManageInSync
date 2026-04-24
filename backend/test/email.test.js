@@ -38,9 +38,17 @@ const loadEmailUtils = (overrides = {}) => {
     )
     assert.equal(
         emailUtils.buildInviteLink({
-            inviteToken: "abc 123"
+            inviteToken: "abc 123",
+            workspace: "manageinsync"
         }),
-        "https://app.manageinsync.test/accept-invite?token=abc%20123"
+        "https://app.manageinsync.test/accept-invite?token=abc+123&workspace=manageinsync"
+    )
+    assert.equal(
+        emailUtils.buildPasswordResetLink({
+            resetToken: "reset 123",
+            workspace: "manageinsync"
+        }),
+        "https://app.manageinsync.test/reset-password?token=reset+123&workspace=manageinsync"
     )
 
     restoreEnvironment()

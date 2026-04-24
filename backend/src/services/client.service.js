@@ -4,9 +4,13 @@ const User = require('../models/user.model')
 const Project = require('../models/project.model')
 const Invoice = require('../models/invoice.model')
 
-const createClient = async ({ email, name, tenantId}) => {
+const normalizeEmail = (value = "") =>
+    typeof value === "string" ? value.trim().toLowerCase() : ""
 
-    if(!tenantId){
+const createClient = async ({ email, name, tenantId}) => {
+    const safeEmail = normalizeEmail(email)
+
+    if(!tenantId || !safeEmail){
 
         throw new Error("tenantId required")
     }
@@ -16,7 +20,7 @@ const createClient = async ({ email, name, tenantId}) => {
         throw new Error("Invalid tenantId")
     }
 
-    const existingUser = await User.findOne({ email, tenantId})
+    const existingUser = await User.findOne({ email: safeEmail, tenantId})
 
     if(existingUser){
         throw new Error("Client already exists")
@@ -28,7 +32,7 @@ const createClient = async ({ email, name, tenantId}) => {
 
     const client = await User.create({
 
-        email,
+        email: safeEmail,
         name,
         password: hashedPassword,
         role: "client",
@@ -39,7 +43,7 @@ const createClient = async ({ email, name, tenantId}) => {
     return client
 }
 
-const getClients = (tenantId) => {
+const getClients = ({ tenantId, includeInvited = false }) => {
 
     if(!tenantId){
 
@@ -49,8 +53,10 @@ const getClients = (tenantId) => {
     const clients = User.find({
         tenantId,
         role: "client",
-        status: "active"
-    }).select("email name")
+        status: includeInvited ? { $in: ["active", "invited"] } : "active"
+    })
+        .select("email name role status inviteTokenExpires createdAt")
+        .sort({ createdAt: -1 })
 
     return clients
 }
@@ -81,7 +87,8 @@ const deleteClient = async ({ clientId, tenantId }) => {
     const client = await User.findOneAndDelete({
         _id: clientId,
         tenantId,
-        role: "client"
+        role: "client",
+        status: { $in: ["active", "invited"] }
     })
 
     if(!client){

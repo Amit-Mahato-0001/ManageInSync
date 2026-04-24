@@ -34,6 +34,12 @@ const userSchema = new mongoose.Schema({
     },
     inviteTokenExpires: {
         type: Date
+    },
+    passwordResetTokenHash: {
+        type: String
+    },
+    passwordResetTokenExpiresAt: {
+        type: Date
     }
 
 }, {timestamps: true}
@@ -49,5 +55,6 @@ userSchema.index(
     {email: 1, tenantId: 1},
     {unique: true}
 )
+userSchema.index({ passwordResetTokenHash: 1 })
 
 module.exports = mongoose.model("User", userSchema)

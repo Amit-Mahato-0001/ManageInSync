@@ -8,13 +8,15 @@ let sharedRefreshPromise = null
 const AuthProvider = ({ children }) => {
   const [token, setToken] = useState(null)
   const [user, setUser] = useState(null)
+  const [tenant, setTenant] = useState(null)
   const [status, setStatus] = useState("loading")
   const logoutInFlightRef = useRef(null)
 
-  const applyAuthState = useCallback(({ accessToken, user: nextUser, status: nextStatus }) => {
+  const applyAuthState = useCallback(({ accessToken, user: nextUser, tenant: nextTenant, status: nextStatus }) => {
     syncAccessToken(accessToken)
     setToken(accessToken || null)
     setUser(nextUser || null)
+    setTenant(nextTenant || null)
 
     if (nextStatus) {
       setStatus(nextStatus)
@@ -25,6 +27,7 @@ const AuthProvider = ({ children }) => {
     applyAuthState({
       accessToken: null,
       user: null,
+      tenant: null,
       status: "anonymous",
     })
   }, [applyAuthState])
@@ -36,6 +39,7 @@ const AuthProvider = ({ children }) => {
         .then((response) => {
           const nextToken = response.data?.accessToken
           const nextUser = response.data?.user || null
+          const nextTenant = response.data?.tenant || null
 
           if (!nextToken) {
             throw new Error("Missing access token")
@@ -44,6 +48,7 @@ const AuthProvider = ({ children }) => {
           applyAuthState({
             accessToken: nextToken,
             user: nextUser,
+            tenant: nextTenant,
             status: "authenticated",
           })
 
@@ -101,6 +106,7 @@ const AuthProvider = ({ children }) => {
     applyAuthState({
       accessToken: payload?.accessToken || null,
       user: payload?.user || null,
+      tenant: payload?.tenant || null,
       status: payload?.accessToken ? "authenticated" : "anonymous",
     })
   }, [applyAuthState])
@@ -117,13 +123,14 @@ const AuthProvider = ({ children }) => {
     () => ({
       token,
       user,
+      tenant,
       status,
       isAuthenticated: status === "authenticated",
       login,
       logout,
       refreshSession,
     }),
-    [login, logout, refreshSession, status, token, user]
+    [login, logout, refreshSession, status, tenant, token, user]
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

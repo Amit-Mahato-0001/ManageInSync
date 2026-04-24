@@ -1,10 +1,16 @@
 const crypto = require('crypto')
 const User = require('../models/user.model')
+const Tenant = require("../models/tenant.model")
 const { sendInviteEmail } = require('../utils/email')
+const { normalizeWorkspaceInput } = require("../utils/workspace")
+
+const normalizeEmail = (value = "") =>
+    typeof value === "string" ? value.trim().toLowerCase() : ""
 
 const inviteUser = async ({email, tenantId, role, invitedByRole}) => {
+    const safeEmail = normalizeEmail(email)
 
-    if(!tenantId || !role || !invitedByRole){
+    if(!tenantId || !role || !invitedByRole || !safeEmail){
 
         throw new Error("tenantId and role and inviter role required")
     }
@@ -30,8 +36,13 @@ const inviteUser = async ({email, tenantId, role, invitedByRole}) => {
 
     const inviteToken = crypto.randomBytes(32).toString("hex")
     const inviteTokenExpires = Date.now() + 24 * 60 * 60 * 1000 //24hrs
+    const tenant = await Tenant.findById(tenantId).select("name slug")
 
-    let user = await User.findOne({ email, tenantId})
+    if (!tenant) {
+        throw new Error("Tenant not found")
+    }
+
+    let user = await User.findOne({ email: safeEmail, tenantId})
 
     if(user && user.status === "active"){
 
@@ -41,7 +52,7 @@ const inviteUser = async ({email, tenantId, role, invitedByRole}) => {
     if(!user){
 
         user = await User.create({
-            email,
+            email: safeEmail,
             tenantId,
             role,
             status: "invited",
@@ -61,8 +72,9 @@ const inviteUser = async ({email, tenantId, role, invitedByRole}) => {
     }
 
     await sendInviteEmail({
-        to: email,
-        inviteToken
+        to: safeEmail,
+        inviteToken,
+        workspace: tenant.slug || normalizeWorkspaceInput(tenant.name)
     })
 
     return{

@@ -1,9 +1,11 @@
+const crypto = require("crypto")
 const jwt = require("jsonwebtoken")
 const bcrypt = require("bcrypt")
 const mongoose = require("mongoose")
 
 const createTenant = require("../services/tenant.service")
 const createUser = require("../services/user.service")
+const Tenant = require("../models/tenant.model")
 const User = require("../models/user.model")
 const Session = require("../models/session.model")
 const createHttpError = require("../utils/httpError")
@@ -17,6 +19,26 @@ const {
     getUserAgent,
     hashToken
 } = require("../utils/auth")
+const { sendPasswordResetEmail } = require("../utils/email")
+const { buildWorkspaceLookupQuery } = require("../utils/workspace")
+
+const PASSWORD_RESET_TTL_MS = 60 * 60 * 1000
+
+const normalizeEmail = (value = "") =>
+    typeof value === "string" ? value.trim().toLowerCase() : ""
+
+const serializeTenant = (tenant) => {
+    if (!tenant) {
+        return null
+    }
+
+    return {
+        id: tenant._id,
+        name: tenant.name,
+        slug: tenant.slug || null,
+        plan: tenant.plan
+    }
+}
 
 const makeAccessToken = ({ user, sessionId }) =>
     jwt.sign(
@@ -31,10 +53,11 @@ const makeAccessToken = ({ user, sessionId }) =>
         { expiresIn: getAccessTokenTtl() }
     )
 
-const buildAuthResponse = ({ user, session, refreshToken }) => ({
+const buildAuthResponse = ({ user, session, refreshToken, tenant }) => ({
     accessToken: makeAccessToken({ user, sessionId: session._id }),
     refreshToken,
-    user: serializeAuthUser(user)
+    user: serializeAuthUser(user),
+    tenant: serializeTenant(tenant)
 })
 
 const createSessionRecord = async ({ user, req, rotatedFromSessionId }) => {
@@ -96,26 +119,41 @@ const revokeAllUserSessions = async ({ userId, reason }) => {
     )
 }
 
-const signup = async ({ agencyName, email, password, req }) => {
-    const existingUser = await User.findOne({ email })
+const findTenantByWorkspace = async (workspace) => {
+    const query = buildWorkspaceLookupQuery(workspace)
 
-    if (existingUser) {
-        throw createHttpError("Email already registered", 409, "email_already_registered")
+    if (!query) {
+        return null
     }
 
+    return Tenant.findOne(query).select("_id name slug plan")
+}
+
+const getTenantById = async (tenantId) =>
+    Tenant.findById(tenantId).select("_id name slug plan")
+
+const createPasswordResetToken = () =>
+    crypto.randomBytes(32).toString("hex")
+
+const getPasswordResetExpiryDate = () =>
+    new Date(Date.now() + PASSWORD_RESET_TTL_MS)
+
+const signup = async ({ agencyName, email, password, req }) => {
+    const safeEmail = normalizeEmail(email)
     const transactionSession = await mongoose.startSession()
     let user
+    let tenant
 
     try {
         await transactionSession.withTransaction(async () => {
-            const tenant = await createTenant(
+            tenant = await createTenant(
                 { name: agencyName },
                 { session: transactionSession }
             )
 
             user = await createUser(
                 {
-                    email,
+                    email: safeEmail,
                     password,
                     tenantId: tenant._id,
                     role: "owner"
@@ -127,17 +165,27 @@ const signup = async ({ agencyName, email, password, req }) => {
         await transactionSession.endSession()
     }
 
-    if (!user) {
+    if (!user || !tenant) {
         throw createHttpError("Signup failed", 500, "signup_failed")
     }
 
     const { session, refreshToken } = await createSessionRecord({ user, req })
 
-    return buildAuthResponse({ user, session, refreshToken })
+    return buildAuthResponse({ user, session, refreshToken, tenant })
 }
 
-const login = async ({ email, password, req }) => {
-    const user = await User.findOne({ email }).select("+password")
+const login = async ({ workspace, email, password, req }) => {
+    const safeEmail = normalizeEmail(email)
+    const tenant = await findTenantByWorkspace(workspace)
+
+    if (!tenant) {
+        throw createHttpError("Invalid credentials", 401, "invalid_credentials")
+    }
+
+    const user = await User.findOne({
+        email: safeEmail,
+        tenantId: tenant._id
+    }).select("+password")
 
     if (!user) {
         throw createHttpError("Invalid credentials", 401, "invalid_credentials")
@@ -172,7 +220,7 @@ const login = async ({ email, password, req }) => {
 
     const { session, refreshToken } = await createSessionRecord({ user, req })
 
-    return buildAuthResponse({ user, session, refreshToken })
+    return buildAuthResponse({ user, session, refreshToken, tenant })
 }
 
 const refreshSession = async ({ refreshToken, req }) => {
@@ -259,10 +307,13 @@ const refreshSession = async ({ refreshToken, req }) => {
 
     await session.save()
 
+    const tenant = await getTenantById(user.tenantId)
+
     return buildAuthResponse({
         user,
         session: nextSession,
-        refreshToken: nextRefreshToken
+        refreshToken: nextRefreshToken,
+        tenant
     })
 }
 
@@ -293,6 +344,108 @@ const logoutAll = async ({ userId }) => {
     return { success: true }
 }
 
+const requestPasswordReset = async ({ workspace, email }) => {
+    const safeEmail = normalizeEmail(email)
+    const tenant = await findTenantByWorkspace(workspace)
+
+    if (!tenant) {
+        return { success: true }
+    }
+
+    const user = await User.findOne({
+        email: safeEmail,
+        tenantId: tenant._id,
+        status: { $ne: "disabled" }
+    }).select("+password")
+
+    if (!user || !user.password) {
+        return { success: true }
+    }
+
+    const resetToken = createPasswordResetToken()
+
+    user.passwordResetTokenHash = hashToken(resetToken)
+    user.passwordResetTokenExpiresAt = getPasswordResetExpiryDate()
+    await user.save()
+
+    await sendPasswordResetEmail({
+        to: user.email,
+        resetToken,
+        workspace: tenant.slug || tenant.name
+    })
+
+    return { success: true }
+}
+
+const resetPassword = async ({ token, password }) => {
+    const resetToken = token?.trim()
+
+    if (!resetToken) {
+        throw createHttpError("Invalid or expired reset link", 400, "reset_token_invalid")
+    }
+
+    const user = await User.findOne({
+        passwordResetTokenHash: hashToken(resetToken),
+        passwordResetTokenExpiresAt: {
+            $gt: new Date()
+        }
+    }).select("+password")
+
+    if (!user || user.status === "disabled") {
+        throw createHttpError("Invalid or expired reset link", 400, "reset_token_invalid")
+    }
+
+    user.password = await bcrypt.hash(password, 12)
+    user.passwordResetTokenHash = undefined
+    user.passwordResetTokenExpiresAt = undefined
+    await user.save()
+
+    await revokeAllUserSessions({
+        userId: user._id,
+        reason: "password_reset"
+    })
+
+    const tenant = await getTenantById(user.tenantId)
+
+    return {
+        message: "Password reset successful. Please log in again.",
+        workspace: serializeTenant(tenant),
+        user: serializeAuthUser(user)
+    }
+}
+
+const changePassword = async ({ userId, currentPassword, newPassword }) => {
+    const user = await User.findById(userId).select("+password")
+
+    if (!user || !user.password) {
+        throw createHttpError("Authentication required", 401, "auth_required")
+    }
+
+    const isMatch = await bcrypt.compare(currentPassword, user.password)
+
+    if (!isMatch) {
+        throw createHttpError("Current password is incorrect", 400, "invalid_current_password")
+    }
+
+    user.password = await bcrypt.hash(newPassword, 12)
+    user.passwordResetTokenHash = undefined
+    user.passwordResetTokenExpiresAt = undefined
+    await user.save()
+
+    await revokeAllUserSessions({
+        userId: user._id,
+        reason: "password_changed"
+    })
+
+    const tenant = await getTenantById(user.tenantId)
+
+    return {
+        message: "Password changed successfully. Please log in again.",
+        workspace: serializeTenant(tenant),
+        user: serializeAuthUser(user)
+    }
+}
+
 const acceptInvite = async ({ token, password }) => {
     const inviteToken = token?.trim()
 
@@ -312,9 +465,7 @@ const acceptInvite = async ({ token, password }) => {
         throw createHttpError("Invite already used", 400, "invite_already_used")
     }
 
-    const hashedPassword = await bcrypt.hash(password, 10)
-
-    user.password = hashedPassword
+    user.password = await bcrypt.hash(password, 10)
 
     if (user.role !== "member") {
         user.status = "active"
@@ -325,21 +476,27 @@ const acceptInvite = async ({ token, password }) => {
 
     await user.save()
 
+    const tenant = await getTenantById(user.tenantId)
+
     return {
         message:
             user.role === "member"
                 ? "Password set. Login to activate account"
                 : "Password set successfully. You can login now",
-        user: serializeAuthUser(user)
+        user: serializeAuthUser(user),
+        workspace: serializeTenant(tenant)
     }
 }
 
 module.exports = {
     acceptInvite,
+    changePassword,
     login,
     logout,
     logoutAll,
     refreshSession,
+    requestPasswordReset,
+    resetPassword,
     revokeAllUserSessions,
     signup
 }

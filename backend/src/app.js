@@ -17,6 +17,7 @@ const clientRoutes = require('./routes/client.route')
 const activityRoutes = require('./routes/activity.route')
 const dashboardRoutes = require('./routes/dashboard.route')
 const billingRoutes = require('./routes/billing.route')
+const auditRoutes = require("./routes/audit.route")
 const cors = require('cors')
 const inviteRoutes = require('./routes/invite.route')
 const memberRoutes = require('./routes/member.route')
@@ -95,6 +96,7 @@ protectedApi.get("/me", (req, res) => {
         tenant: {
             id: req.tenantId,
             name: req.tenant.name,
+            slug: req.tenant.slug || null,
             plan: req.tenant.plan
         }
     })
@@ -117,6 +119,7 @@ protectedApi.use("/clients", clientRoutes)
 protectedApi.use("/activity-feed", activityRoutes)
 protectedApi.use("/dashboard", dashboardRoutes)
 protectedApi.use("/billing", billingRoutes)
+protectedApi.use("/audit-logs", auditRoutes)
 protectedApi.use("/members", memberRoutes)
 protectedApi.use("/tenants", tenantRoutes)
 protectedApi.use("/users", userRoutes)

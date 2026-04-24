@@ -18,6 +18,7 @@ import {
   runAsyncToast,
   splitValidationErrors
 } from "../utils/projectModuleUtils"
+import { getAuthUserId } from "@/features/auth/utils/getAuthUserId"
 
 const POLL_INTERVAL_MS = 6000
 
@@ -70,7 +71,7 @@ const ProjectConversation = () => {
   const messagesRef = useRef([])
   const scrollBehaviorRef = useRef("")
 
-  const currentUserId = user?._id || user?.userId || user?.id
+  const currentUserId = getAuthUserId(user)
   const currentUserEmail = user?.email || ""
   const canViewTasks = user?.role !== "client"
   const projectName = state?.projectName || "Project"

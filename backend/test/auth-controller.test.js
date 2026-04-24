@@ -48,6 +48,11 @@ const loadAuthController = ({
                     tenantId: "tenant-1",
                     email: "owner@manageinsync.test",
                     role: "owner"
+                },
+                tenant: {
+                    id: "tenant-1",
+                    name: "ManageInSync",
+                    slug: "manageinsync"
                 }
             }),
             login: async () => ({
@@ -58,6 +63,11 @@ const loadAuthController = ({
                     tenantId: "tenant-1",
                     email: "owner@manageinsync.test",
                     role: "owner"
+                },
+                tenant: {
+                    id: "tenant-1",
+                    name: "ManageInSync",
+                    slug: "manageinsync"
                 }
             }),
             refreshSession: async () => ({
@@ -68,6 +78,11 @@ const loadAuthController = ({
                     tenantId: "tenant-1",
                     email: "owner@manageinsync.test",
                     role: "owner"
+                },
+                tenant: {
+                    id: "tenant-1",
+                    name: "ManageInSync",
+                    slug: "manageinsync"
                 }
             }),
             logout: async () => ({
@@ -75,6 +90,25 @@ const loadAuthController = ({
             }),
             logoutAll: async () => ({
                 success: true
+            }),
+            requestPasswordReset: async () => ({
+                success: true
+            }),
+            resetPassword: async () => ({
+                message: "Password reset successful. Please log in again.",
+                workspace: {
+                    id: "tenant-1",
+                    name: "ManageInSync",
+                    slug: "manageinsync"
+                }
+            }),
+            changePassword: async () => ({
+                message: "Password changed successfully. Please log in again.",
+                workspace: {
+                    id: "tenant-1",
+                    name: "ManageInSync",
+                    slug: "manageinsync"
+                }
             }),
             acceptInvite: async () => ({
                 message: "Password set successfully",
@@ -150,6 +184,7 @@ const loadAuthController = ({
         await authController.loginHandler(
             {
                 body: {
+                    workspace: "manageinsync",
                     email: "owner@manageinsync.test",
                     password: "password123"
                 }
@@ -164,7 +199,67 @@ const loadAuthController = ({
         assert.equal(res.statusCode, 200)
         assert.equal(res.payload.message, "Login successful")
         assert.equal(res.payload.accessToken, "login-token")
+        assert.equal(res.payload.tenant.slug, "manageinsync")
         assert.deepEqual(sharedState.setRefreshCookieCalls, ["login-refresh"])
+
+        restoreEnvironment()
+        clearBackendModuleCache()
+    }
+
+    {
+        const { authController, restoreEnvironment } = loadAuthController()
+        const res = createResponse()
+        let nextCalled = false
+
+        await authController.forgotPasswordHandler(
+            {
+                body: {
+                    workspace: "manageinsync",
+                    email: "owner@manageinsync.test"
+                }
+            },
+            res,
+            () => {
+                nextCalled = true
+            }
+        )
+
+        assert.equal(nextCalled, false)
+        assert.equal(res.statusCode, 200)
+        assert.match(res.payload.message, /reset link has been sent/i)
+
+        restoreEnvironment()
+        clearBackendModuleCache()
+    }
+
+    {
+        const { authController, restoreEnvironment, sharedState } = loadAuthController()
+        const res = createResponse()
+        let nextCalled = false
+
+        await authController.changePasswordHandler(
+            {
+                user: {
+                    _id: "user-1",
+                    tenantId: "tenant-1",
+                    email: "owner@manageinsync.test",
+                    role: "owner"
+                },
+                body: {
+                    currentPassword: "password123",
+                    newPassword: "new-password123"
+                }
+            },
+            res,
+            () => {
+                nextCalled = true
+            }
+        )
+
+        assert.equal(nextCalled, false)
+        assert.equal(res.statusCode, 200)
+        assert.match(res.payload.message, /password changed successfully/i)
+        assert.equal(sharedState.clearRefreshCookieCalls, 1)
 
         restoreEnvironment()
         clearBackendModuleCache()

@@ -8,6 +8,18 @@ const signupApi = (data) => {
     return authClient.post("/auth/signup", data)
 }
 
+const forgotPasswordApi = (data) => {
+    return authClient.post("/auth/forgot-password", data)
+}
+
+const resetPasswordApi = (data) => {
+    return authClient.post("/auth/reset-password", data)
+}
+
+const changePasswordApi = (data) => {
+    return api.post("/auth/change-password", data)
+}
+
 const refreshApi = () => {
     return authClient.post("/auth/refresh")
 }
@@ -32,10 +44,13 @@ const meApi = () => {
 
 export default {
     acceptInviteApi,
+    changePasswordApi,
+    forgotPasswordApi,
     loginApi,
     logoutAllApi,
     logoutApi,
     meApi,
     refreshApi,
+    resetPasswordApi,
     signupApi
 }

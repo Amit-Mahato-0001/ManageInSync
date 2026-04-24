@@ -13,7 +13,10 @@ const getMembersHandler = async (req, res, next) => {
 
   try {
 
-    const members = await getMembers(req.tenantId)
+    const members = await getMembers({
+      tenantId: req.tenantId,
+      includeInvited: req.query.includeInvited === "true"
+    })
 
     res.status(200).json({ members })
 

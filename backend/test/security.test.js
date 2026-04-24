@@ -92,6 +92,7 @@ const run = async () => {
                     "Content-Type": "application/json"
                 },
                 body: JSON.stringify({
+                    workspace: "demo-workspace",
                     email: "not-an-email",
                     password: "short"
                 })
@@ -106,6 +107,7 @@ const run = async () => {
                 "Content-Type": "application/json"
             },
             body: JSON.stringify({
+                workspace: "demo-workspace",
                 email: "not-an-email",
                 password: "short"
             })
@@ -117,6 +119,7 @@ const run = async () => {
         assert.ok(Number(throttledResponse.headers.get("retry-after")) >= 0)
 
         const oversizedPayload = JSON.stringify({
+            workspace: "demo-workspace",
             email: "person@example.com",
             password: "a".repeat(3000)
         })

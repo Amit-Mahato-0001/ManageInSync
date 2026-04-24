@@ -1,8 +1,8 @@
 import api from '@/shared/api/axios'
 
-export const fetchMembers = () => {
+export const fetchMembers = (params) => {
     
-    return api.get('/members')
+    return api.get('/members', { params })
 }
 
 export const inviteMember = (data) => {

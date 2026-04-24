@@ -8,6 +8,14 @@ const tenantSchema = new mongoose.Schema({
         unique: true,
         index: true
     },
+    slug: {
+        type: String,
+        trim: true,
+        lowercase: true,
+        unique: true,
+        sparse: true,
+        index: true
+    },
     plan: {
         type: String,
         enum: ["free", "pro"],

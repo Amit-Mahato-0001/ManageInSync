@@ -8,21 +8,28 @@ import {
   User,
   CreditCard,
   FileText,
+  ScrollText,
+  Shield,
   LogOut,
 } from "lucide-react";
 
 export default function AppLayout({ children }) {
-  const { user, logout } = useAuth();
+  const { user, tenant, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   const handleLogout = async () => {
     setIsLoggingOut(true);
+    const workspace = tenant?.slug || tenant?.name || "";
 
     try {
       await logout();
-      navigate("/login");
+      navigate(
+        workspace
+          ? `/login?workspace=${encodeURIComponent(workspace)}`
+          : "/login"
+      );
     } finally {
       setIsLoggingOut(false);
     }
@@ -35,6 +42,8 @@ export default function AppLayout({ children }) {
     { name: "Clients", to: "/clients", icon: User, roles: ["owner", "admin"] },
     { name: "Members", to: "/members", icon: Users, roles: ["owner", "admin"] },
     { name: "Activity Feed", to: "/activity-feed", icon: FileText, roles: ["owner", "admin", "member"] },
+    { name: "Audit Logs", to: "/audit-logs", icon: ScrollText, roles: ["owner", "admin"] },
+    { name: "Security", to: "/security", icon: Shield, roles: ["owner", "admin", "member", "client"] },
   ];
 
   return (
@@ -43,7 +52,7 @@ export default function AppLayout({ children }) {
       {/* NAVBAR */}
       <header className="h-20 flex items-center justify-between px-6 border-b border-white/10 bg-[#18181B]">
         <div className="flex items-center gap-3">
-          <img src="/Union.png" className="h-12" />
+          <img src="/Union.png" alt="ManageInSync" className="h-12" />
         </div>
 
         <button

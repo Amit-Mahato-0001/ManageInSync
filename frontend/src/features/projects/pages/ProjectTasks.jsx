@@ -3,6 +3,7 @@ import { Link, useLocation, useParams } from "react-router-dom"
 import { ArrowLeft, Rocket, Trash2, X } from "lucide-react"
 import { createTask, deleteTask, fetchTasks, updateTask } from "../api/tasks"
 import { useAuth } from "@/features/auth/hooks/useAuth"
+import { getAuthUserId } from "@/features/auth/utils/getAuthUserId"
 import TasksPagination from "@/shared/components/TasksPagination"
 import { formatDate } from "@/shared/utils/formatDate"
 import {
@@ -75,7 +76,7 @@ const ProjectTasks = () => {
   const canCreateTasks = user?.role === "owner" || user?.role === "admin"
   const canUpdateTasks =
     user?.role === "owner" || user?.role === "admin" || user?.role === "member"
-  const currentUserId = user?.userId
+  const currentUserId = getAuthUserId(user)
   const projectName = state?.projectName || "Project"
   const projectDescription = state?.projectDescription || ""
   const projectTargetDate = state?.projectTargetDate || ""

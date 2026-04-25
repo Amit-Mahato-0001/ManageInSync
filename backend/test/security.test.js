@@ -31,6 +31,7 @@ const close = (server) =>
 
 const run = async () => {
     const restoreEnvironment = applyTestEnvironment({
+        NODE_ENV: "production",
         AUTH_RATE_LIMIT_MAX: "2",
         AUTH_RATE_LIMIT_WINDOW_MS: "60000",
         JSON_BODY_LIMIT: "1kb"
@@ -72,6 +73,37 @@ const run = async () => {
         assert.equal(
             allowedOriginResponse.headers.get("cross-origin-opener-policy"),
             "same-origin"
+        )
+        assert.equal(
+            allowedOriginResponse.headers.get("strict-transport-security"),
+            "max-age=31536000; includeSubDomains"
+        )
+
+        const contentSecurityPolicy = allowedOriginResponse.headers.get(
+            "content-security-policy"
+        )
+
+        assert.ok(contentSecurityPolicy)
+        assert.match(contentSecurityPolicy, /default-src 'self'/)
+        assert.match(
+            contentSecurityPolicy,
+            /script-src 'self' https:\/\/checkout\.razorpay\.com/
+        )
+        assert.match(
+            contentSecurityPolicy,
+            /style-src 'self' 'unsafe-inline' https:\/\/fonts\.googleapis\.com/
+        )
+        assert.match(
+            contentSecurityPolicy,
+            /font-src 'self' https:\/\/fonts\.gstatic\.com/
+        )
+        assert.match(
+            contentSecurityPolicy,
+            /connect-src 'self' https:\/\/api\.razorpay\.com https:\/\/checkout\.razorpay\.com/
+        )
+        assert.match(
+            contentSecurityPolicy,
+            /frame-src 'self' https:\/\/checkout\.razorpay\.com/
         )
 
         const blockedOriginResponse = await fetch(`${baseUrl}/api/health`, {

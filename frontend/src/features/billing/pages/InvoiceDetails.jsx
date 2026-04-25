@@ -27,6 +27,8 @@ const getRazorpayMode = (checkout) => {
   return String(checkout?.keyId || "").startsWith("rzp_live_") ? "live" : "test"
 }
 
+const RAZORPAY_CHECKOUT_URL = "https://checkout.razorpay.com/v1/checkout.js"
+
 const InfoCard = ({ title, children }) => {
   return (
     <section className="rounded-2xl border border-white/10 bg-gradient-to-br from-[#18181B] to-[#09090B] p-6">
@@ -69,7 +71,7 @@ const loadRazorpayCheckout = () =>
     }
 
     const script = document.createElement("script")
-    script.src = "https://checkout.razorpay.com/v1/checkout.js"
+    script.src = RAZORPAY_CHECKOUT_URL
     script.async = true
     script.dataset.razorpayCheckout = "true"
     script.onload = () => resolve(window.Razorpay)

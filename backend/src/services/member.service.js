@@ -1,5 +1,6 @@
 const User = require("../models/user.model")
 const Project = require("../models/project.model")
+const createHttpError = require("../utils/httpError")
 
 const getMembers = async ({ tenantId, includeInvited = false }) => {
 
@@ -14,7 +15,7 @@ const getMembers = async ({ tenantId, includeInvited = false }) => {
     role: "member",
     status: includeInvited ? { $in: ["active", "invited"] } : "active"
   })
-    .select("email role status inviteTokenExpires createdAt")
+    .select("email role createdAt")
     .sort({ createdAt: -1 })
 }
 
@@ -36,7 +37,7 @@ const deleteMember = async ({ memberId, tenantId }) => {
   })
 
   if (!member) {
-    throw new Error("Member not found")
+    throw createHttpError("Member not found", 404, "member_not_found")
   }
 
   await Project.updateMany(

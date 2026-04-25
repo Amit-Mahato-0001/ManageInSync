@@ -1,6 +1,9 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import authApi from "../api/auth"
-import { configureAuthSession, setAccessToken as syncAccessToken } from "@/shared/api/axios"
+import {
+  configureAuthSession,
+  setAccessToken as syncAccessToken
+} from "@/shared/api/axios"
 import AuthContext from "./authContext"
 
 let sharedRefreshPromise = null
@@ -12,7 +15,7 @@ const AuthProvider = ({ children }) => {
   const [status, setStatus] = useState("loading")
   const logoutInFlightRef = useRef(null)
 
-  const applyAuthState = useCallback(({ accessToken, user: nextUser, tenant: nextTenant, status: nextStatus }) => {
+  function setAuthData(accessToken, nextUser, nextTenant, nextStatus) {
     syncAccessToken(accessToken)
     setToken(accessToken || null)
     setUser(nextUser || null)
@@ -21,36 +24,32 @@ const AuthProvider = ({ children }) => {
     if (nextStatus) {
       setStatus(nextStatus)
     }
-  }, [])
+  }
 
-  const clearAuthState = useCallback(() => {
-    applyAuthState({
-      accessToken: null,
-      user: null,
-      tenant: null,
-      status: "anonymous",
-    })
-  }, [applyAuthState])
+  function clearAuthData() {
+    setAuthData(null, null, null, "anonymous")
+  }
 
-  const refreshSession = useCallback(async () => {
+  async function refreshSession() {
     if (!sharedRefreshPromise) {
       sharedRefreshPromise = authApi
         .refreshApi()
         .then((response) => {
-          const nextToken = response.data?.accessToken
-          const nextUser = response.data?.user || null
-          const nextTenant = response.data?.tenant || null
+          let nextToken = null
+          let nextUser = null
+          let nextTenant = null
+
+          if (response && response.data) {
+            nextToken = response.data.accessToken
+            nextUser = response.data.user || null
+            nextTenant = response.data.tenant || null
+          }
 
           if (!nextToken) {
             throw new Error("Missing access token")
           }
 
-          applyAuthState({
-            accessToken: nextToken,
-            user: nextUser,
-            tenant: nextTenant,
-            status: "authenticated",
-          })
+          setAuthData(nextToken, nextUser, nextTenant, "authenticated")
 
           return nextToken
         })
@@ -60,78 +59,85 @@ const AuthProvider = ({ children }) => {
     }
 
     return sharedRefreshPromise
-  }, [applyAuthState])
+  }
 
-  const handleUnauthorized = useCallback(async () => {
+  async function handleUnauthorized() {
     if (!logoutInFlightRef.current) {
       logoutInFlightRef.current = authApi
         .logoutApi()
         .catch(() => null)
         .finally(() => {
-          clearAuthState()
+          clearAuthData()
           logoutInFlightRef.current = null
         })
     }
 
     await logoutInFlightRef.current
-  }, [clearAuthState])
+  }
 
-  const bootstrapAuth = useCallback(async () => {
+  async function startAuth() {
     setStatus("loading")
 
     try {
       await refreshSession()
-    } catch {
-      clearAuthState()
+    } catch (error) {
+      clearAuthData()
     }
-  }, [clearAuthState, refreshSession])
+  }
 
   useEffect(() => {
     configureAuthSession({
       onRefresh: refreshSession,
-      onUnauthorized: handleUnauthorized,
+      onUnauthorized: handleUnauthorized
     })
 
-    bootstrapAuth()
+    startAuth()
 
     return () => {
       configureAuthSession({
         onRefresh: null,
-        onUnauthorized: null,
+        onUnauthorized: null
       })
     }
-  }, [bootstrapAuth, handleUnauthorized, refreshSession])
+  }, [])
 
-  const login = useCallback((payload) => {
-    applyAuthState({
-      accessToken: payload?.accessToken || null,
-      user: payload?.user || null,
-      tenant: payload?.tenant || null,
-      status: payload?.accessToken ? "authenticated" : "anonymous",
-    })
-  }, [applyAuthState])
+  function login(payload) {
+    let accessToken = null
+    let nextUser = null
+    let nextTenant = null
+    let nextStatus = "anonymous"
 
-  const logout = useCallback(async () => {
+    if (payload) {
+      accessToken = payload.accessToken || null
+      nextUser = payload.user || null
+      nextTenant = payload.tenant || null
+
+      if (payload.accessToken) {
+        nextStatus = "authenticated"
+      }
+    }
+
+    setAuthData(accessToken, nextUser, nextTenant, nextStatus)
+  }
+
+  async function logout() {
     try {
       await authApi.logoutApi()
     } finally {
-      clearAuthState()
+      clearAuthData()
     }
-  }, [clearAuthState])
+  }
 
-  const value = useMemo(
-    () => ({
-      token,
-      user,
-      tenant,
-      status,
-      isAuthenticated: status === "authenticated",
-      login,
-      logout,
-      refreshSession,
-    }),
-    [login, logout, refreshSession, status, tenant, token, user]
-  )
+  const value = {
+    token,
+    user,
+    tenant,
+    status,
+    isAuthenticated: status === "authenticated",
+    login,
+    logout,
+    refreshSession
+  }
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }

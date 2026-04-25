@@ -3,6 +3,7 @@ const User = require('../models/user.model')
 const Tenant = require("../models/tenant.model")
 const { sendInviteEmail } = require('../utils/email')
 const { normalizeWorkspaceInput } = require("../utils/workspace")
+const createHttpError = require("../utils/httpError")
 
 const normalizeEmail = (value = "") =>
     typeof value === "string" ? value.trim().toLowerCase() : ""
@@ -12,13 +13,13 @@ const inviteUser = async ({email, tenantId, role, invitedByRole}) => {
 
     if(!tenantId || !role || !invitedByRole || !safeEmail){
 
-        throw new Error("tenantId and role and inviter role required")
+        throw createHttpError("tenantId and role and inviter role required", 400, "invalid_invite_request")
     }
 
     const allowedRoles = ["client", "member", "admin"]
 
     if(!allowedRoles.includes(role)){
-        throw new Error("Invalid role")
+        throw createHttpError("Invalid role", 400, "invalid_role")
     }
 
     const invitePermissions = {
@@ -31,7 +32,7 @@ const inviteUser = async ({email, tenantId, role, invitedByRole}) => {
 
     if(!canInvite.includes(role)){
 
-        throw new Error("You are not allowed to invite this role")
+        throw createHttpError("You are not allowed to invite this role", 403, "invite_forbidden")
     }
 
     const inviteToken = crypto.randomBytes(32).toString("hex")
@@ -39,37 +40,27 @@ const inviteUser = async ({email, tenantId, role, invitedByRole}) => {
     const tenant = await Tenant.findById(tenantId).select("name slug")
 
     if (!tenant) {
-        throw new Error("Tenant not found")
+        throw createHttpError("Tenant not found", 404, "tenant_not_found")
     }
 
     let user = await User.findOne({ email: safeEmail, tenantId})
 
-    if(user && user.status === "active"){
-
-        throw new Error("Client already exists")
+    if(user){
+        throw createHttpError(
+            "This email is already added to the workspace",
+            400,
+            "user_already_exists"
+        )
     }
 
-    if(!user){
-
-        user = await User.create({
-            email: safeEmail,
-            tenantId,
-            role,
-            status: "invited",
-            inviteToken,
-            inviteTokenExpires
-        })
-
-    } else{
-
-        user.role = role
-        user.inviteToken = inviteToken
-        user.inviteTokenExpires = inviteTokenExpires
-        user.status = "invited"
-
-        await user.save()
-
-    }
+    user = await User.create({
+        email: safeEmail,
+        tenantId,
+        role,
+        status: "invited",
+        inviteToken,
+        inviteTokenExpires
+    })
 
     await sendInviteEmail({
         to: safeEmail,

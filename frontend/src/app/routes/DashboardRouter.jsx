@@ -4,29 +4,25 @@ import ClientDashboard from "@/features/dashboard/pages/ClientDashboard"
 import MemberDashboard from "@/features/dashboard/pages/MemberDashboard"
 
 const DashboardRouter = () => {
+  const { status, user } = useAuth()
 
-    const { status, user } = useAuth()
+  if (status === "loading") {
+    return <p>Loading dashboard...</p>
+  }
 
-    if(status === "loading"){
-        return <p>Loading dashboard...</p>
-    }
+  if (!user) {
+    return null
+  }
 
-    if(!user){
-        return null
-    }
+  if (user.role === "client") {
+    return <ClientDashboard />
+  }
 
-    if(user.role === "client"){
+  if (user.role === "member") {
+    return <MemberDashboard />
+  }
 
-        return <ClientDashboard/>
-    }
-
-    if(user.role === "member"){
-
-        return <MemberDashboard/>
-    }
-
-    return <Dashboard/>
-
+  return <Dashboard />
 }
 
 export default DashboardRouter

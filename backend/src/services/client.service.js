@@ -3,6 +3,7 @@ const bcrypt = require('bcrypt')
 const User = require('../models/user.model')
 const Project = require('../models/project.model')
 const Invoice = require('../models/invoice.model')
+const createHttpError = require("../utils/httpError")
 
 const normalizeEmail = (value = "") =>
     typeof value === "string" ? value.trim().toLowerCase() : ""
@@ -55,7 +56,7 @@ const getClients = ({ tenantId, includeInvited = false }) => {
         role: "client",
         status: includeInvited ? { $in: ["active", "invited"] } : "active"
     })
-        .select("email name role status inviteTokenExpires createdAt")
+        .select("email name role createdAt")
         .sort({ createdAt: -1 })
 
     return clients
@@ -70,7 +71,7 @@ const deleteClient = async ({ clientId, tenantId }) => {
 
     if(!mongoose.Types.ObjectId.isValid(clientId)){
 
-        throw new Error("Invalid clientId")
+        throw createHttpError("Invalid clientId", 400, "invalid_client_id")
     }
 
     const existingInvoice = await Invoice.exists({
@@ -93,7 +94,7 @@ const deleteClient = async ({ clientId, tenantId }) => {
 
     if(!client){
 
-        throw new Error("Client not found")
+        throw createHttpError("Client not found", 404, "client_not_found")
     }
 
     await Project.updateMany(

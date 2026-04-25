@@ -2,260 +2,137 @@ import { useEffect, useState } from "react"
 import toast from "react-hot-toast"
 import { deleteMember, fetchMembers, inviteMember } from "../api/members"
 import { triggerDashboardRefresh } from "@/shared/utils/dashboardRefresh"
-import { RefreshCcw, Trash2, User2 } from "lucide-react"
+import { Trash2, User2 } from "lucide-react"
 import InviteEntityModal from "@/shared/components/InviteEntityModal"
 
-const formatInviteExpiry = (value) => {
-  if (!value) {
-    return ""
-  }
-
-  const date = new Date(value)
-
-  if (Number.isNaN(date.getTime())) {
-    return ""
-  }
-
-  return date.toLocaleDateString()
-}
-
 const Members = () => {
-
   const [members, setMembers] = useState([])
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(true)
-  const [deletingMemberId, setDeletingMemberId] = useState(null)
+  const [deletingMemberId, setDeletingMemberId] = useState("")
 
   useEffect(() => {
-
     loadMembers()
-
   }, [])
 
-  const loadMembers = async ({ showLoader = true, throwOnError = false } = {}) => {
-
+  const loadMembers = async () => {
     try {
-
-      if (showLoader) {
-        setLoading(true)
-      }
-
-      const res = await fetchMembers({ includeInvited: true })
-      setMembers(res.data.members)
+      setLoading(true)
+      const response = await fetchMembers({ includeInvited: true })
+      setMembers(response.data.members)
       setError("")
-
-    } catch (err) {
-
-      console.error(err)
+    } catch (error) {
+      console.error(error)
       setError("Failed to load members")
-
-      if (throwOnError) {
-        throw err
-      }
-
     } finally {
-
-      if (showLoader) {
-        setLoading(false)
-      }
-
+      setLoading(false)
     }
-
   }
 
   const handleSubmit = async (email) => {
-    const safeEmail = email.trim()
+    const memberEmail = email.trim()
 
-    if (!safeEmail) {
+    if (!memberEmail) {
       throw new Error("Member email required")
     }
 
+    const toastId = toast.loading("Adding member...")
+
     try {
-
       setError("")
-      const existingMember = members.find(
-        (member) => member.email === safeEmail && member.status === "invited"
-      )
+      await inviteMember({ email: memberEmail })
 
-      await toast.promise(
-        (async () => {
-          await inviteMember({ email: safeEmail })
-          await loadMembers({ showLoader: false, throwOnError: true })
-          triggerDashboardRefresh()
-        })(),
-        {
-          loading: "Sending member invite...",
-          success: existingMember ? "Member invite resent" : "Member invite sent",
-          error: (requestError) =>
-            requestError?.response?.data?.message || "Failed to send invite",
-        }
-      )
+      const response = await fetchMembers({ includeInvited: true })
+      setMembers(response.data.members)
 
+      triggerDashboardRefresh()
+      toast.success("Member added", { id: toastId })
     } catch (error) {
-
-      throw new Error(error?.response?.data?.message || "Failed to send invite")
-
+      console.error(error)
+      const message = error?.response?.data?.message || "Failed to add member"
+      toast.error(message, { id: toastId })
+      throw new Error(message)
     }
-
   }
 
   const handleDelete = async (member) => {
-    const isInvited = member.status === "invited"
+    if (!window.confirm("Delete this member?")) {
+      return
+    }
 
-    if (!confirm(isInvited ? "Revoke this member invite?" : "Delete this member?")) return
+    const toastId = toast.loading("Deleting member...")
 
     try {
       setDeletingMemberId(member._id)
+      await deleteMember(member._id)
 
-      await toast.promise(
-        (async () => {
-          await deleteMember(member._id)
+      const response = await fetchMembers({ includeInvited: true })
+      setMembers(response.data.members)
 
-          setMembers((prev) =>
-            prev.filter((currentMember) => currentMember._id !== member._id)
-          )
-
-          triggerDashboardRefresh()
-        })(),
-        {
-          loading: isInvited ? "Revoking invite..." : "Deleting member...",
-          success: isInvited ? "Member invite revoked" : "Member deleted",
-          error: isInvited ? "Failed to revoke invite" : "Failed to delete member",
-        }
+      triggerDashboardRefresh()
+      toast.success("Member deleted", { id: toastId })
+    } catch (error) {
+      console.error(error)
+      toast.error(
+        error?.response?.data?.message || "Failed to delete member",
+        { id: toastId }
       )
-    } catch {
-      return
     } finally {
-      setDeletingMemberId(null)
-
-    }
-
-  }
-
-  const handleResendInvite = async (memberEmail) => {
-    try {
-      await toast.promise(
-        (async () => {
-          await inviteMember({ email: memberEmail })
-          await loadMembers({ showLoader: false, throwOnError: true })
-        })(),
-        {
-          loading: "Resending invite...",
-          success: "Invite resent",
-          error: (requestError) =>
-            requestError?.response?.data?.message || "Failed to resend invite"
-        }
-      )
-    } catch {
-      return
+      setDeletingMemberId("")
     }
   }
 
-  if (loading) return <p>Loading members...</p>
+  if (loading) {
+    return <p>Loading members...</p>
+  }
 
   return (
-
     <div className="space-y-6">
-
-      {/* header */}
-
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-
         <div>
-
           <h1 className="text-5xl font-semibold">Members</h1>
-
-          <p className="text-2xl text-white/60">
-            Manage your team members
-          </p>
-          
+          <p className="text-2xl text-white/60">Add and remove your team members</p>
         </div>
 
         <InviteEntityModal
           entityLabel="Member"
-          description="Send an invite to add a new team member"
+          description="Add a new team member to your workspace"
           placeholder="Enter member email..."
           onSubmit={handleSubmit}
         />
-
       </div>
 
       {error && <p className="text-red-500 text-2xl">{error}</p>}
 
-      {/* members list */}
       <div className="space-y-3">
-
-        {members.map((m) => {
-          const isInvited = m.status === "invited"
-          const inviteExpiry = formatInviteExpiry(m.inviteTokenExpires)
-
-          return (
-            <div
-              key={m._id}
-              className="flex items-center justify-between rounded-xl p-5 border border-white/10 bg-gradient-to-br from-[#18181B] to-[#09090B]"
-            >
-
-              {/* left */}
-
-              <div className="flex items-center gap-4 text-2xl">
-
-                <User2 className="w-6 h-6" />
-
-                <div className="space-y-1">
-                  <p>{m.email}</p>
-                  <div className="flex flex-wrap items-center gap-2 text-base text-white/50">
-                    <span className={`rounded-full px-2 py-0.5 ${isInvited ? "bg-amber-500/15 text-amber-300" : "bg-emerald-500/15 text-emerald-300"}`}>
-                      {isInvited ? "Invited" : "Active"}
-                    </span>
-
-                    {isInvited && inviteExpiry && (
-                      <span>Expires {inviteExpiry}</span>
-                    )}
-                  </div>
-                </div>
-
-              </div>
-
-              {/* delete */}
-
-              <div className="flex items-center gap-3">
-                {isInvited && (
-                  <button
-                    onClick={() => handleResendInvite(m.email)}
-                    className="inline-flex items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-2xl"
-                  >
-                    <RefreshCcw className="h-5 w-5" />
-                    Resend
-                  </button>
-                )}
-
-                <button
-                  onClick={() => handleDelete(m)}
-                  disabled={deletingMemberId === m._id}
-                  className="disabled:cursor-not-allowed disabled:opacity-60"
-                >
-
-                  <div className="p-2 rounded-lg border border-white/10 bg-gradient-to-br from-[#18181B] to-red-500">
-                    <Trash2 className="h-6 w-6" />
-                  </div>
-
-                </button>
-              </div>
-
+        {members.map((member) => (
+          <div
+            key={member._id}
+            className="flex flex-col gap-4 rounded-xl border border-white/10 bg-gradient-to-br from-[#18181B] to-[#09090B] p-5 md:flex-row md:items-center md:justify-between"
+          >
+            <div className="flex min-w-0 items-center gap-4 text-2xl">
+              <User2 className="h-6 w-6 shrink-0" />
+              <p className="break-all">{member.email}</p>
             </div>
-          )
-        })}
+
+            <div className="flex items-center gap-3 md:justify-end">
+              <button
+                onClick={() => handleDelete(member)}
+                disabled={deletingMemberId === member._id}
+                className="disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                <div className="rounded-lg border border-white/10 bg-gradient-to-br from-[#18181B] to-red-500 p-2">
+                  <Trash2 className="h-6 w-6" />
+                </div>
+              </button>
+            </div>
+          </div>
+        ))}
 
         {members.length === 0 && (
-
-          <p className="text-2xl text-white/40">
-            No members or pending invites yet
-          </p>
-
+          <p className="text-2xl text-white/40">No members added yet</p>
         )}
-
       </div>
-
     </div>
   )
 }

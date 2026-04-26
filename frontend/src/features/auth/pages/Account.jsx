@@ -2,16 +2,13 @@ import { useEffect, useRef, useState } from "react"
 import { useNavigate, useSearchParams } from "react-router-dom"
 import toast from "react-hot-toast"
 import {
-  CircleUserRound,
   Mail,
   Monitor,
   Plus,
   RefreshCw,
-  Shield,
   Smartphone,
   Trash2,
-  Upload,
-  X
+  Upload
 } from "lucide-react"
 
 import accountApi from "../api/account"
@@ -29,25 +26,27 @@ import {
 
 const MIN_PASSWORD_LENGTH = 8
 const PANEL_CLASS_NAME =
-  "rounded-2xl bg-gradient-to-br from-[#18181B] to-[#09090B] shadow-[0_20px_55px_rgba(0,0,0,0.22)]"
-const INNER_CARD_CLASS_NAME = "rounded-xl bg-white/[0.045]"
+  "rounded-2xl border border-white/10 bg-gradient-to-br from-[#18181B] to-[#09090B] shadow-[0_20px_55px_rgba(0,0,0,0.22)]"
+const INNER_CARD_CLASS_NAME = "rounded-xl bg-white/5"
 const INPUT_CLASS_NAME =
-  "w-full rounded-xl border border-white/6 bg-black/20 px-4 py-3 text-2xl text-white outline-none transition placeholder:text-white/35 focus:border-blue-500/40 focus:ring-2 focus:ring-blue-500/15"
+  "w-full rounded-lg border border-white/10 bg-transparent px-4 py-3 text-2xl text-white outline-none transition placeholder:text-white/35 focus:border-blue-500"
 
 const TAB_OPTIONS = [
   {
     id: "profile",
-    label: "Profile",
-    description: "Identity and sign-in details",
-    icon: CircleUserRound
+    label: "Profile"
   },
   {
     id: "security",
-    label: "Security",
-    description: "Password and active devices",
-    icon: Shield
+    label: "Security"
   }
 ]
+
+const getTabClassName = (active) => {
+  return active
+    ? "rounded-lg bg-white px-4 py-2 text-2xl font-medium border border-white/10 bg-gradient-to-br from-[#18181B] to-blue-500"
+    : "px-4 py-2 text-2xl font-medium"
+}
 
 const resolveWorkspaceRedirect = (tenant, workspaceOverride) => {
   const workspace = workspaceOverride || tenant?.slug || tenant?.name || ""
@@ -89,39 +88,6 @@ const StatusPill = ({ children, tone = "neutral" }) => {
   )
 }
 
-const TabButton = ({ tab, isActive, onClick }) => {
-  const Icon = tab.icon
-
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`w-full rounded-xl px-4 py-4 text-left transition ${
-        isActive
-          ? "bg-white/10 shadow-[inset_0_0_0_1px_rgba(59,130,246,0.25)]"
-          : "bg-transparent hover:bg-white/[0.06]"
-      }`}
-    >
-      <div className="flex items-start gap-3">
-        <div
-          className={`mt-1 rounded-lg p-2 ${
-            isActive
-              ? "bg-gradient-to-br from-[#18181B] to-blue-500"
-              : "bg-white/[0.06]"
-          }`}
-        >
-          <Icon className="h-5 w-5" />
-        </div>
-
-        <div className="min-w-0">
-          <p className="text-2xl font-medium text-white">{tab.label}</p>
-          <p className="mt-1 text-xl text-white/50">{tab.description}</p>
-        </div>
-      </div>
-    </button>
-  )
-}
-
 const ProfileAvatar = ({ logoUrl, displayName, initials, onError, large = false }) => (
   <div
     className={`flex shrink-0 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br from-[#18181B] to-blue-500 text-white ${
@@ -150,17 +116,17 @@ const ActionButton = ({
 }) => {
   const className =
     tone === "danger"
-      ? "bg-red-500/14 text-red-200 hover:bg-red-500/20"
+      ? "border border-white/10 bg-gradient-to-br from-[#18181B] to-red-500 text-white hover:opacity-90"
       : tone === "secondary"
-        ? "bg-white/[0.07] text-white hover:bg-white/[0.11]"
-        : "bg-gradient-to-br from-[#18181B] to-blue-500 text-white shadow-[0_10px_30px_rgba(37,99,235,0.22)]"
+        ? "border border-white/10 bg-white/5 text-white hover:bg-white/10"
+        : "border border-white/10 bg-gradient-to-br from-[#18181B] to-blue-500 text-white hover:opacity-90"
 
   return (
     <button
       type={type}
       onClick={onClick}
       disabled={disabled}
-      className={`inline-flex items-center justify-center gap-3 rounded-xl px-4 py-2.5 text-2xl font-medium transition disabled:cursor-not-allowed disabled:opacity-60 ${className}`}
+      className={`inline-flex items-center justify-center gap-4 rounded-lg px-4 py-2 text-2xl font-medium transition disabled:cursor-not-allowed disabled:opacity-60 ${className}`}
     >
       {children}
     </button>
@@ -432,34 +398,27 @@ const Account = () => {
             }}
             tone={isEditingProfile ? "secondary" : "default"}
           >
-            {isEditingProfile ? "Cancel" : "Edit Profile"}
+            {isEditingProfile ? "Cancel" : "Edit"}
           </ActionButton>
         </div>
 
         <div className={`mt-6 ${INNER_CARD_CLASS_NAME} p-5`}>
-          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-            <div className="flex min-w-0 items-center gap-4">
-              <ProfileAvatar
-                logoUrl={hasLogo ? cleanLogoUrl : ""}
-                displayName={displayName}
-                initials={initials}
-                onError={() => setLogoPreviewBroken(true)}
-                large
-              />
+          <div className="flex min-w-0 items-center gap-4">
+            <ProfileAvatar
+              logoUrl={hasLogo ? cleanLogoUrl : ""}
+              displayName={displayName}
+              initials={initials}
+              onError={() => setLogoPreviewBroken(true)}
+              large
+            />
 
-              <div className="min-w-0">
-                <p className="break-words text-3xl font-semibold text-white">
-                  {displayName}
-                </p>
-                <p className="mt-2 break-all text-2xl text-white/55">
-                  {user?.email || "No email"}
-                </p>
-              </div>
-            </div>
-
-            <div className="flex flex-wrap gap-2">
-              <StatusPill>{formatRoleLabel(user?.role || "member")}</StatusPill>
-              <StatusPill>{tenant?.name || "Workspace"}</StatusPill>
+            <div className="min-w-0">
+              <p className="break-words text-3xl font-semibold text-white">
+                {displayName}
+              </p>
+              <p className="mt-2 break-all text-2xl text-white/55">
+                {user?.email || "No email"}
+              </p>
             </div>
           </div>
         </div>
@@ -480,7 +439,7 @@ const Account = () => {
                   onChange={(event) =>
                     handleProfileChange("name", event.target.value)
                   }
-                  placeholder="Enter your full name"
+                  placeholder="Enter your name"
                   className={INPUT_CLASS_NAME}
                 />
               </div>
@@ -523,13 +482,13 @@ const Account = () => {
                 <div className="flex flex-wrap gap-3">
                   <ActionButton onClick={handleLogoPickerOpen} tone="secondary">
                     <Upload className="h-5 w-5" />
-                    Upload From Device
+                    Upload
                   </ActionButton>
 
                   {cleanLogoUrl ? (
                     <ActionButton onClick={handleLogoRemove} tone="danger">
                       <Trash2 className="h-5 w-5" />
-                      Remove Logo
+                      Remove
                     </ActionButton>
                   ) : null}
                 </div>
@@ -538,7 +497,7 @@ const Account = () => {
 
             <div className="flex flex-wrap gap-3">
               <ActionButton type="submit" disabled={profileSaving}>
-                {profileSaving ? "Saving..." : "Save Changes"}
+                {profileSaving ? "Saving..." : "Save"}
               </ActionButton>
 
               <ActionButton onClick={resetProfileEditor} tone="secondary">
@@ -565,14 +524,12 @@ const Account = () => {
                 {user?.email || "No email"}
               </p>
             </div>
-
-            <StatusPill>Primary</StatusPill>
           </div>
 
           <button
             type="button"
             disabled
-            className="inline-flex items-center gap-3 rounded-xl bg-white/[0.04] px-4 py-3 text-2xl text-white/35 disabled:cursor-not-allowed"
+            className="inline-flex items-center gap-4 rounded-lg border border-white/10 bg-white/5 px-4 py-2 text-2xl font-medium text-white disabled:cursor-not-allowed disabled:opacity-40"
           >
             <Plus className="h-5 w-5" />
             Add Email Address
@@ -593,8 +550,6 @@ const Account = () => {
                 {user?.email || "No email"}
               </p>
             </div>
-
-            <StatusPill>Connected</StatusPill>
           </div>
         </div>
       </section>
@@ -623,7 +578,7 @@ const Account = () => {
             }}
             tone={isEditingPassword ? "secondary" : "default"}
           >
-            {isEditingPassword ? "Cancel" : "Change Password"}
+            {isEditingPassword ? "Cancel" : "Change"}
           </ActionButton>
         </div>
 
@@ -639,8 +594,6 @@ const Account = () => {
                 Changing it will sign you out so you can log in again with the new one.
               </p>
             </div>
-
-            <StatusPill tone="success">Protected</StatusPill>
           </div>
         ) : (
           <form onSubmit={handlePasswordSubmit} className="mt-6 space-y-4" noValidate>
@@ -688,7 +641,7 @@ const Account = () => {
 
             <div className="flex flex-wrap gap-3">
               <ActionButton type="submit" disabled={passwordSaving}>
-                {passwordSaving ? "Updating..." : "Update Password"}
+                {passwordSaving ? "Updating..." : "Update"}
               </ActionButton>
 
               <ActionButton onClick={resetPasswordEditor} tone="secondary">
@@ -742,7 +695,7 @@ const Account = () => {
                     key={session.id}
                     className={`${INNER_CARD_CLASS_NAME} flex flex-col gap-4 p-5 md:flex-row md:items-start`}
                   >
-                    <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-white/5 text-blue-300">
+                    <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-lg bg-white/5 text-blue-300">
                       <DeviceIcon userAgent={session.userAgent} />
                     </div>
 
@@ -776,15 +729,30 @@ const Account = () => {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-5xl font-semibold">Account</h1>
-        <p className="mt-1 text-2xl text-white/60">
-          Manage your profile, password, and the devices using this workspace account.
-        </p>
+      <div className="space-y-4">
+        <div>
+          <h1 className="text-5xl font-semibold">Account</h1>
+          <p className="mt-1 text-2xl text-white/60">
+            Manage your profile, password, and the devices using this workspace account.
+          </p>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2">
+          {TAB_OPTIONS.map((tab) => (
+            <button
+              key={tab.id}
+              type="button"
+              onClick={() => changeTab(tab.id)}
+              className={getTabClassName(activeTab === tab.id)}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
       </div>
 
       <div className="grid gap-6 xl:grid-cols-[320px_minmax(0,1fr)]">
-        <aside className="space-y-6">
+        <aside>
           <section className={`${PANEL_CLASS_NAME} p-6`}>
             <div className="flex items-start gap-4">
               <ProfileAvatar
@@ -808,57 +776,11 @@ const Account = () => {
             <div className="mt-5 flex flex-wrap gap-2">
               <StatusPill>{formatRoleLabel(user?.role || "member")}</StatusPill>
             </div>
-
-            <div className={`${INNER_CARD_CLASS_NAME} mt-6 p-4`}>
-              <p className="text-2xl font-medium text-white">Workspace</p>
-              <p className="mt-2 text-2xl text-white/55">
-                {tenant?.name || "Unknown workspace"}
-              </p>
-            </div>
-          </section>
-
-          <section className={`${PANEL_CLASS_NAME} p-4`}>
-            <div className="space-y-3">
-              {TAB_OPTIONS.map((tab) => (
-                <TabButton
-                  key={tab.id}
-                  tab={tab}
-                  isActive={activeTab === tab.id}
-                  onClick={() => changeTab(tab.id)}
-                />
-              ))}
-            </div>
           </section>
         </aside>
 
-        <section className={PANEL_CLASS_NAME}>
-          <div className="p-6 sm:p-8">
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <h2 className="text-[1.7rem] font-semibold text-white">
-                  {activeTab === "profile" ? "Profile" : "Security"}
-                </h2>
-                <p className="mt-2 text-2xl text-white/50">
-                  {activeTab === "profile"
-                    ? "Manage your identity, logo, and sign-in details."
-                    : "Manage your password and device access."}
-                </p>
-              </div>
-
-              <button
-                type="button"
-                onClick={() => navigate("/")}
-                className="rounded-full p-1 text-white/45 transition hover:bg-white/10 hover:text-white"
-                aria-label="Close account settings"
-              >
-                <X className="h-5 w-5" />
-              </button>
-            </div>
-
-            <div className="mt-6">
-              {activeTab === "profile" ? renderProfileTab() : renderSecurityTab()}
-            </div>
-          </div>
+        <section>
+          {activeTab === "profile" ? renderProfileTab() : renderSecurityTab()}
         </section>
       </div>
     </div>

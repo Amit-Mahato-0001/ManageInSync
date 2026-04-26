@@ -8,7 +8,7 @@ import {
   User,
   CreditCard,
   FileText,
-  Shield,
+  Settings,
   LogOut
 } from "lucide-react"
 
@@ -56,9 +56,9 @@ export default function AppLayout({ children }) {
       roles: ["owner", "admin", "member"]
     },
     {
-      name: "Security",
-      to: "/security",
-      icon: Shield,
+      name: "Account",
+      to: "/account",
+      icon: Settings,
       roles: ["owner", "admin", "member", "client"]
     }
   ]

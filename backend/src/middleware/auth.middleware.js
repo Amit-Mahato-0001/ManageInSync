@@ -3,7 +3,25 @@ const jwt = require("jsonwebtoken")
 const User = require("../models/user.model")
 const Session = require("../models/session.model")
 const createHttpError = require("../utils/httpError")
-const { getAccessTokenSecret } = require("../utils/auth")
+const { getAccessTokenSecret, getClientIp, getUserAgent } = require("../utils/auth")
+
+const SESSION_ACTIVITY_UPDATE_INTERVAL_MS = 60 * 1000
+
+const shouldRefreshSessionActivity = ({ session, nextIp, nextUserAgent }) => {
+    if (!session) {
+        return false
+    }
+
+    if (!session.lastUsedAt) {
+        return true
+    }
+
+    if (session.lastUsedIp !== nextIp || session.userAgent !== nextUserAgent) {
+        return true
+    }
+
+    return Date.now() - session.lastUsedAt.getTime() >= SESSION_ACTIVITY_UPDATE_INTERVAL_MS
+}
 
 const authenticate = async (req, res, next) => {
     const authHeader = req.headers.authorization
@@ -87,6 +105,16 @@ const authenticate = async (req, res, next) => {
         req.auth = {
             token: decoded,
             session
+        }
+
+        const nextIp = getClientIp(req)
+        const nextUserAgent = getUserAgent(req)
+
+        if (shouldRefreshSessionActivity({ session, nextIp, nextUserAgent })) {
+            session.lastUsedAt = new Date()
+            session.lastUsedIp = nextIp
+            session.userAgent = nextUserAgent
+            session.save().catch(() => null)
         }
 
         next()

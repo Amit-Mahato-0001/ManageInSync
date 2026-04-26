@@ -8,6 +8,16 @@ const userSchema = new mongoose.Schema({
         trim: true,
         match: [/^\S+@\S+\.\S+$/, 'Invalid email']
     },
+    name: {
+        type: String,
+        trim: true,
+        maxlength: 80
+    },
+    logoUrl: {
+        type: String,
+        trim: true,
+        maxlength: 100000
+    },
     password: {
         type: String,
         minlength: 8,

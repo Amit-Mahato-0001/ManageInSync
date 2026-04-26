@@ -6,6 +6,8 @@ const serializeAuthUser = (user) => {
     return {
         _id: user._id,
         email: user.email,
+        name: user.name || null,
+        logoUrl: user.logoUrl || null,
         role: user.role,
         status: user.status,
         tenantId: user.tenantId

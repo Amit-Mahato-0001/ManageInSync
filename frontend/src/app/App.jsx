@@ -20,6 +20,7 @@ import CreateInvoice from "@/features/billing/pages/CreateInvoice"
 import InvoiceDetails from "@/features/billing/pages/InvoiceDetails"
 import InvoicePrint from "@/features/billing/pages/InvoicePrint"
 import Security from "@/features/auth/pages/Security"
+import Account from "@/features/auth/pages/Account"
 
 function AuthPage({ children }) {
   return <AuthLayout>{children}</AuthLayout>
@@ -127,6 +128,14 @@ const App = () => {
               <ProtectedRoute allowedRoles={["owner", "client"]}>
                 <InvoicePrint />
               </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/account"
+            element={
+              <ProtectedPage>
+                <Account />
+              </ProtectedPage>
             }
           />
           <Route

@@ -128,6 +128,17 @@ const AuthProvider = ({ children }) => {
     }
   }
 
+  function updateUser(nextUser) {
+    if (!nextUser) {
+      return
+    }
+
+    setUser((currentUser) => ({
+      ...(currentUser || {}),
+      ...nextUser
+    }))
+  }
+
   const value = {
     token,
     user,
@@ -136,7 +147,8 @@ const AuthProvider = ({ children }) => {
     isAuthenticated: status === "authenticated",
     login,
     logout,
-    refreshSession
+    refreshSession,
+    updateUser
   }
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

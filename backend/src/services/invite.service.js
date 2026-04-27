@@ -46,6 +46,33 @@ const inviteUser = async ({email, tenantId, role, invitedByRole}) => {
     let user = await User.findOne({ email: safeEmail, tenantId})
 
     if(user){
+        if (user.status === "invited") {
+            if (user.role !== role) {
+                throw createHttpError(
+                    `This email already has a pending ${user.role} invite`,
+                    400,
+                    "invite_already_pending"
+                )
+            }
+
+            user.inviteToken = inviteToken
+            user.inviteTokenExpires = inviteTokenExpires
+            await user.save()
+
+            await sendInviteEmail({
+                to: safeEmail,
+                inviteToken,
+                workspace: tenant.slug || normalizeWorkspaceInput(tenant.name)
+            })
+
+            return {
+                _id: user._id,
+                email: user.email,
+                role: user.role,
+                resent: true
+            }
+        }
+
         throw createHttpError(
             "This email is already added to the workspace",
             400,

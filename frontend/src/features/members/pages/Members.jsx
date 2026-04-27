@@ -18,7 +18,7 @@ const Members = () => {
   const loadMembers = async () => {
     try {
       setLoading(true)
-      const response = await fetchMembers({ includeInvited: true })
+      const response = await fetchMembers()
       setMembers(response.data.members)
       setError("")
     } catch (error) {
@@ -36,17 +36,17 @@ const Members = () => {
       throw new Error("Member email required")
     }
 
-    const toastId = toast.loading("Adding member...")
+    const toastId = toast.loading("Sending invite...")
 
     try {
       setError("")
       await inviteMember({ email: memberEmail })
 
-      const response = await fetchMembers({ includeInvited: true })
+      const response = await fetchMembers()
       setMembers(response.data.members)
 
       triggerDashboardRefresh()
-      toast.success("Member added", { id: toastId })
+      toast.success("Member invite sent", { id: toastId })
     } catch (error) {
       console.error(error)
       const message = error?.response?.data?.message || "Failed to add member"
@@ -66,7 +66,7 @@ const Members = () => {
       setDeletingMemberId(member._id)
       await deleteMember(member._id)
 
-      const response = await fetchMembers({ includeInvited: true })
+      const response = await fetchMembers()
       setMembers(response.data.members)
 
       triggerDashboardRefresh()
@@ -91,12 +91,12 @@ const Members = () => {
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
           <h1 className="text-5xl font-semibold">Members</h1>
-          <p className="text-2xl text-white/60">Add and remove your team members</p>
+          <p className="text-2xl text-white/60">Invite and remove your team members</p>
         </div>
 
         <InviteEntityModal
           entityLabel="Member"
-          description="Add a new team member to your workspace"
+          description="Send an invite link to a new team member"
           placeholder="Enter member email..."
           onSubmit={handleSubmit}
         />

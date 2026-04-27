@@ -22,7 +22,7 @@ const Clients = () => {
   const loadClients = async () => {
     try {
       setLoading(true)
-      const response = await fetchClients({ includeInvited: true })
+      const response = await fetchClients()
       setClients(response.data.clients)
       setError("")
     } catch (error) {
@@ -40,17 +40,17 @@ const Clients = () => {
       throw new Error("Client email required")
     }
 
-    const toastId = toast.loading("Adding client...")
+    const toastId = toast.loading("Sending invite...")
 
     try {
       setError("")
       await inviteClientAPI({ email: clientEmail })
 
-      const response = await fetchClients({ includeInvited: true })
+      const response = await fetchClients()
       setClients(response.data.clients)
 
       triggerDashboardRefresh()
-      toast.success("Client added", { id: toastId })
+      toast.success("Client invite sent", { id: toastId })
     } catch (error) {
       console.error(error)
       const message = error?.response?.data?.message || "Failed to add client"
@@ -70,7 +70,7 @@ const Clients = () => {
       setDeletingClientId(client._id)
       await deleteClientAPI(client._id)
 
-      const response = await fetchClients({ includeInvited: true })
+      const response = await fetchClients()
       setClients(response.data.clients)
 
       triggerDashboardRefresh()
@@ -95,12 +95,12 @@ const Clients = () => {
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
           <h1 className="text-5xl font-semibold">Clients</h1>
-          <p className="text-2xl text-white/60">Add and remove your clients</p>
+          <p className="text-2xl text-white/60">Invite and remove your clients</p>
         </div>
 
         <InviteEntityModal
           entityLabel="Client"
-          description="Add a new client to your workspace"
+          description="Send an invite link to a new client"
           placeholder="Enter client email..."
           onSubmit={handleSubmit}
         />

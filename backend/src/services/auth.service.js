@@ -467,9 +467,7 @@ const acceptInvite = async ({ token, password }) => {
 
     user.password = await bcrypt.hash(password, 10)
 
-    if (user.role !== "member") {
-        user.status = "active"
-    }
+    user.status = "active"
 
     user.inviteToken = undefined
     user.inviteTokenExpires = undefined
@@ -479,10 +477,7 @@ const acceptInvite = async ({ token, password }) => {
     const tenant = await getTenantById(user.tenantId)
 
     return {
-        message:
-            user.role === "member"
-                ? "Password set. Login to activate account"
-                : "Password set successfully. You can login now",
+        message: "Password set successfully. You can login now",
         user: serializeAuthUser(user),
         workspace: serializeTenant(tenant)
     }

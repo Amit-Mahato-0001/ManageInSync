@@ -57,7 +57,9 @@ const loadEmailUtils = (overrides = {}) => {
 
 {
     const { emailUtils, restoreEnvironment } = loadEmailUtils({
-        EMAIL_PORT: "465"
+        EMAIL_PORT: "465",
+        EMAIL_SECURE: "true",
+        EMAIL_REQUIRE_TLS: "false"
     })
     const transportConfig = emailUtils.getEmailTransportConfig()
 

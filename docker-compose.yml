@@ -6,6 +6,8 @@ services:
       mongo:
         condition: service_healthy
     env_file:
+      # Loads backend credentials such as EMAIL_*, RAZORPAY_*, JWT_*, and Mongo config.
+      # Keep real values in backend/.env, not in docker-compose.yml.
       - backend/.env
     environment:
       NODE_ENV: production

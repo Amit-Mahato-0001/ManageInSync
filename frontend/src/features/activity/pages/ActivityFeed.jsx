@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react"
+import { useCallback, useEffect, useState } from "react"
 import fetchActivityFeed from "../api/activity"
-import ProjectsPagination from "@/shared/components/ProjectsPagination"
+import InfiniteScrollSentinel from "@/shared/components/InfiniteScrollSentinel"
 
 const formatActivityTime = (value) => {
   const date = new Date(value)
@@ -15,35 +15,61 @@ const formatActivityTime = (value) => {
 const ActivityFeed = () => {
   const [activities, setActivities] = useState([])
   const [loading, setLoading] = useState(true)
+  const [loadingMore, setLoadingMore] = useState(false)
   const [error, setError] = useState("")
-  const [page, setPage] = useState(1)
   const [pagination, setPagination] = useState({})
 
-  useEffect(() => {
-    const loadActivityFeed = async () => {
-      try {
+  const loadActivityFeed = useCallback(async ({
+    pageToLoad = 1,
+    append = false,
+    showLoader = true
+  } = {}) => {
+    try {
+      if (showLoader) {
         setLoading(true)
+      }
 
-        const res = await fetchActivityFeed({
-          page,
-          limit: 5
-        })
+      const res = await fetchActivityFeed({
+        page: pageToLoad,
+        limit: 10
+      })
+      const nextActivities = res.data.activities.data
 
-        setActivities(res.data.activities.data)
-        setPagination(res.data.activities.pagination)
-        setError("")
-      } catch (requestError) {
-        console.error(requestError)
-        setError("Failed to load activity feed")
-      } finally {
+      setActivities((prev) => (append ? [...prev, ...nextActivities] : nextActivities))
+      setPagination(res.data.activities.pagination)
+      setError("")
+    } catch (requestError) {
+      console.error(requestError)
+      setError("Failed to load activity feed")
+    } finally {
+      if (showLoader) {
         setLoading(false)
       }
     }
+  }, [])
 
+  useEffect(() => {
     loadActivityFeed()
-  }, [page])
+  }, [loadActivityFeed])
 
-  const totalPages = pagination.totalPages || 1
+  const handleLoadMore = useCallback(async () => {
+    const nextPage = (pagination.page || 1) + 1
+
+    if (loadingMore || nextPage > (pagination.totalPages || 1)) {
+      return
+    }
+
+    try {
+      setLoadingMore(true)
+      await loadActivityFeed({
+        pageToLoad: nextPage,
+        append: true,
+        showLoader: false
+      })
+    } finally {
+      setLoadingMore(false)
+    }
+  }, [loadActivityFeed, loadingMore, pagination.page, pagination.totalPages])
 
   if (loading) return <p>Loading activity feed...</p>
 
@@ -83,10 +109,10 @@ const ActivityFeed = () => {
         )}
       </div>
 
-      <ProjectsPagination
-        page={page}
-        totalPages={totalPages}
-        onPageChange={setPage}
+      <InfiniteScrollSentinel
+        hasMore={(pagination.page || 1) < (pagination.totalPages || 1)}
+        loading={loadingMore}
+        onLoadMore={handleLoadMore}
       />
     </div>
   )

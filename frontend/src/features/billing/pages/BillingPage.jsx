@@ -3,7 +3,7 @@ import { Link } from "react-router-dom"
 import { Plus, RotateCcw, Search } from "lucide-react"
 
 import { fetchInvoices } from "../api/billing"
-import ProjectsPagination from "@/shared/components/ProjectsPagination"
+import InfiniteScrollSentinel from "@/shared/components/InfiniteScrollSentinel"
 import { useAuth } from "@/features/auth/hooks/useAuth"
 import {
   formatCurrency,
@@ -17,8 +17,8 @@ const Billing = () => {
   const { user } = useAuth()
   const [invoices, setInvoices] = useState([])
   const [loading, setLoading] = useState(true)
+  const [loadingMore, setLoadingMore] = useState(false)
   const [error, setError] = useState("")
-  const [page, setPage] = useState(1)
   const [pagination, setPagination] = useState({})
   const [searchInput, setSearchInput] = useState("")
   const [search, setSearch] = useState("")
@@ -28,13 +28,7 @@ const Billing = () => {
     const timeoutId = window.setTimeout(() => {
       const nextSearch = searchInput.trim()
 
-      setSearch((currentSearch) => {
-        if (currentSearch !== nextSearch) {
-          setPage(1)
-        }
-
-        return nextSearch
-      })
+      setSearch(nextSearch)
     }, 300)
 
     return () => {
@@ -42,20 +36,26 @@ const Billing = () => {
     }
   }, [searchInput])
 
-  const loadInvoices = useCallback(async ({ showLoader = true } = {}) => {
+  const loadInvoices = useCallback(async ({
+    pageToLoad = 1,
+    append = false,
+    showLoader = true
+  } = {}) => {
     try {
       if (showLoader) {
         setLoading(true)
       }
 
       const response = await fetchInvoices({
-        page,
+        page: pageToLoad,
         limit: 10,
         ...(search ? { search } : {}),
         ...(statusFilter ? { status: statusFilter } : {})
       })
 
-      setInvoices(response.data.invoices.data)
+      const nextInvoices = response.data.invoices.data
+
+      setInvoices((prev) => (append ? [...prev, ...nextInvoices] : nextInvoices))
       setPagination(response.data.invoices.pagination)
       setError("")
     } catch (requestError) {
@@ -66,23 +66,40 @@ const Billing = () => {
         setLoading(false)
       }
     }
-  }, [page, search, statusFilter])
+  }, [search, statusFilter])
 
   useEffect(() => {
-    loadInvoices()
+    loadInvoices({ pageToLoad: 1 })
   }, [loadInvoices])
 
   const handleStatusChange = (event) => {
     setStatusFilter(event.target.value)
-    setPage(1)
   }
 
   const handleReset = () => {
     setSearchInput("")
     setSearch("")
     setStatusFilter("")
-    setPage(1)
   }
+
+  const handleLoadMore = useCallback(async () => {
+    const nextPage = (pagination.page || 1) + 1
+
+    if (loadingMore || nextPage > (pagination.totalPages || 1)) {
+      return
+    }
+
+    try {
+      setLoadingMore(true)
+      await loadInvoices({
+        pageToLoad: nextPage,
+        append: true,
+        showLoader: false
+      })
+    } finally {
+      setLoadingMore(false)
+    }
+  }, [loadInvoices, loadingMore, pagination.page, pagination.totalPages])
 
   const isOwner = user?.role === "owner"
 
@@ -218,10 +235,10 @@ const Billing = () => {
         )}
       </div>
 
-      <ProjectsPagination
-        page={page}
-        totalPages={pagination.totalPages || 1}
-        onPageChange={setPage}
+      <InfiniteScrollSentinel
+        hasMore={(pagination.page || 1) < (pagination.totalPages || 1)}
+        loading={loadingMore}
+        onLoadMore={handleLoadMore}
       />
     </div>
   )

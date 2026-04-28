@@ -11,7 +11,7 @@ import { useAuth } from "@/features/auth/hooks/useAuth"
 import { fetchClients } from "@/features/clients/api/clients"
 import { fetchMembers } from "@/features/members/api/members"
 import { triggerDashboardRefresh } from "@/shared/utils/dashboardRefresh"
-import ProjectsPagination from "@/shared/components/ProjectsPagination"
+import InfiniteScrollSentinel from "@/shared/components/InfiniteScrollSentinel"
 
 import CreateProjectForm from "../components/CreateProjectForm"
 import ProjectCard from "../components/ProjectCard"
@@ -29,22 +29,29 @@ const Projects = () => {
   const [selectedClients, setSelectedClients] = useState({})
   const [selectedMembers, setSelectedMembers] = useState({})
 
-  const [page, setPage] = useState(1)
   const [pagination, setPagination] = useState({})
   const [loading, setLoading] = useState(true)
+  const [loadingMore, setLoadingMore] = useState(false)
   const [error, setError] = useState("")
   const [deletingProjectId, setDeletingProjectId] = useState(null)
   const [updatingProjectId, setUpdatingProjectId] = useState(null)
   const canAssign = user?.role === "owner" || user?.role === "admin"
 
-  const loadProjects = useCallback(async ({ showLoader = true, throwOnError = false } = {}) => {
+  const loadProjects = useCallback(async ({
+    pageToLoad = 1,
+    append = false,
+    showLoader = true,
+    throwOnError = false
+  } = {}) => {
     try {
       if (showLoader) {
         setLoading(true)
       }
 
-      const res = await fetchProjects({ page, limit: 4 })
-      setProjects(res.data.projects.data)
+      const res = await fetchProjects({ page: pageToLoad, limit: 10 })
+      const nextProjects = res.data.projects.data
+
+      setProjects((prev) => (append ? [...prev, ...nextProjects] : nextProjects))
       setPagination(res.data.projects.pagination)
       setError("")
     } catch (requestError) {
@@ -59,7 +66,7 @@ const Projects = () => {
         setLoading(false)
       }
     }
-  }, [page])
+  }, [])
 
   useEffect(() => {
     loadProjects()
@@ -100,11 +107,7 @@ const Projects = () => {
       targetDate
     })
 
-    if (page === 1) {
-      await loadProjects({ showLoader: false, throwOnError: true })
-    } else {
-      setPage(1)
-    }
+    await loadProjects({ pageToLoad: 1, showLoader: false, throwOnError: true })
 
     triggerDashboardRefresh()
   }
@@ -119,13 +122,7 @@ const Projects = () => {
         async () => {
           await deleteProject(id)
 
-          if (projects.length === 1 && page > 1) {
-            setPage((prevPage) => prevPage - 1)
-          } else if (page === 1) {
-            await loadProjects({ showLoader: false, throwOnError: true })
-          } else {
-            setPage(1)
-          }
+          await loadProjects({ pageToLoad: 1, showLoader: false, throwOnError: true })
 
           triggerDashboardRefresh()
         },
@@ -168,6 +165,28 @@ const Projects = () => {
       setUpdatingProjectId(null)
     }
   }
+
+  const handleLoadMore = useCallback(async () => {
+    const nextPage = (pagination.page || 1) + 1
+
+    if (loadingMore || nextPage > (pagination.totalPages || 1)) {
+      return
+    }
+
+    try {
+      setLoadingMore(true)
+      await loadProjects({
+        pageToLoad: nextPage,
+        append: true,
+        showLoader: false,
+        throwOnError: true
+      })
+    } catch {
+      return
+    } finally {
+      setLoadingMore(false)
+    }
+  }, [loadProjects, loadingMore, pagination.page, pagination.totalPages])
 
   if (loading) {
     return <p>Loading projects...</p>
@@ -217,8 +236,6 @@ const Projects = () => {
             assignClient={assignClient}
             assignMember={assignMember}
             loadProjects={loadProjects}
-            page={page}
-            setPage={setPage}
           />
         ))}
       </div>
@@ -229,10 +246,10 @@ const Projects = () => {
         </p>
       )}
 
-      <ProjectsPagination
-        page={page}
-        totalPages={pagination.totalPages || 1}
-        onPageChange={setPage}
+      <InfiniteScrollSentinel
+        hasMore={(pagination.page || 1) < (pagination.totalPages || 1)}
+        loading={loadingMore}
+        onLoadMore={handleLoadMore}
       />
     </div>
   )

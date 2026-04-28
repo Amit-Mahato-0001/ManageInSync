@@ -38,9 +38,7 @@ const AssignClients = ({
   selectedClients,
   setSelectedClients,
   assignClient,
-  loadProjects,
-  page,
-  setPage
+  loadProjects
 }) => {
 
   const [saving, setSaving] = useState(false)
@@ -128,12 +126,7 @@ const AssignClients = ({
             await runAsyncToast(
               async () => {
                 await assignClient(p._id, finalClients)
-
-                if (page === 1) {
-                  await loadProjects({ showLoader: false, throwOnError: true })
-                } else {
-                  setPage(1)
-                }
+                await loadProjects({ pageToLoad: 1, showLoader: false, throwOnError: true })
               },
               {
                 loadingMessage: "Saving clients...",

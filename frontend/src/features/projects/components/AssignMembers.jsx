@@ -41,9 +41,7 @@ const AssignMembers = ({
   selectedMembers,
   setSelectedMembers,
   assignMember,
-  loadProjects,
-  page,
-  setPage
+  loadProjects
 }) => {
 
   const [saving, setSaving] = useState(false)
@@ -133,12 +131,7 @@ const AssignMembers = ({
             await runAsyncToast(
               async () => {
                 await assignMember(p._id, finalMembers)
-
-                if (page === 1) {
-                  await loadProjects({ showLoader: false, throwOnError: true })
-                } else {
-                  setPage(1)
-                }
+                await loadProjects({ pageToLoad: 1, showLoader: false, throwOnError: true })
               },
               {
                 loadingMessage: "Saving members...",

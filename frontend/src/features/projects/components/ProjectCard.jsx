@@ -32,9 +32,7 @@ const ProjectCard = ({
   handleStatusChange,
   assignClient,
   assignMember,
-  loadProjects,
-  page,
-  setPage
+  loadProjects
 }) => {
   const navigate = useNavigate()
   const canViewTasks = user?.role !== "client"
@@ -101,12 +99,6 @@ const ProjectCard = ({
         <option value="completed">Completed</option>
       </select>
 
-      {updatingProjectId === p._id && (
-        <p className="text-2xl text-white/40">
-          Updating status...
-        </p>
-      )}
-
       {canAssign && (
         <div className="text-white/60 flex items-center gap-4">
           <User2 className="h-6 w-6" />
@@ -165,9 +157,7 @@ const ProjectCard = ({
             selectedClients,
             setSelectedClients,
             assignClient,
-            loadProjects,
-            page,
-            setPage
+            loadProjects
           }}
         />
 
@@ -180,9 +170,7 @@ const ProjectCard = ({
             selectedMembers,
             setSelectedMembers,
             assignMember,
-            loadProjects,
-            page,
-            setPage
+            loadProjects
           }}
         />
       </div>

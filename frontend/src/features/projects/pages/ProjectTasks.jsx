@@ -4,7 +4,7 @@ import { ArrowLeft, Rocket, Trash2, X } from "lucide-react"
 import { createTask, deleteTask, fetchTasks, updateTask } from "../api/tasks"
 import { useAuth } from "@/features/auth/hooks/useAuth"
 import { getAuthUserId } from "@/features/auth/utils/getAuthUserId"
-import TasksPagination from "@/shared/components/TasksPagination"
+import InfiniteScrollSentinel from "@/shared/components/InfiniteScrollSentinel"
 import { formatDate } from "@/shared/utils/formatDate"
 import {
   getErrorMessage,
@@ -70,8 +70,8 @@ const ProjectTasks = () => {
   const [updatingTaskId, setUpdatingTaskId] = useState(null)
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
 
-  const [page, setPage] = useState(1)
   const [pagination, setPagination] = useState({})
+  const [loadingMore, setLoadingMore] = useState(false)
 
   const canCreateTasks = user?.role === "owner" || user?.role === "admin"
   const canUpdateTasks =
@@ -91,7 +91,12 @@ const ProjectTasks = () => {
     unreadCount
   }
 
-  const loadTasks = useCallback(async ({ showLoader = true, throwOnError = false } = {}) => {
+  const loadTasks = useCallback(async ({
+    pageToLoad = 1,
+    append = false,
+    showLoader = true,
+    throwOnError = false
+  } = {}) => {
     try {
       if (showLoader) {
         setLoading(true)
@@ -99,8 +104,10 @@ const ProjectTasks = () => {
 
       setPageError("")
 
-      const res = await fetchTasks(projectId, { page, limit: 5 })
-      setTasks(res.data.tasks.data)
+      const res = await fetchTasks(projectId, { page: pageToLoad, limit: 10 })
+      const nextTasks = res.data.tasks.data
+
+      setTasks((prev) => (append ? [...prev, ...nextTasks] : nextTasks))
       setPagination(res.data.tasks.pagination)
     } catch (error) {
       console.error(error)
@@ -114,7 +121,7 @@ const ProjectTasks = () => {
         setLoading(false)
       }
     }
-  }, [projectId, page])
+  }, [projectId])
 
   useEffect(() => {
     loadTasks()
@@ -185,11 +192,7 @@ const ProjectTasks = () => {
             priority
           })
 
-          if (page === 1) {
-            await loadTasks({ showLoader: false, throwOnError: true })
-          } else {
-            setPage(1)
-          }
+          await loadTasks({ pageToLoad: 1, showLoader: false, throwOnError: true })
         },
         {
           loadingMessage: "Creating task...",
@@ -243,11 +246,7 @@ const ProjectTasks = () => {
         async () => {
           await deleteTask(projectId, taskId)
 
-          if (tasks.length === 1 && page > 1) {
-            setPage((prev) => prev - 1)
-          } else {
-            await loadTasks({ showLoader: false, throwOnError: true })
-          }
+          await loadTasks({ pageToLoad: 1, showLoader: false, throwOnError: true })
         },
         {
           loadingMessage: "Deleting task...",
@@ -301,10 +300,27 @@ const ProjectTasks = () => {
     }
   }
 
-  const totalPages =
-    Number.isFinite(pagination.totalPages) && pagination.totalPages > 0
-      ? pagination.totalPages
-      : 1
+  const handleLoadMore = useCallback(async () => {
+    const nextPage = (pagination.page || 1) + 1
+
+    if (loadingMore || nextPage > (pagination.totalPages || 1)) {
+      return
+    }
+
+    try {
+      setLoadingMore(true)
+      await loadTasks({
+        pageToLoad: nextPage,
+        append: true,
+        showLoader: false,
+        throwOnError: true
+      })
+    } catch {
+      return
+    } finally {
+      setLoadingMore(false)
+    }
+  }, [loadTasks, loadingMore, pagination.page, pagination.totalPages])
 
   return (
     <>
@@ -459,11 +475,6 @@ const ProjectTasks = () => {
                       </button>
                     )}
 
-                    {updatingTaskId === task._id && (
-                      <span className="text-2xl text-white/50">
-                        Updating...
-                      </span>
-                    )}
                   </div>
                 </div>
               )
@@ -473,7 +484,11 @@ const ProjectTasks = () => {
             <p className="text-2xl text-white/40">No tasks in this project</p>
           )}
 
-          <TasksPagination page={page} totalPages={totalPages} onPageChange={setPage} />
+          <InfiniteScrollSentinel
+            hasMore={(pagination.page || 1) < (pagination.totalPages || 1)}
+            loading={loadingMore}
+            onLoadMore={handleLoadMore}
+          />
         </div>
       </div>
 

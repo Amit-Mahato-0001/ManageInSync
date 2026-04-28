@@ -12,6 +12,32 @@ import {
 
 const DASHBOARD_REFRESH_INTERVAL_MS = 10000
 
+const getTimeBasedGreeting = () => {
+  const hour = new Date().getHours()
+
+  if (hour >= 5 && hour < 12) {
+    return "Good Morning"
+  }
+
+  if (hour >= 12 && hour < 17) {
+    return "Good Afternoon"
+  }
+
+  if (hour >= 17 && hour < 21) {
+    return "Good Evening"
+  }
+
+  return "Good Night"
+}
+
+const capitalizeFirstCharacter = (value) => {
+  if (!value) {
+    return ""
+  }
+
+  return value.charAt(0).toUpperCase() + value.slice(1)
+}
+
 function Stat({ label, value, icon, color, sub }) {
   const Icon = icon
 
@@ -90,17 +116,19 @@ const Dashboard = () => {
   let tenantName = ""
 
   if (data.tenantName) {
-    tenantName = data.tenantName.trim()
+    tenantName = capitalizeFirstCharacter(data.tenantName.trim())
   }
+
+  const greeting = getTimeBasedGreeting()
 
   return (
     <div>
       <h1 className="text-5xl font-semibold">
-        Welcome back{tenantName ? `, ${tenantName}` : ""}
+        {greeting}{tenantName ? `, ${tenantName}` : ""}
       </h1>
 
       <p className="mt-1 text-2xl text-white/60">
-        Here's what's happening with your projects today
+        While we move through today’s work, keep in mind that supporting your progress is always our top priority.
       </p>
 
       <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">

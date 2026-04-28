@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 import authApi from "../api/auth"
 import {
   configureAuthSession,
@@ -15,7 +15,7 @@ const AuthProvider = ({ children }) => {
   const [status, setStatus] = useState("loading")
   const logoutInFlightRef = useRef(null)
 
-  function setAuthData(accessToken, nextUser, nextTenant, nextStatus) {
+  const setAuthData = useCallback((accessToken, nextUser, nextTenant, nextStatus) => {
     syncAccessToken(accessToken)
     setToken(accessToken || null)
     setUser(nextUser || null)
@@ -24,13 +24,13 @@ const AuthProvider = ({ children }) => {
     if (nextStatus) {
       setStatus(nextStatus)
     }
-  }
+  }, [])
 
-  function clearAuthData() {
+  const clearAuthData = useCallback(() => {
     setAuthData(null, null, null, "anonymous")
-  }
+  }, [setAuthData])
 
-  async function refreshSession() {
+  const refreshSession = useCallback(async () => {
     if (!sharedRefreshPromise) {
       sharedRefreshPromise = authApi
         .refreshApi()
@@ -59,9 +59,9 @@ const AuthProvider = ({ children }) => {
     }
 
     return sharedRefreshPromise
-  }
+  }, [setAuthData])
 
-  async function handleUnauthorized() {
+  const handleUnauthorized = useCallback(async () => {
     if (!logoutInFlightRef.current) {
       logoutInFlightRef.current = authApi
         .logoutApi()
@@ -73,17 +73,17 @@ const AuthProvider = ({ children }) => {
     }
 
     await logoutInFlightRef.current
-  }
+  }, [clearAuthData])
 
-  async function startAuth() {
+  const startAuth = useCallback(async () => {
     setStatus("loading")
 
     try {
       await refreshSession()
-    } catch (error) {
+    } catch {
       clearAuthData()
     }
-  }
+  }, [clearAuthData, refreshSession])
 
   useEffect(() => {
     configureAuthSession({
@@ -99,7 +99,7 @@ const AuthProvider = ({ children }) => {
         onUnauthorized: null
       })
     }
-  }, [])
+  }, [handleUnauthorized, refreshSession, startAuth])
 
   function login(payload) {
     let accessToken = null

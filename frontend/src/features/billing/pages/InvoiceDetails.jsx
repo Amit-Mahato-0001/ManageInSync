@@ -18,6 +18,7 @@ import {
   getBillingErrorMessage,
   getInvoiceStatusClasses
 } from "../utils/billingUtils"
+import { PageLoader } from "@/shared/components/LoadingSpinner"
 
 const getRazorpayMode = (checkout) => {
   if (checkout?.mode === "live" || checkout?.mode === "test") {
@@ -238,7 +239,7 @@ const InvoiceDetails = () => {
   }
 
   if (loading) {
-    return <p>Loading invoice...</p>
+    return <PageLoader />
   }
 
   if (error) {

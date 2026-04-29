@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react"
 import fetchActivityFeed from "../api/activity"
 import InfiniteScrollSentinel from "@/shared/components/InfiniteScrollSentinel"
+import { PageLoader } from "@/shared/components/LoadingSpinner"
 
 const formatActivityTime = (value) => {
   const date = new Date(value)
@@ -71,7 +72,7 @@ const ActivityFeed = () => {
     }
   }, [loadActivityFeed, loadingMore, pagination.page, pagination.totalPages])
 
-  if (loading) return <p>Loading activity feed...</p>
+  if (loading) return <PageLoader />
 
   return (
     <div className="space-y-6">

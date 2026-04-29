@@ -12,6 +12,7 @@ import { fetchClients } from "@/features/clients/api/clients"
 import { fetchMembers } from "@/features/members/api/members"
 import { triggerDashboardRefresh } from "@/shared/utils/dashboardRefresh"
 import InfiniteScrollSentinel from "@/shared/components/InfiniteScrollSentinel"
+import { PageLoader } from "@/shared/components/LoadingSpinner"
 
 import CreateProjectForm from "../components/CreateProjectForm"
 import ProjectCard from "../components/ProjectCard"
@@ -189,7 +190,7 @@ const Projects = () => {
   }, [loadProjects, loadingMore, pagination.page, pagination.totalPages])
 
   if (loading) {
-    return <p>Loading projects...</p>
+    return <PageLoader />
   }
 
   return (

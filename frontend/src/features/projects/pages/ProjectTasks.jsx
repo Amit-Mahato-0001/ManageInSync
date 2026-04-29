@@ -5,6 +5,7 @@ import { createTask, deleteTask, fetchTasks, updateTask } from "../api/tasks"
 import { useAuth } from "@/features/auth/hooks/useAuth"
 import { getAuthUserId } from "@/features/auth/utils/getAuthUserId"
 import InfiniteScrollSentinel from "@/shared/components/InfiniteScrollSentinel"
+import { PageLoader } from "@/shared/components/LoadingSpinner"
 import { formatDate } from "@/shared/utils/formatDate"
 import {
   getErrorMessage,
@@ -390,9 +391,7 @@ const ProjectTasks = () => {
 
         <div className="space-y-3">
           {loading && (
-            <p className="text-2xl text-white/50">
-              Loading tasks...
-            </p>
+            <PageLoader />
           )}
 
           {!loading &&

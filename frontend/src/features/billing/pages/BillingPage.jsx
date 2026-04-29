@@ -4,6 +4,7 @@ import { Plus, RotateCcw, Search } from "lucide-react"
 
 import { fetchInvoices } from "../api/billing"
 import InfiniteScrollSentinel from "@/shared/components/InfiniteScrollSentinel"
+import { PageLoader } from "@/shared/components/LoadingSpinner"
 import { useAuth } from "@/features/auth/hooks/useAuth"
 import {
   formatCurrency,
@@ -104,7 +105,7 @@ const Billing = () => {
   const isOwner = user?.role === "owner"
 
   if (loading) {
-    return <p className="text-2xl">Loading invoices...</p>
+    return <PageLoader />
   }
 
   return (

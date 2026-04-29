@@ -2,12 +2,13 @@ import { useAuth } from "@/features/auth/hooks/useAuth"
 import Dashboard from "@/features/dashboard/pages/Dashboard"
 import ClientDashboard from "@/features/dashboard/pages/ClientDashboard"
 import MemberDashboard from "@/features/dashboard/pages/MemberDashboard"
+import { PageLoader } from "@/shared/components/LoadingSpinner"
 
 const DashboardRouter = () => {
   const { status, user } = useAuth()
 
   if (status === "loading") {
-    return <p>Loading dashboard...</p>
+    return <PageLoader />
   }
 
   if (!user) {

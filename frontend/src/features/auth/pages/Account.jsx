@@ -14,6 +14,7 @@ import {
 import accountApi from "../api/account"
 import authApi from "../api/auth"
 import { useAuth } from "../hooks/useAuth"
+import LoadingSpinner from "@/shared/components/LoadingSpinner"
 import { prepareLogoUpload } from "../utils/prepareLogoUpload"
 import {
   formatSessionTimestamp,
@@ -679,7 +680,9 @@ const Account = () => {
           ) : null}
 
           {sessionsLoading ? (
-            <p className="text-2xl text-white/50">Loading active devices...</p>
+            <div className="flex py-4">
+              <LoadingSpinner />
+            </div>
           ) : null}
 
           {!sessionsLoading && !sessionsError && sessions.length === 0 ? (

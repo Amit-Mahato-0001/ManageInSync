@@ -1,4 +1,5 @@
 import MessageItem from "./MessageItem"
+import LoadingSpinner from "@/shared/components/LoadingSpinner"
 
 const MessageList = ({
   messages,
@@ -36,14 +37,14 @@ const MessageList = ({
             disabled={loadingOlder}
             className="text-2xl text-white/50 transition hover:text-white disabled:cursor-not-allowed disabled:opacity-60"
           >
-            {loadingOlder ? "Loading..." : "Load older messages"}
+            {loadingOlder ? <LoadingSpinner size="sm" /> : "Load older messages"}
           </button>
         </div>
       )}
 
       {loading ? (
-        <div className="px-4 py-8 text-center text-2xl text-white/50">
-          Loading conversation...
+        <div className="flex justify-center px-4 py-8">
+          <LoadingSpinner />
         </div>
       ) : messages.length === 0 ? (
         <div className="px-4 py-12 text-center">

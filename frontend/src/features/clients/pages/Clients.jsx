@@ -8,6 +8,7 @@ import {
 import { triggerDashboardRefresh } from "@/shared/utils/dashboardRefresh"
 import { Trash2, User2 } from "lucide-react"
 import InviteEntityModal from "@/shared/components/InviteEntityModal"
+import { PageLoader } from "@/shared/components/LoadingSpinner"
 
 const Clients = () => {
   const [clients, setClients] = useState([])
@@ -87,7 +88,7 @@ const Clients = () => {
   }
 
   if (loading) {
-    return <p>Loading clients...</p>
+    return <PageLoader />
   }
 
   return (

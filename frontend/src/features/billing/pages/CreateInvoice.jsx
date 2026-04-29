@@ -5,6 +5,7 @@ import { MinusCircle, PlusCircle } from "lucide-react"
 
 import { createInvoice } from "../api/billing"
 import { fetchClients } from "@/features/clients/api/clients"
+import { PageLoader } from "@/shared/components/LoadingSpinner"
 import {
   addDaysToInputValue,
   calculateInvoicePreview,
@@ -283,7 +284,7 @@ const CreateInvoice = () => {
       {pageError && <p className="text-2xl text-red-500">{pageError}</p>}
 
       {loadingClients ? (
-        <p>Loading clients...</p>
+        <PageLoader />
       ) : clients.length === 0 ? (
         <div className="rounded-2xl border border-white/10 p-6">
           <p className="text-2xl text-white/70">

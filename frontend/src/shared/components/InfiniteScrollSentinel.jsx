@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react"
+import LoadingSpinner from "@/shared/components/LoadingSpinner"
 
 const InfiniteScrollSentinel = ({ hasMore, loading, onLoadMore }) => {
   const sentinelRef = useRef(null)
@@ -33,8 +34,8 @@ const InfiniteScrollSentinel = ({ hasMore, loading, onLoadMore }) => {
   }
 
   return (
-    <div ref={sentinelRef} className="py-6 text-center text-2xl text-white/45">
-      {loading ? "Loading more..." : "Scroll for more"}
+    <div ref={sentinelRef} className="flex h-16 items-center justify-center">
+      {loading ? <LoadingSpinner size="sm" /> : null}
     </div>
   )
 }

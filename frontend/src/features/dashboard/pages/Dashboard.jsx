@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react"
 import fetchDashboard from "../api/dashboard"
+import { PageLoader } from "@/shared/components/LoadingSpinner"
 import { DASHBOARD_REFRESH_EVENT } from "@/shared/utils/dashboardRefresh"
 import {
   Folder,
@@ -102,7 +103,7 @@ const Dashboard = () => {
   }, [])
 
   if (loading) {
-    return <p>Loading dashboard...</p>
+    return <PageLoader />
   }
 
   if (error) {

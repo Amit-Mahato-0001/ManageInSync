@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react"
 import { fetchProjects } from "@/features/projects/api/projects"
+import { PageLoader } from "@/shared/components/LoadingSpinner"
 
 const MemberDashboard = () => {
   const [projects, setProjects] = useState([])
@@ -37,7 +38,7 @@ const MemberDashboard = () => {
   }
 
   if (loading) {
-    return <p>Loading...</p>
+    return <PageLoader />
   }
 
   if (error) {

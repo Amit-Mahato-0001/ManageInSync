@@ -1,12 +1,13 @@
 import { Navigate, useLocation } from 'react-router-dom'
 import { useAuth } from '@/features/auth/hooks/useAuth'
+import { PageLoader } from '@/shared/components/LoadingSpinner'
 
 const ProtectedRoute = ({children, allowedRoles }) => {
     const location = useLocation()
     const { status, user} = useAuth()
 
     if(status === "loading"){
-        return <p>Restoring session...</p>
+        return <PageLoader />
     }
 
     if(status !== "authenticated"){

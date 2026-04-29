@@ -3,6 +3,7 @@ import { Link, useParams } from "react-router-dom"
 
 import authApi from "@/features/auth/api/auth"
 import { fetchInvoiceDetail } from "../api/billing"
+import { PageLoader } from "@/shared/components/LoadingSpinner"
 import {
   formatCurrency,
   formatInvoiceDate,
@@ -88,7 +89,7 @@ const InvoicePrint = () => {
   }, [invoice])
 
   if (loading) {
-    return <p className="p-6">Loading invoice...</p>
+    return <PageLoader className="min-h-screen" />
   }
 
   if (error) {

@@ -4,6 +4,7 @@ import { deleteMember, fetchMembers, inviteMember } from "../api/members"
 import { triggerDashboardRefresh } from "@/shared/utils/dashboardRefresh"
 import { Trash2, User2 } from "lucide-react"
 import InviteEntityModal from "@/shared/components/InviteEntityModal"
+import { PageLoader } from "@/shared/components/LoadingSpinner"
 
 const Members = () => {
   const [members, setMembers] = useState([])
@@ -83,7 +84,7 @@ const Members = () => {
   }
 
   if (loading) {
-    return <p>Loading members...</p>
+    return <PageLoader />
   }
 
   return (

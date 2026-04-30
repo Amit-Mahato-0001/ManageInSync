@@ -88,7 +88,15 @@ export default function AppLayout({ children }) {
     <div className="app-shell flex h-screen flex-col bg-[#0B0F19] text-2xl text-white">
       <header className="flex h-20 items-center justify-between border-b border-white/10 bg-[#18181B] px-6">
         <div className="flex items-center gap-3">
-          <img src="/Union.png" alt="ManageInSync" className="h-12" />
+          {tenant?.logoUrl ? (
+            <img
+              src={tenant.logoUrl}
+              alt={tenant.name || "Workspace"}
+              className="h-12 w-12 rounded-full object-cover"
+            />
+          ) : (
+            <img src="/Union.png" alt="ManageInSync" className="h-12" />
+          )}
         </div>
 
         <button

@@ -36,6 +36,7 @@ const serializeTenant = (tenant) => {
         id: tenant._id,
         name: tenant.name,
         slug: tenant.slug || null,
+        logoUrl: tenant.logoUrl || null,
         plan: tenant.plan
     }
 }

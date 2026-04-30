@@ -16,6 +16,7 @@ import authApi from "../api/auth"
 import { useAuth } from "../hooks/useAuth"
 import LoadingSpinner from "@/shared/components/LoadingSpinner"
 import { prepareLogoUpload } from "../utils/prepareLogoUpload"
+import { triggerDashboardRefresh } from "@/shared/utils/dashboardRefresh"
 import {
   formatSessionTimestamp,
   getDevicePlatform,
@@ -137,12 +138,13 @@ const ActionButton = ({
 const Account = () => {
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
-  const { user, tenant, updateUser, logout } = useAuth()
+  const { user, tenant, updateTenant, updateUser, logout } = useAuth()
   const logoInputRef = useRef(null)
+  const canManageWorkspaceProfile = ["owner", "admin"].includes(user?.role)
 
   const [profileForm, setProfileForm] = useState(() => ({
-    name: user?.name || "",
-    logoUrl: user?.logoUrl || ""
+    name: canManageWorkspaceProfile ? tenant?.name || "" : user?.name || "",
+    logoUrl: canManageWorkspaceProfile ? tenant?.logoUrl || "" : user?.logoUrl || ""
   }))
   const [profileError, setProfileError] = useState("")
   const [profileSaving, setProfileSaving] = useState(false)
@@ -174,11 +176,17 @@ const Account = () => {
 
   useEffect(() => {
     setProfileForm({
-      name: user?.name || "",
-      logoUrl: user?.logoUrl || ""
+      name: canManageWorkspaceProfile ? tenant?.name || "" : user?.name || "",
+      logoUrl: canManageWorkspaceProfile ? tenant?.logoUrl || "" : user?.logoUrl || ""
     })
     setSelectedLogoName("")
-  }, [user?.name, user?.logoUrl])
+  }, [
+    canManageWorkspaceProfile,
+    tenant?.logoUrl,
+    tenant?.name,
+    user?.logoUrl,
+    user?.name
+  ])
 
   useEffect(() => {
     setLogoPreviewBroken(false)
@@ -222,8 +230,8 @@ const Account = () => {
 
   const resetProfileEditor = () => {
     setProfileForm({
-      name: user?.name || "",
-      logoUrl: user?.logoUrl || ""
+      name: canManageWorkspaceProfile ? tenant?.name || "" : user?.name || "",
+      logoUrl: canManageWorkspaceProfile ? tenant?.logoUrl || "" : user?.logoUrl || ""
     })
     setSelectedLogoName("")
     setLogoPreviewBroken(false)
@@ -319,6 +327,11 @@ const Account = () => {
         updateUser(response.data.user)
       }
 
+      if (response.data?.tenant) {
+        updateTenant(response.data.tenant)
+        triggerDashboardRefresh()
+      }
+
       setSelectedLogoName("")
       setIsEditingProfile(false)
     } catch {
@@ -384,7 +397,9 @@ const Account = () => {
           <div>
             <h2 className="text-4xl font-semibold">Profile</h2>
             <p className="mt-2 text-2xl text-white/60">
-              Update the name and logo your workspace sees for this account.
+              {canManageWorkspaceProfile
+                ? "Update the name and logo shown for this workspace."
+                : "Update the name and logo your workspace sees for this account."}
             </p>
           </div>
 

@@ -20,15 +20,18 @@ const getAccountProfileHandler = async (req, res, next) => {
 
 const updateAccountProfileHandler = async (req, res, next) => {
     try {
-        const user = await updateProfile({
+        const profile = await updateProfile({
             userId: req.user._id,
+            tenantId: req.tenantId,
+            role: req.user.role,
             name: req.body.name,
             logoUrl: req.body.logoUrl
         })
 
         return res.status(200).json({
             message: "Profile updated successfully",
-            user
+            user: profile.user,
+            tenant: profile.tenant
         })
     } catch (error) {
         next(error)

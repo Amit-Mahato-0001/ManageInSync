@@ -16,6 +16,11 @@ const tenantSchema = new mongoose.Schema({
         sparse: true,
         index: true
     },
+    logoUrl: {
+        type: String,
+        trim: true,
+        maxlength: 100000
+    },
     plan: {
         type: String,
         enum: ["free", "pro"],

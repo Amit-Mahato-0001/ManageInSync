@@ -98,6 +98,7 @@ protectedApi.get("/me", (req, res) => {
             id: req.tenantId,
             name: req.tenant.name,
             slug: req.tenant.slug || null,
+            logoUrl: req.tenant.logoUrl || null,
             plan: req.tenant.plan
         }
     })

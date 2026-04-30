@@ -10,6 +10,7 @@ const dashboardHandler = async (req, res, next) => {
 
             tenantId: req.tenantId,
             tenantName: req.tenant?.name,
+            tenantLogoUrl: req.tenant?.logoUrl || null,
             dashboardStats
             
         })

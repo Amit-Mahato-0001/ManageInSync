@@ -139,6 +139,17 @@ const AuthProvider = ({ children }) => {
     }))
   }
 
+  function updateTenant(nextTenant) {
+    if (!nextTenant) {
+      return
+    }
+
+    setTenant((currentTenant) => ({
+      ...(currentTenant || {}),
+      ...nextTenant
+    }))
+  }
+
   const value = {
     token,
     user,
@@ -148,6 +159,7 @@ const AuthProvider = ({ children }) => {
     login,
     logout,
     refreshSession,
+    updateTenant,
     updateUser
   }
 

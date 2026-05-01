@@ -287,8 +287,6 @@ const InvoiceDetails = () => {
         <div className="flex flex-wrap gap-3">
           <Link
             to={`/billing/invoices/${invoice._id}/print`}
-            target="_blank"
-            rel="noreferrer"
             className="inline-flex rounded-lg border border-white/10 bg-gradient-to-br from-[#18181B] to-blue-500 px-4 py-2 text-2xl font-medium text-white transition hover:bg-white/10"
           >
             Download PDF

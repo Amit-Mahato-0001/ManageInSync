@@ -226,7 +226,7 @@ const getRazorpayPendingPayment = ({ tenantId, invoiceId, orderId }) =>
         transactionId: orderId,
         gateway: "razorpay",
         status: "pending"
-    })
+    }).select("transactionId amount status gateway rawResponseJson")
 
 const getPaidRazorpayPayment = ({ tenantId, invoiceId, paymentId }) =>
     Payment.findOne({
@@ -236,6 +236,8 @@ const getPaidRazorpayPayment = ({ tenantId, invoiceId, paymentId }) =>
         gateway: /^razorpay/,
         status: "paid"
     })
+        .select("tenantId invoiceId userId gateway transactionId amount status paidAt rawResponseJson createdAt updatedAt")
+        .lean()
 
 const createInvoiceCheckoutOrder = async ({ tenantId, invoiceId, user }) => {
     ensureObjectId(tenantId, "tenantId")
@@ -249,7 +251,12 @@ const createInvoiceCheckoutOrder = async ({ tenantId, invoiceId, user }) => {
     const invoice = await Invoice.findOne({
         _id: invoiceId,
         tenantId
-    }).populate("clientUserId", "email")
+    })
+        .select("tenantId userId clientUserId contactId invoiceNumber reference status issueDate dueDate subtotal taxTotal total amountPaid amountDue notes contactSnapshot createdAt updatedAt")
+        .populate({
+            path: "clientUserId",
+            select: "email"
+        })
 
     ensureInvoiceAccess(invoice, user)
 
@@ -350,7 +357,7 @@ const verifyInvoiceCheckoutPayment = async ({
 
     if (existingPayment) {
         return {
-            payment: existingPayment.toObject(),
+            payment: existingPayment,
             invoice: await getInvoiceDetail({
                 tenantId,
                 invoiceId,
@@ -362,7 +369,12 @@ const verifyInvoiceCheckoutPayment = async ({
     const invoice = await Invoice.findOne({
         _id: invoiceId,
         tenantId
-    }).populate("clientUserId", "email")
+    })
+        .select("tenantId clientUserId invoiceNumber status amountDue amountPaid total dueDate")
+        .populate({
+            path: "clientUserId",
+            select: "email"
+        })
 
     ensureInvoiceAccess(invoice, user)
 
@@ -595,10 +607,14 @@ const listInvoices = async ({ tenantId, user, page, limit, search, status }) => 
 
     const [invoices, total] = await Promise.all([
         Invoice.find(query)
+            .select("tenantId userId clientUserId contactId invoiceNumber reference status issueDate dueDate subtotal taxTotal total amountPaid amountDue contactSnapshot createdAt updatedAt")
             .sort({ createdAt: -1 })
             .skip(skip)
             .limit(safeLimit)
-            .populate("clientUserId", "email")
+            .populate({
+                path: "clientUserId",
+                select: "email"
+            })
             .lean(),
         Invoice.countDocuments(query)
     ])
@@ -626,7 +642,13 @@ const getInvoiceDetail = async ({ tenantId, invoiceId, user }) => {
     const invoice = await Invoice.findOne({
         _id: invoiceId,
         tenantId
-    }).populate("clientUserId", "email")
+    })
+        .select("tenantId userId clientUserId contactId invoiceNumber reference status issueDate dueDate subtotal taxTotal total amountPaid amountDue notes contactSnapshot createdAt updatedAt")
+        .populate({
+            path: "clientUserId",
+            select: "email"
+        })
+        .lean()
 
     ensureInvoiceAccess(invoice, user)
 
@@ -635,12 +657,14 @@ const getInvoiceDetail = async ({ tenantId, invoiceId, user }) => {
             tenantId,
             invoiceId
         })
+            .select("invoiceId itemName quantity unitPrice taxRate lineTotal taxAmount createdAt updatedAt")
             .sort({ createdAt: 1 })
             .lean(),
         Payment.find({
             tenantId,
             invoiceId
         })
+            .select("invoiceId userId gateway transactionId amount status paidAt createdAt updatedAt")
             .sort({ paidAt: -1, createdAt: -1 })
             .lean()
     ])
@@ -685,7 +709,12 @@ const createInvoicePayment = async ({ tenantId, invoiceId, user, data }) => {
     const invoice = await Invoice.findOne({
         _id: invoiceId,
         tenantId
-    }).populate("clientUserId", "email")
+    })
+        .select("tenantId clientUserId invoiceNumber status amountDue amountPaid total dueDate")
+        .populate({
+            path: "clientUserId",
+            select: "email"
+        })
 
     ensureInvoiceAccess(invoice, user)
 

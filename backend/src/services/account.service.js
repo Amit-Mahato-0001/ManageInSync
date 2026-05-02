@@ -16,6 +16,8 @@ const sanitizeOptionalString = (value = "") => {
 
 const getProfile = async ({ userId }) => {
     const user = await User.findById(userId)
+        .select("email name logoUrl role status tenantId")
+        .lean()
 
     if (!user) {
         throw createHttpError("User not found", 404, "user_not_found")
@@ -71,7 +73,7 @@ const updateProfile = async ({ userId, tenantId, role, name, logoUrl }) => {
                 throw createHttpError("Workspace name is required", 400, "tenant_name_required")
             }
 
-            const existingTenant = await Tenant.findOne(
+            const existingTenant = await Tenant.exists(
                 buildTenantNameLookup({
                     name: safeName,
                     tenantId: tenant._id
@@ -120,10 +122,13 @@ const listActiveSessions = async ({ userId, currentSessionId }) => {
         expiresAt: {
             $gt: new Date()
         }
-    }).sort({
-        lastUsedAt: -1,
-        createdAt: -1
     })
+        .select("createdByIp lastUsedIp userAgent createdAt expiresAt lastUsedAt")
+        .sort({
+            lastUsedAt: -1,
+            createdAt: -1
+        })
+        .lean()
 
     const currentSessionKey = currentSessionId?.toString() || ""
 

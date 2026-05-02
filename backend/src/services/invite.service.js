@@ -37,7 +37,9 @@ const inviteUser = async ({email, tenantId, role, invitedByRole}) => {
 
     const inviteToken = crypto.randomBytes(32).toString("hex")
     const inviteTokenExpires = Date.now() + 24 * 60 * 60 * 1000 //24hrs
-    const tenant = await Tenant.findById(tenantId).select("name slug")
+    const tenant = await Tenant.findById(tenantId)
+        .select("name slug")
+        .lean()
 
     if (!tenant) {
         throw createHttpError("Tenant not found", 404, "tenant_not_found")

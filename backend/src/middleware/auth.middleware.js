@@ -57,6 +57,7 @@ const authenticate = async (req, res, next) => {
 
     try {
         const session = await Session.findById(sessionId)
+            .select("userId tenantId expiresAt revokedAt lastUsedAt lastUsedIp userAgent")
 
         if (!session || session.revokedAt || session.expiresAt.getTime() <= Date.now()) {
             return next(createHttpError("Session revoked", 401, "session_revoked"))
@@ -67,6 +68,7 @@ const authenticate = async (req, res, next) => {
         }
 
         const user = await User.findById(userId)
+            .select("email name logoUrl role status tenantId")
 
         if (!user) {
             return next(createHttpError("User not found", 401, "auth_required"))

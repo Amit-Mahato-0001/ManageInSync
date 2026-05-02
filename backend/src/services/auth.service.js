@@ -98,7 +98,7 @@ const revokeSessionById = async (sessionId, reason) => {
         {
             new: true
         }
-    )
+    ).select("_id userId tenantId revokedAt revokeReason")
 }
 
 const revokeAllUserSessions = async ({ userId, reason }) => {
@@ -127,11 +127,15 @@ const findTenantByWorkspace = async (workspace) => {
         return null
     }
 
-    return Tenant.findOne(query).select("_id name slug plan")
+    return Tenant.findOne(query)
+        .select("_id name slug logoUrl plan")
+        .lean()
 }
 
 const getTenantById = async (tenantId) =>
-    Tenant.findById(tenantId).select("_id name slug plan")
+    Tenant.findById(tenantId)
+        .select("_id name slug logoUrl plan")
+        .lean()
 
 const createPasswordResetToken = () =>
     crypto.randomBytes(32).toString("hex")
@@ -262,6 +266,8 @@ const refreshSession = async ({ refreshToken, req }) => {
     }
 
     const user = await User.findById(session.userId)
+        .select("email name logoUrl role status tenantId")
+        .lean()
 
     if (!user) {
         await revokeSessionById(session._id, "user_missing")
@@ -326,6 +332,8 @@ const logout = async ({ refreshToken }) => {
     const session = await Session.findOne({
         refreshTokenHash: hashToken(refreshToken)
     })
+        .select("_id revokedAt")
+        .lean()
 
     if (!session || session.revokedAt) {
         return { success: true }

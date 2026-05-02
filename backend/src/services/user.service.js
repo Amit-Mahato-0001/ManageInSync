@@ -31,7 +31,7 @@ const createUser = async (data, options = {}) => {
     throw new Error('Invalid tenantId')
   }
 
-  const existingUser = await User.findOne({
+  const existingUser = await User.exists({
 
     email: safeEmail,
     tenantId: data.tenantId

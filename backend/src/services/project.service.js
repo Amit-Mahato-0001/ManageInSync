@@ -166,6 +166,8 @@ const getProject = async ({ tenantId, user, page, limit, search, status }) => {
     const skip = (page - 1) * limit
 
     const projects = await Project.find(query)
+    .select("name description targetDate status tenantId members clients deletedAt createdAt updatedAt")
+    .sort({ createdAt: -1 })
     .skip(skip)
     .limit(limit)
     .lean()
@@ -256,6 +258,7 @@ const deleteProject = async (projectId, tenantId) => {
         { deletedAt }, //update (kya change krna h)
         { new: true} //option (update ke baad wala project return)
     )
+        .select("name status tenantId members clients deletedAt createdAt updatedAt")
 
     if(!project){
         throw new Error("Project not found")
@@ -313,7 +316,9 @@ const assignClient = async ({projectId, clientIds, tenantId}) => {
     
     //return updated project
     return {
-        project: await Project.findById(projectId),
+        project: await Project.findById(projectId)
+            .select("name description targetDate status tenantId members clients createdAt updatedAt")
+            .lean(),
         previousClientIds
     }
 
@@ -396,7 +401,9 @@ const assignMember = async({projectId, memberIds, tenantId}) => {
 
     //return krdo updated project ko bus bus ;)
     return {
-        project: await Project.findById(projectId),
+        project: await Project.findById(projectId)
+            .select("name description targetDate status tenantId members clients createdAt updatedAt")
+            .lean(),
         previousMemberIds
     }
 }

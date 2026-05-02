@@ -23,7 +23,10 @@ const getAuditLogs = async(req, res, next) => {
                 .sort({ createdAt: -1})
                 .skip(skip)
                 .limit(safeLimit)
-                .populate("actorId", "email role")
+                .populate({
+                    path: "actorId",
+                    select: "email role"
+                })
                 .lean(),
             AuditLog.countDocuments(query)
         ])

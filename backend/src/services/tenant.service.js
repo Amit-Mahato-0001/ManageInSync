@@ -15,7 +15,7 @@ const resolveUniqueWorkspaceSlug = async ({ name, session }) => {
         const nextSlug =
             attempt === 0 ? baseSlug : `${baseSlug}-${attempt + 1}`
 
-        const existingTenant = await Tenant.findOne({
+        const existingTenant = await Tenant.exists({
             slug: nextSlug
         }).session(session || null)
 
@@ -32,7 +32,7 @@ const createTenant = async (data, options = {}) => {
     const { session } = options
     const safeName = data.name?.trim()
 
-    const existingTenant = await Tenant.findOne(buildNameLookup(safeName)).session(session || null)
+    const existingTenant = await Tenant.exists(buildNameLookup(safeName)).session(session || null)
 
     if(existingTenant){
 

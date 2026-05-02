@@ -90,6 +90,8 @@ const getOrCreateProjectConversation = async (projectId, user, tenantId) => {
             setDefaultsOnInsert: true
         }
     )
+        .select("tenantId projectId createdBy lastMessageAt deletedAt createdAt updatedAt")
+        .lean()
 
     const unreadCount = await getUnreadCount({
 
@@ -115,6 +117,7 @@ const listProjectMessages = async (conversationId, tenantId, limit, cursor) => {
         deletedAt: null
 
     }).select("_id")
+        .lean()
 
     if (!conversation) {
         throw makeError("Conversation not found", 404)
@@ -137,7 +140,11 @@ const listProjectMessages = async (conversationId, tenantId, limit, cursor) => {
     const messages = await Message.find(query)
         .sort({ _id: -1 })
         .limit(safeLimit)
-        .populate("senderId", "email role")
+        .select("tenantId projectId conversationId senderId text editedAt deletedAt readBy createdAt updatedAt")
+        .populate({
+            path: "senderId",
+            select: "email role"
+        })
         .lean()
 
     const nextCursor =
@@ -174,7 +181,7 @@ const sendMessage = async (
         tenantId: tenantObjectId,
         projectId: projectObjectId,
         deletedAt: null
-    })
+    }).select("_id lastMessageAt")
 
     if (!conversation) {
         throw makeError("Conversation not found", 404)
@@ -192,7 +199,13 @@ const sendMessage = async (
     conversation.lastMessageAt = now
     await conversation.save()
 
-    return Message.findById(message._id).populate("senderId", "email role")
+    return Message.findById(message._id)
+        .select("tenantId projectId conversationId senderId text editedAt deletedAt readBy createdAt updatedAt")
+        .populate({
+            path: "senderId",
+            select: "email role"
+        })
+        .lean()
 }
 
 const editMessage = async (messageId, senderId, text, projectId, tenantId) => {
@@ -209,7 +222,7 @@ const editMessage = async (messageId, senderId, text, projectId, tenantId) => {
         projectId: projectObjectId,
         tenantId: tenantObjectId,
         deletedAt: null
-    })
+    }).select("senderId projectId tenantId text editedAt deletedAt")
 
     if (!message) {
         throw makeError("Message not found or access denied", 404)
@@ -219,7 +232,13 @@ const editMessage = async (messageId, senderId, text, projectId, tenantId) => {
     message.editedAt = new Date()
     await message.save()
 
-    return Message.findById(message._id).populate("senderId", "email role")
+    return Message.findById(message._id)
+        .select("tenantId projectId conversationId senderId text editedAt deletedAt readBy createdAt updatedAt")
+        .populate({
+            path: "senderId",
+            select: "email role"
+        })
+        .lean()
 }
 
 const deleteMessage = async (messageId, actor, projectId, tenantId) => {
@@ -233,7 +252,7 @@ const deleteMessage = async (messageId, actor, projectId, tenantId) => {
         projectId: projectObjectId,
         tenantId: tenantObjectId,
         deletedAt: null
-    })
+    }).select("senderId projectId tenantId conversationId deletedAt")
 
     if (!message) {
         throw makeError("Message not found", 404)
@@ -253,12 +272,13 @@ const deleteMessage = async (messageId, actor, projectId, tenantId) => {
     })
         .sort({ _id: -1 })
         .select("createdAt")
+        .lean()
 
     const conversation = await Conversation.findOne({
         _id: message.conversationId,
         tenantId: message.tenantId,
         deletedAt: null
-    })
+    }).select("lastMessageAt createdAt")
 
     if (conversation) {
         conversation.lastMessageAt = latestMessage
@@ -284,6 +304,7 @@ const markAsRead = async (conversationId, userId, tenantId) => {
         tenantId: tenantObjectId,
         deletedAt: null
     }).select("_id")
+        .lean()
 
     if (!conversation) {
 

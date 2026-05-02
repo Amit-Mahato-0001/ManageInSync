@@ -1,0 +1,6 @@
+- Applied `.lean()` for read query optimization
+- Reduced payload using `.select()`
+- Optimized `populate()` usage
+- Used `exists()` for lightweight checks
+- Ensured safe mutation flows
+- Ran autocannon benchmark for validation

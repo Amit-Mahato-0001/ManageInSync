@@ -21,7 +21,7 @@ const createClient = async ({ email, name, tenantId}) => {
         throw new Error("Invalid tenantId")
     }
 
-    const existingUser = await User.findOne({ email: safeEmail, tenantId})
+    const existingUser = await User.exists({ email: safeEmail, tenantId})
 
     if(existingUser){
         throw new Error("Client already exists")
@@ -56,8 +56,9 @@ const getClients = ({ tenantId, includeInvited = false }) => {
         role: "client",
         status: includeInvited ? { $in: ["active", "invited"] } : "active"
     })
-        .select("email name role createdAt")
+        .select("email name role status createdAt")
         .sort({ createdAt: -1 })
+        .lean()
 
     return clients
 }

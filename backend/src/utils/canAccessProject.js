@@ -33,6 +33,8 @@ const canAccessProject = async ({ projectId, userId, role, tenantId }) => {
         tenantId: new mongoose.Types.ObjectId(tenantId),
         deletedAt: null
     })
+        .select("name status members clients tenantId")
+        .lean()
 
     if (!project) {
         throw makeError("Project not found", 404)

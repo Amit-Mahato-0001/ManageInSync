@@ -15,8 +15,9 @@ const getMembers = async ({ tenantId, includeInvited = false }) => {
     role: "member",
     status: includeInvited ? { $in: ["active", "invited"] } : "active"
   })
-    .select("email role createdAt")
+    .select("email name role status createdAt")
     .sort({ createdAt: -1 })
+    .lean()
 }
 
 const deleteMember = async ({ memberId, tenantId }) => {

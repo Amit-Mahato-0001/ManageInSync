@@ -39,6 +39,8 @@ const getProject = async ({ tenantId, projectId, user }) => {
         deletedAt: null
 
     })
+        .select("name status members clients tenantId")
+        .lean()
 
     if (!project) {
 
@@ -109,7 +111,9 @@ const createTask = async (data) => {
         status: "active",
         role: { $ne: "client" }
 
-    }).select("_id role")
+    })
+        .select("_id role")
+        .lean()
 
     if (!assignee) {
 
@@ -187,6 +191,7 @@ const getTasks = async ({ tenantId, projectId, user, page, limit, assigneeId, st
     const skip = (safePage - 1) * safeLimit
 
     const tasks = await Task.find(query)
+        .select("title description targetDate assigneeId status priority projectId tenantId createdBy createdAt updatedAt")
         .lean()
         .skip(skip)
         .limit(safeLimit)

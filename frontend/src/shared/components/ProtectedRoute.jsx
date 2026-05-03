@@ -7,7 +7,7 @@ const ProtectedRoute = ({children, allowedRoles }) => {
     const { status, user} = useAuth()
 
     if(status === "loading"){
-        return <PageLoader />
+        return <PageLoader fullScreen label="" />
     }
 
     if(status !== "authenticated"){

@@ -14,10 +14,17 @@ const LoadingSpinner = ({ size = "md", className = "" }) => {
   )
 }
 
-export const PageLoader = ({ className = "" }) => {
+export const PageLoader = ({ className = "", fullScreen = false, label = "Loading..." }) => {
+  const shellClass = fullScreen
+    ? "min-h-screen bg-[#09090B] text-white"
+    : "min-h-[240px]"
+
   return (
-    <div className={`flex min-h-[240px] items-center justify-center ${className}`}>
-      <LoadingSpinner size="lg" />
+    <div className={`flex items-center justify-center ${shellClass} ${className}`}>
+      <div className="flex flex-col items-center gap-4">
+        <LoadingSpinner size="lg" />
+        {label ? <p className="text-2xl text-white/60">{label}</p> : null}
+      </div>
     </div>
   )
 }

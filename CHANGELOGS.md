@@ -1,6 +1,5 @@
-- Applied `.lean()` for read query optimization
-- Reduced payload using `.select()`
-- Optimized `populate()` usage
-- Used `exists()` for lightweight checks
-- Ensured safe mutation flows
-- Ran autocannon benchmark for validation
+# Changelog
+
+## 2026-05-03
+
+- Fixed the white screen during session restore by adding a dark full-screen loader.

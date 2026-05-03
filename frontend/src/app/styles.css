@@ -20,6 +20,13 @@
 }
 
 /* Global font apply */
+html,
+body,
+#root {
+  min-height: 100%;
+  background-color: #09090B;
+}
+
 body {
   font-family: "Outfit", "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
 }

@@ -138,8 +138,11 @@ const getProject = async ({ tenantId, user, page, limit, search, status }) => {
         throw new Error("Invalid tenantId")
     }
 
+    const tenantObjectId = new mongoose.Types.ObjectId(tenantId)
+    const userObjectId = new mongoose.Types.ObjectId(user._id)
+
     const query = {
-        tenantId,
+        tenantId: tenantObjectId,
         deletedAt: null
     }
 
@@ -155,31 +158,32 @@ const getProject = async ({ tenantId, user, page, limit, search, status }) => {
 
     if(user.role === "client"){
 
-        query.clients = new mongoose.Types.ObjectId(user._id)
+        query.clients = userObjectId
     }
 
     if(user.role === "member"){
 
-        query.members = new mongoose.Types.ObjectId(user._id)
+        query.members = userObjectId
     }
 
     const skip = (page - 1) * limit
 
-    const projects = await Project.find(query)
-    .select("name description targetDate status tenantId members clients deletedAt createdAt updatedAt")
-    .sort({ createdAt: -1 })
-    .skip(skip)
-    .limit(limit)
-    .lean()
-
-    const total = await Project.countDocuments(query)
+    const [projects, total] = await Promise.all([
+        Project.find(query)
+            .select("name description targetDate status tenantId members clients deletedAt createdAt updatedAt")
+            .sort({ createdAt: -1 })
+            .skip(skip)
+            .limit(limit)
+            .lean(),
+        Project.countDocuments(query)
+    ])
 
     const projectIds = projects.map((project) => project._id)
     const unreadByProject = {}
 
     if (projectIds.length > 0) {
         const conversations = await Conversation.find({
-            tenantId: new mongoose.Types.ObjectId(tenantId),
+            tenantId: tenantObjectId,
             projectId: { $in: projectIds },
             deletedAt: null
         })
@@ -192,15 +196,15 @@ const getProject = async ({ tenantId, user, page, limit, search, status }) => {
             const unreadCounts = await Message.aggregate([
                 {
                     $match: {
-                        tenantId: new mongoose.Types.ObjectId(tenantId),
+                        tenantId: tenantObjectId,
                         projectId: { $in: projectIds },
                         conversationId: { $in: conversationIds },
                         deletedAt: null,
-                        senderId: { $ne: new mongoose.Types.ObjectId(user._id) },
+                        senderId: { $ne: userObjectId },
                         readBy: {
                             $not: {
                                 $elemMatch: {
-                                    userId: new mongoose.Types.ObjectId(user._id)
+                                    userId: userObjectId
                                 }
                             }
                         }

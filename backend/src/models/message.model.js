@@ -78,5 +78,6 @@ const messageSchema = new mongoose.Schema(
 
 messageSchema.index({ tenantId: 1, conversationId: 1, createdAt: -1 })
 messageSchema.index({ tenantId: 1, projectId: 1, createdAt: -1 })
+messageSchema.index({ tenantId: 1, projectId: 1, conversationId: 1, deletedAt: 1 })
 
 module.exports = mongoose.model("Message", messageSchema)

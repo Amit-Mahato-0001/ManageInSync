@@ -52,4 +52,11 @@ const projectSchema = new mongoose.Schema({
 
 )
 
+projectSchema.index({ tenantId: 1, deletedAt: 1, createdAt: -1 })
+projectSchema.index({ tenantId: 1, deletedAt: 1, status: 1, createdAt: -1 })
+projectSchema.index({ tenantId: 1, deletedAt: 1, clients: 1, createdAt: -1 })
+projectSchema.index({ tenantId: 1, deletedAt: 1, members: 1, createdAt: -1 })
+projectSchema.index({ tenantId: 1, deletedAt: 1, clients: 1, status: 1, createdAt: -1 })
+projectSchema.index({ tenantId: 1, deletedAt: 1, members: 1, status: 1, createdAt: -1 })
+
 module.exports = mongoose.model("Project", projectSchema)

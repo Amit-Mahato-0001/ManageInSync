@@ -63,7 +63,7 @@ const userSchema = new mongoose.Schema({
 
 userSchema.index(
     {email: 1, tenantId: 1},
-    {unique: true}
+    {unique: true, name: "email_1_tenantId_1"}
 )
 userSchema.index({ passwordResetTokenHash: 1 })
 

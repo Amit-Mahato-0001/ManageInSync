@@ -8,6 +8,25 @@ const createHttpError = require("../utils/httpError")
 const normalizeEmail = (value = "") =>
     typeof value === "string" ? value.trim().toLowerCase() : ""
 
+const isDuplicateKeyError = (error) =>
+    error?.code === 11000 || error?.code === 11001
+
+const getDuplicateInviteError = (error) => {
+    if (error?.keyPattern?.email === 1 && !error?.keyPattern?.tenantId) {
+        return createHttpError(
+            "Production database index needs migration. Same email should only be unique inside one workspace.",
+            500,
+            "user_email_index_needs_migration"
+        )
+    }
+
+    return createHttpError(
+        "This email is already added to the workspace",
+        400,
+        "user_already_exists"
+    )
+}
+
 const inviteUser = async ({email, tenantId, role, invitedByRole}) => {
     const safeEmail = normalizeEmail(email)
 
@@ -82,14 +101,22 @@ const inviteUser = async ({email, tenantId, role, invitedByRole}) => {
         )
     }
 
-    user = await User.create({
-        email: safeEmail,
-        tenantId,
-        role,
-        status: "invited",
-        inviteToken,
-        inviteTokenExpires
-    })
+    try {
+        user = await User.create({
+            email: safeEmail,
+            tenantId,
+            role,
+            status: "invited",
+            inviteToken,
+            inviteTokenExpires
+        })
+    } catch (error) {
+        if (isDuplicateKeyError(error)) {
+            throw getDuplicateInviteError(error)
+        }
+
+        throw error
+    }
 
     await sendInviteEmail({
         to: safeEmail,

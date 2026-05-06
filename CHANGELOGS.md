@@ -1,9 +1,7 @@
 # Changelog
 
-## 2026-05-06
+## 2026-05-07
 
-- Optimized project list query & reduced unnecessary hydration/select overhead
+- Updated user uniqueness so the same email is blocked only inside the same tenant/workspace, while different tenants can reuse the email.
 
-- Added indexes for project and unread-count lookups then benchmarked endpoint performance using Autocannon
-
-- Benchmark results show only minor latency improvement indicating the main bottleneck exists outside the core project query
+- Improved invite duplicate-key handling with clearer backend errors instead of a generic production internal server error.

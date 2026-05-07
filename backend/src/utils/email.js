@@ -22,6 +22,16 @@ const parseBooleanValue = (value, fallback = false) => {
     return value.trim().toLowerCase() === "true"
 }
 
+const parsePositiveInteger = (value, fallback) => {
+    const parsedValue = Number(value)
+
+    if (!Number.isInteger(parsedValue) || parsedValue <= 0) {
+        return fallback
+    }
+
+    return parsedValue
+}
+
 const getEmailTransportConfig = () => {
     const port = Number(process.env.EMAIL_PORT)
     const secure =
@@ -34,6 +44,18 @@ const getEmailTransportConfig = () => {
         port,
         secure,
         requireTLS: parseBooleanValue(process.env.EMAIL_REQUIRE_TLS, !secure),
+        connectionTimeout: parsePositiveInteger(
+            process.env.EMAIL_CONNECTION_TIMEOUT_MS,
+            10000
+        ),
+        greetingTimeout: parsePositiveInteger(
+            process.env.EMAIL_GREETING_TIMEOUT_MS,
+            10000
+        ),
+        socketTimeout: parsePositiveInteger(
+            process.env.EMAIL_SOCKET_TIMEOUT_MS,
+            20000
+        ),
         auth: {
             user: process.env.EMAIL_USER,
             pass: process.env.EMAIL_PASS

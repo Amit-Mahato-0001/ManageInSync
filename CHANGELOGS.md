@@ -2,6 +2,11 @@
 
 ## 2026-05-07
 
-- Updated user uniqueness so the same email is blocked only inside the same tenant/workspace, while different tenants can reuse the email.
+- Added timeout in Nodemailer
+connection timeout: 10 sec
+greeting timeout: 10 sec
+socket timeout: 20 sec
 
-- Improved invite duplicate-key handling with clearer backend errors instead of a generic production internal server error.
+- Frontend API timeout 30 sec added so UI should not stuck
+
+- Added timeout config tests

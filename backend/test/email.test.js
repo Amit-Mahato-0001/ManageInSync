@@ -32,6 +32,9 @@ const loadEmailUtils = (overrides = {}) => {
     assert.equal(transportConfig.port, 587)
     assert.equal(transportConfig.secure, false)
     assert.equal(transportConfig.requireTLS, true)
+    assert.equal(transportConfig.connectionTimeout, 10000)
+    assert.equal(transportConfig.greetingTimeout, 10000)
+    assert.equal(transportConfig.socketTimeout, 20000)
     assert.equal(
         emailUtils.getEmailFromAddress(),
         "\"ManageInSync\" <noreply@manageinsync.dev>"
@@ -59,12 +62,18 @@ const loadEmailUtils = (overrides = {}) => {
     const { emailUtils, restoreEnvironment } = loadEmailUtils({
         EMAIL_PORT: "465",
         EMAIL_SECURE: "true",
-        EMAIL_REQUIRE_TLS: "false"
+        EMAIL_REQUIRE_TLS: "false",
+        EMAIL_CONNECTION_TIMEOUT_MS: "3000",
+        EMAIL_GREETING_TIMEOUT_MS: "4000",
+        EMAIL_SOCKET_TIMEOUT_MS: "5000"
     })
     const transportConfig = emailUtils.getEmailTransportConfig()
 
     assert.equal(transportConfig.secure, true)
     assert.equal(transportConfig.requireTLS, false)
+    assert.equal(transportConfig.connectionTimeout, 3000)
+    assert.equal(transportConfig.greetingTimeout, 4000)
+    assert.equal(transportConfig.socketTimeout, 5000)
 
     restoreEnvironment()
     clearBackendModuleCache()

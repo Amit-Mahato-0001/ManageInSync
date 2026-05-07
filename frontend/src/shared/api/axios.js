@@ -6,11 +6,13 @@ const baseURL = import.meta.env.VITE_API_URL || defaultBaseURL
 const api = axios.create({
   baseURL,
   withCredentials: true,
+  timeout: 30000,
 })
 
 const authClient = axios.create({
   baseURL,
   withCredentials: true,
+  timeout: 30000,
 })
 
 let accessToken = null

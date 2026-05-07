@@ -39,10 +39,13 @@ const getEmailTransportConfig = () => {
             ? parseBooleanValue(process.env.EMAIL_SECURE)
             : port === 465
 
+    const family = parsePositiveInteger(process.env.EMAIL_FAMILY, 4)
+
     return {
         host: process.env.EMAIL_HOST,
         port,
         secure,
+        family,
         requireTLS: parseBooleanValue(process.env.EMAIL_REQUIRE_TLS, !secure),
         connectionTimeout: parsePositiveInteger(
             process.env.EMAIL_CONNECTION_TIMEOUT_MS,

@@ -2,4 +2,4 @@
 
 ## 2026-05-13
 
-- rotating loading text for more engaging loading experience
+- demo login credentials for quick access and test

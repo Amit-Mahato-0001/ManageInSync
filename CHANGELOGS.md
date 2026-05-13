@@ -1,5 +1,5 @@
 # Changelog
 
-## 2026-05-07
+## 2026-05-13
 
-- switched nodemailer to IPv4 for a more stable SMTP connection
+- rotating loading text for more engaging loading experience

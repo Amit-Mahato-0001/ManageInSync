@@ -33,6 +33,31 @@ body {
 
 /* Utilities */
 @layer utilities {
+  @keyframes loader-text-cycle {
+    0%,
+    8% {
+      opacity: 0;
+      transform: translateY(0.75rem);
+    }
+
+    16%,
+    30% {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    38%,
+    100% {
+      opacity: 0;
+      transform: translateY(-0.75rem);
+    }
+  }
+
+  .loader-rotating-text {
+    animation: loader-text-cycle 5.4s ease-in-out infinite;
+    opacity: 0;
+  }
+
   .no-scrollbar::-webkit-scrollbar {
     display: none;
   }

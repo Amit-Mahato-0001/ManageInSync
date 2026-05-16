@@ -12,7 +12,8 @@ const {
 const {
     createTaskHandler,
     getTasksHandler,
-    deleteTaskHandler
+    deleteTaskHandler,
+    updateTaskHandler
 } = require("../controllers/task.controller")
 
 const {
@@ -30,6 +31,7 @@ const validate = require("../middleware/validate.middleware")
 
 const {
     createProjectSchema,
+    listProjectsQuerySchema,
     projectIdParamsSchema,
     deleteProjectSchema,
     assignProjectSchema,
@@ -40,7 +42,10 @@ const {
 const {
     createTaskSchema,
     projectTaskParamsSchema,
-    deleteTaskSchema
+    listTasksQuerySchema,
+    deleteTaskSchema,
+    taskParamsSchema,
+    updateTaskSchema
 } = require("../validators/task.validator")
 
 const {
@@ -64,6 +69,7 @@ router.post(
 router.get(
     "/",
     requireRole(["owner", "admin", "member", "client"]),
+    validate(listProjectsQuerySchema, "query"),
     getProjectHandler
 )
 
@@ -110,6 +116,7 @@ router.get(
     "/:projectId/tasks",
     requireRole(["owner", "admin", "member"]),
     validate(projectTaskParamsSchema, "params"),
+    validate(listTasksQuerySchema, "query"),
     getTasksHandler
 )
 
@@ -118,6 +125,14 @@ router.delete(
     requireRole(["owner", "admin"]),
     validate(deleteTaskSchema, "params"),
     deleteTaskHandler
+)
+
+router.patch(
+    "/:projectId/tasks/:taskId",
+    requireRole(["owner", "admin", "member"]),
+    validate(taskParamsSchema, "params"),
+    validate(updateTaskSchema, "body"),
+    updateTaskHandler
 )
 
 router.get(

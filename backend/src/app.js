@@ -24,7 +24,6 @@ const memberRoutes = require('./routes/member.route')
 const tenantRoutes = require('./routes/tenant.route')
 const userRoutes = require('./routes/user.route')
 const accountRoutes = require('./routes/account.route')
-const taskRoutes = require('./routes/task.route')
 const securityHeaders = require("./middleware/securityHeaders.middleware")
 const { createRateLimiter } = require("./middleware/rateLimit.middleware")
 
@@ -126,7 +125,6 @@ protectedApi.use("/members", memberRoutes)
 protectedApi.use("/tenants", tenantRoutes)
 protectedApi.use("/account", accountRoutes)
 protectedApi.use("/users", userRoutes)
-protectedApi.use(taskRoutes)
 
 app.use("/api", protectedApi)
 

@@ -2,8 +2,6 @@
 
 ## 2026-05-16
 
-- Added MongoDB indexes for all database models.
-- Added support for the db:create-indexes command.
-- Configured MongoDB connection using environment variables.
-- Improved handling for existing conflicting MongoDB indexes.
-- Verified successful index creation with MongoDB Atlas.
+- Removed duplicate task route file.
+- Kept task APIs under project routes only.
+- Added query validation for project list and task list APIs.

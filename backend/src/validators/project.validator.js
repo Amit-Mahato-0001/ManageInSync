@@ -28,6 +28,32 @@ const createProjectSchema = z.object({
     .optional()
 })
 
+const listProjectsQuerySchema = z.object({
+
+    page: z.coerce
+    .number()
+    .int()
+    .min(1)
+    .optional(),
+
+    limit: z.coerce
+    .number()
+    .int()
+    .min(1)
+    .max(50)
+    .optional(),
+
+    search: z
+    .string()
+    .trim()
+    .max(100, "Search is too long")
+    .optional(),
+
+    status: z
+    .enum(["active", "completed", "on-hold"])
+    .optional()
+})
+
 const projectIdParamsSchema = z.object({
 
     projectId: objectId("projectId")
@@ -56,6 +82,7 @@ const assignMemberSchema = z.object({
 
 module.exports = {
     createProjectSchema,
+    listProjectsQuerySchema,
     projectIdParamsSchema,
     deleteProjectSchema,
     assignProjectSchema,

@@ -36,12 +36,41 @@ const projectTaskParamsSchema = z.object({
     
 })
 
+const listTasksQuerySchema = z.object({
+
+    page: z.coerce
+    .number()
+    .int()
+    .min(1)
+    .optional(),
+
+    limit: z.coerce
+    .number()
+    .int()
+    .min(1)
+    .max(50)
+    .optional(),
+
+    assigneeId: objectId("assigneeId")
+    .optional(),
+
+    status: z
+    .enum(["todo", "in-progress", "done"])
+    .optional(),
+
+    priority: z
+    .enum(["low", "medium", "high"])
+    .optional()
+})
+
 const deleteTaskSchema = z.object({
 
     projectId: objectId("projectId"),
     taskId: objectId("taskId")
 
 })
+
+const taskParamsSchema = deleteTaskSchema
 
 const updateTaskSchema = z.object({
 
@@ -79,6 +108,8 @@ const updateTaskSchema = z.object({
 module.exports = {
     createTaskSchema,
     projectTaskParamsSchema,
+    listTasksQuerySchema,
     deleteTaskSchema,
+    taskParamsSchema,
     updateTaskSchema
 }

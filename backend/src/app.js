@@ -26,6 +26,10 @@ const userRoutes = require('./routes/user.route')
 const accountRoutes = require('./routes/account.route')
 const securityHeaders = require("./middleware/securityHeaders.middleware")
 const { createRateLimiter } = require("./middleware/rateLimit.middleware")
+const {
+    installMongooseProfiler,
+    projectListProfiler
+} = require("./utils/requestProfiler")
 
 const app = express()
 const protectedApi = express.Router()
@@ -48,6 +52,8 @@ const databaseStates = {
 
 const corsAllowedOrigins = readAllowedOrigins()
 
+installMongooseProfiler()
+
 app.disable("x-powered-by")
 app.set("trust proxy", getTrustProxySetting())
 app.use(securityHeaders())
@@ -60,6 +66,7 @@ app.use(express.urlencoded({
     extended: false,
     limit: process.env.JSON_BODY_LIMIT || "100kb"
 }))
+app.use(projectListProfiler())
 
 app.get("/api/health", (req, res) => {
     const readyState = mongoose.connection.readyState

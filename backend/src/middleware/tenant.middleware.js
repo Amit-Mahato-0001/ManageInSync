@@ -6,6 +6,7 @@
 //req ko aage bhejo next()
 //error handling
 const Tenant = require('../models/tenant.model')
+const { timeProfileStep } = require("../utils/requestProfiler")
 
 const resolveTenant = async (req, res, next) => {
 
@@ -17,12 +18,15 @@ const resolveTenant = async (req, res, next) => {
             return res.status(400).json({ message: "Tenant not found"})
         }
 
-        const tenantQuery = Tenant.findById(tenantId)
-        const tenant = typeof tenantQuery.select === "function"
-            ? await tenantQuery
-                .select("name slug logoUrl plan")
-                .lean()
-            : await tenantQuery
+        const tenant = await timeProfileStep("tenant.lookup", async () => {
+            const tenantQuery = Tenant.findById(tenantId)
+
+            return typeof tenantQuery.select === "function"
+                ? tenantQuery
+                    .select("name slug logoUrl plan")
+                    .lean()
+                : tenantQuery
+        })
 
         if(!tenant){
             return res.status(404).json({ message: "Tenant does not exists"})

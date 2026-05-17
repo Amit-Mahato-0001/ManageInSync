@@ -4,6 +4,7 @@ const User = require("../models/user.model")
 const Session = require("../models/session.model")
 const createHttpError = require("../utils/httpError")
 const { getAccessTokenSecret, getClientIp, getUserAgent } = require("../utils/auth")
+const { timeProfileStep } = require("../utils/requestProfiler")
 
 const SESSION_ACTIVITY_UPDATE_INTERVAL_MS = 60 * 1000
 
@@ -56,8 +57,10 @@ const authenticate = async (req, res, next) => {
     }
 
     try {
-        const session = await Session.findById(sessionId)
-            .select("userId tenantId expiresAt revokedAt lastUsedAt lastUsedIp userAgent")
+        const session = await timeProfileStep("auth.session_lookup", () =>
+            Session.findById(sessionId)
+                .select("userId tenantId expiresAt revokedAt lastUsedAt lastUsedIp userAgent")
+        )
 
         if (!session || session.revokedAt || session.expiresAt.getTime() <= Date.now()) {
             return next(createHttpError("Session revoked", 401, "session_revoked"))
@@ -67,8 +70,10 @@ const authenticate = async (req, res, next) => {
             return next(createHttpError("Session revoked", 401, "session_revoked"))
         }
 
-        const user = await User.findById(userId)
-            .select("email name logoUrl role status tenantId")
+        const user = await timeProfileStep("auth.user_lookup", () =>
+            User.findById(userId)
+                .select("email name logoUrl role status tenantId")
+        )
 
         if (!user) {
             return next(createHttpError("User not found", 401, "auth_required"))
@@ -116,7 +121,7 @@ const authenticate = async (req, res, next) => {
             session.lastUsedAt = new Date()
             session.lastUsedIp = nextIp
             session.userAgent = nextUserAgent
-            session.save().catch(() => null)
+            timeProfileStep("auth.session_activity_save", () => session.save()).catch(() => null)
         }
 
         next()

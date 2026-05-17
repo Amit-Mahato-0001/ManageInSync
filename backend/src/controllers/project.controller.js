@@ -1,4 +1,5 @@
 const { createProject, getProject, deleteProject, assignClient, updateProjectStatus, assignMember} = require('../services/project.service')
+const { timeProfileStep } = require("../utils/requestProfiler")
 const {
     ACTIVITY_CATEGORIES,
     ACTIVITY_VISIBILITY,
@@ -65,14 +66,23 @@ const getProjectHandler = async(req, res, next) => {
         const search = req.query.search || ""
         const status = req.query.status
 
-        const projects = await getProject({
-            tenantId: req.tenantId,
-            user: req.user,
-            page,
-            limit,
-            search,
-            status
-        })
+        const projects = await timeProfileStep("projects.handler_total", () =>
+            getProject({
+                tenantId: req.tenantId,
+                user: req.user,
+                page,
+                limit,
+                search,
+                status
+            }),
+            {
+                page,
+                limit,
+                role: req.user?.role,
+                hasSearch: Boolean(search),
+                status: status || null
+            }
+        )
 
         return res.status(200).json({
             projects

@@ -4,6 +4,7 @@ const Task = require('../models/task.model')
 const User = require('../models/user.model')
 const Conversation = require("../models/conversation.model")
 const Message = require("../models/message.model")
+const { recordProfileStep, timeProfileStep } = require("../utils/requestProfiler")
 
 const normalizeObjectIds = (ids = []) => {
 
@@ -169,54 +170,75 @@ const getProject = async ({ tenantId, user, page, limit, search, status }) => {
     const skip = (page - 1) * limit
 
     const [projects, total] = await Promise.all([
-        Project.find(query)
-            .select("name description targetDate status tenantId members clients deletedAt createdAt updatedAt")
-            .sort({ createdAt: -1 })
-            .skip(skip)
-            .limit(limit)
-            .lean(),
-        Project.countDocuments(query)
+        timeProfileStep("projects.find", () =>
+            Project.find(query)
+                .select("name description targetDate status tenantId members clients deletedAt createdAt updatedAt")
+                .sort({ createdAt: -1 })
+                .skip(skip)
+                .limit(limit)
+                .lean(),
+            { page, limit, role: user.role }
+        ),
+        timeProfileStep("projects.count", () => Project.countDocuments(query), {
+            page,
+            limit,
+            role: user.role
+        })
     ])
+
+    recordProfileStep("projects.page_loaded", 0, {
+        projectCount: projects.length,
+        total
+    })
 
     const projectIds = projects.map((project) => project._id)
     const unreadByProject = {}
 
     if (projectIds.length > 0) {
-        const conversations = await Conversation.find({
-            tenantId: tenantObjectId,
-            projectId: { $in: projectIds },
-            deletedAt: null
-        })
-            .select("_id projectId")
-            .lean()
+        const conversations = await timeProfileStep("projects.conversation_lookup", () =>
+            Conversation.find({
+                tenantId: tenantObjectId,
+                projectId: { $in: projectIds },
+                deletedAt: null
+            })
+                .select("_id projectId")
+                .lean(),
+            { projectCount: projectIds.length }
+        )
 
         const conversationIds = conversations.map((item) => item._id)
 
         if (conversationIds.length > 0) {
-            const unreadCounts = await Message.aggregate([
-                {
-                    $match: {
-                        tenantId: tenantObjectId,
-                        projectId: { $in: projectIds },
-                        conversationId: { $in: conversationIds },
-                        deletedAt: null,
-                        senderId: { $ne: userObjectId },
-                        readBy: {
-                            $not: {
-                                $elemMatch: {
-                                    userId: userObjectId
+            const unreadCounts = await timeProfileStep("projects.unread_count_aggregation", () =>
+                Message.aggregate([
+                    {
+                        $match: {
+                            tenantId: tenantObjectId,
+                            projectId: { $in: projectIds },
+                            conversationId: { $in: conversationIds },
+                            deletedAt: null,
+                            senderId: { $ne: userObjectId },
+                            readBy: {
+                                $not: {
+                                    $elemMatch: {
+                                        userId: userObjectId
+                                    }
                                 }
                             }
                         }
+                    },
+                    {
+                        $group: {
+                            _id: "$projectId",
+                            unreadCount: { $sum: 1 }
+                        }
                     }
-                },
+                ]),
                 {
-                    $group: {
-                        _id: "$projectId",
-                        unreadCount: { $sum: 1 }
-                    }
+                    projectCount: projectIds.length,
+                    conversationCount: conversationIds.length
                 }
-            ])
+            )
 
             unreadCounts.forEach((item) => {
                 unreadByProject[item._id.toString()] = item.unreadCount
@@ -224,7 +246,11 @@ const getProject = async ({ tenantId, user, page, limit, search, status }) => {
         }
     }
 
-    const sanitizedProjects = await sanitizeProjectAssignments(projects, tenantId)
+    const sanitizedProjects = await timeProfileStep(
+        "projects.assignment_cleanup",
+        () => sanitizeProjectAssignments(projects, tenantId),
+        { projectCount: projects.length }
+    )
 
     const projectsWithUnread = sanitizedProjects.map((project) => ({
         ...project,

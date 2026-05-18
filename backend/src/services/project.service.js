@@ -51,42 +51,16 @@ const resolveActiveAssignmentIds = async ({ tenantId, role, ids }) => {
     return normalizedIds.filter((id) => validIdSet.has(id))
 }
 
-const sanitizeProjectAssignments = async (projects, tenantId) => {
+const normalizeProjectAssignments = (projects) => {
 
     if (!Array.isArray(projects) || projects.length === 0) {
         return []
     }
 
-    const allAssignmentIds = new Set()
-
-    projects.forEach((project) => {
-        normalizeObjectIds(project.clients).forEach((id) => allAssignmentIds.add(id))
-        normalizeObjectIds(project.members).forEach((id) => allAssignmentIds.add(id))
-    })
-
-    if (allAssignmentIds.size === 0) {
-        return projects.map((project) => ({
-            ...project,
-            clients: [],
-            members: []
-        }))
-    }
-
-    const users = await User.find({
-        _id: { $in: Array.from(allAssignmentIds) },
-        tenantId,
-        role: { $in: ["client", "member"] },
-        status: "active"
-    })
-        .select("_id role")
-        .lean()
-
-    const userRoleMap = new Map(users.map((user) => [user._id.toString(), user.role]))
-
     return projects.map((project) => ({
         ...project,
-        clients: normalizeObjectIds(project.clients).filter((id) => userRoleMap.get(id) === "client"),
-        members: normalizeObjectIds(project.members).filter((id) => userRoleMap.get(id) === "member")
+        clients: normalizeObjectIds(project.clients),
+        members: normalizeObjectIds(project.members)
     }))
 }
 
@@ -246,13 +220,13 @@ const getProject = async ({ tenantId, user, page, limit, search, status }) => {
         }
     }
 
-    const sanitizedProjects = await timeProfileStep(
-        "projects.assignment_cleanup",
-        () => sanitizeProjectAssignments(projects, tenantId),
+    const normalizedProjects = await timeProfileStep(
+        "projects.assignment_normalization",
+        () => normalizeProjectAssignments(projects),
         { projectCount: projects.length }
     )
 
-    const projectsWithUnread = sanitizedProjects.map((project) => ({
+    const projectsWithUnread = normalizedProjects.map((project) => ({
         ...project,
         unreadCount: unreadByProject[project._id.toString()] || 0
     }))

@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="./frontend/public/Union.png" alt="ManageInSync" width="120" />
+  <img src="./frontend/public/Union.png" alt="ManageInSync" width="700" />
 </div>
 
 <p align="center">

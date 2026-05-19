@@ -57,10 +57,18 @@ const authenticate = async (req, res, next) => {
     }
 
     try {
-        const session = await timeProfileStep("auth.session_lookup", () =>
-            Session.findById(sessionId)
-                .select("userId tenantId expiresAt revokedAt lastUsedAt lastUsedIp userAgent")
-        )
+        const [session, user] = await Promise.all([
+            timeProfileStep("auth.session_lookup", () =>
+                Session.findById(sessionId)
+                    .select("userId tenantId expiresAt revokedAt lastUsedAt lastUsedIp userAgent")
+                    .lean()
+            ),
+            timeProfileStep("auth.user_lookup", () =>
+                User.findById(userId)
+                    .select("email name logoUrl role status tenantId")
+                    .lean()
+            )
+        ])
 
         if (!session || session.revokedAt || session.expiresAt.getTime() <= Date.now()) {
             return next(createHttpError("Session revoked", 401, "session_revoked"))
@@ -69,11 +77,6 @@ const authenticate = async (req, res, next) => {
         if (session.userId.toString() !== userId.toString()) {
             return next(createHttpError("Session revoked", 401, "session_revoked"))
         }
-
-        const user = await timeProfileStep("auth.user_lookup", () =>
-            User.findById(userId)
-                .select("email name logoUrl role status tenantId")
-        )
 
         if (!user) {
             return next(createHttpError("User not found", 401, "auth_required"))
@@ -118,10 +121,18 @@ const authenticate = async (req, res, next) => {
         const nextUserAgent = getUserAgent(req)
 
         if (shouldRefreshSessionActivity({ session, nextIp, nextUserAgent })) {
-            session.lastUsedAt = new Date()
-            session.lastUsedIp = nextIp
-            session.userAgent = nextUserAgent
-            timeProfileStep("auth.session_activity_save", () => session.save()).catch(() => null)
+            timeProfileStep("auth.session_activity_update", () =>
+                Session.updateOne(
+                    { _id: session._id },
+                    {
+                        $set: {
+                            lastUsedAt: new Date(),
+                            lastUsedIp: nextIp,
+                            userAgent: nextUserAgent
+                        }
+                    }
+                )
+            ).catch(() => null)
         }
 
         next()

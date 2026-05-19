@@ -1,19 +1,15 @@
 # Changelog
 
-## 2026-05-18
+## 2026-05-19
 
-- Removed extra database check from project listing.
+- Optimized auth middleware hot path for protected requests.
 
-- Earlier GET /api/projects was checking assigned clients/members from users collection every time.
+- Session and user lookups now use `.lean()` so Mongoose does not hydrate full documents on every API request.
 
-- Now it only cleans/normalizes client/member IDs locally.
+- Session and user lookups now run in parallel after JWT verification.
 
-- Project create and assign APIs still validate clients/members properly, so safety is kept.
+- Session activity refresh now uses a targeted `Session.updateOne()` instead of mutating and saving a hydrated session document.
 
-- Project listing MongoDB calls reduced from 8 to 7.
-
-- Slow projects.assignment_cleanup step is gone.
+- Security checks are still kept: revoked/expired session, session user match, disabled account revocation, active user status, tenant match, and role drift detection.
 
 - Backend tests passed.
-
-- Profiler after change showed assignment step now takes almost 0 ms.

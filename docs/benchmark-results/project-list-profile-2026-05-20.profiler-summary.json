@@ -1,0 +1,105 @@
+{
+  "generatedAt": "2026-05-20T17:43:17.487Z",
+  "sourceLog": "C:/tmp/agency-os-project-profile-server.log",
+  "selectedSamples": 349,
+  "profile": {
+    "total": {
+      "samples": 349,
+      "avgMs": 2162.94,
+      "p50Ms": 2039.18,
+      "p95Ms": 2915.88,
+      "p99Ms": 2931.36,
+      "maxMs": 5064.21
+    },
+    "mongoQueryCount": {
+      "samples": 349,
+      "avgMs": 7.03,
+      "p50Ms": 7,
+      "p95Ms": 7,
+      "p99Ms": 8,
+      "maxMs": 8
+    },
+    "steps": {
+      "auth.session_lookup": {
+        "samples": 349,
+        "avgMs": 435.3,
+        "p50Ms": 83.38,
+        "p95Ms": 913.43,
+        "p99Ms": 930.75,
+        "maxMs": 3053.75
+      },
+      "auth.user_lookup": {
+        "samples": 349,
+        "avgMs": 438.16,
+        "p50Ms": 83.85,
+        "p95Ms": 916.26,
+        "p99Ms": 938.96,
+        "maxMs": 3122.16
+      },
+      "auth.session_activity_update": {
+        "samples": 9,
+        "avgMs": 111.53,
+        "p50Ms": 120.54,
+        "p95Ms": 126.52,
+        "p99Ms": 126.52,
+        "maxMs": 126.52
+      },
+      "tenant.lookup": {
+        "samples": 349,
+        "avgMs": 460.63,
+        "p50Ms": 100.1,
+        "p95Ms": 943.29,
+        "p99Ms": 1036.28,
+        "maxMs": 1041.25
+      },
+      "projects.find": {
+        "samples": 349,
+        "avgMs": 395.55,
+        "p50Ms": 87.21,
+        "p95Ms": 955.33,
+        "p99Ms": 991.16,
+        "maxMs": 1008.33
+      },
+      "projects.count": {
+        "samples": 349,
+        "avgMs": 391.98,
+        "p50Ms": 89.8,
+        "p95Ms": 963.39,
+        "p99Ms": 983.5,
+        "maxMs": 996.2
+      },
+      "projects.conversation_lookup": {
+        "samples": 349,
+        "avgMs": 442.18,
+        "p50Ms": 94.66,
+        "p95Ms": 921.24,
+        "p99Ms": 939.68,
+        "maxMs": 942.16
+      },
+      "projects.unread_count_aggregation": {
+        "samples": 349,
+        "avgMs": 405.14,
+        "p50Ms": 95.57,
+        "p95Ms": 931.14,
+        "p99Ms": 941.52,
+        "maxMs": 948.35
+      },
+      "projects.assignment_normalization": {
+        "samples": 349,
+        "avgMs": 0.02,
+        "p50Ms": 0.02,
+        "p95Ms": 0.03,
+        "p99Ms": 0.05,
+        "maxMs": 0.06
+      },
+      "projects.handler_total": {
+        "samples": 349,
+        "avgMs": 1257.46,
+        "p50Ms": 1060.69,
+        "p95Ms": 1946.63,
+        "p99Ms": 1980.79,
+        "maxMs": 1998.06
+      }
+    }
+  }
+}

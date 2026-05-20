@@ -1,15 +1,18 @@
-# Changelog
+# Updates
 
-## 2026-05-19
+## 2026-05-20
 
-- Optimized auth middleware hot path for protected requests.
+- Reran the authenticated project list benchmark after the auth middleware optimization.
 
-- Session and user lookups now use `.lean()` so Mongoose does not hydrate full documents on every API request.
+- Stored raw benchmark artifacts in `docs/benchmark-results/`:
+  - `project-list-profile-2026-05-20.autocannon.json`
+  - `project-list-profile-2026-05-20.profiler-summary.json`
 
-- Session and user lookups now run in parallel after JWT verification.
+- Benchmark fixture used 300 projects, 300 conversations, and 300 unread messages under a benchmark-only tenant.
 
-- Session activity refresh now uses a targeted `Session.updateOne()` instead of mutating and saving a hydrated session document.
+- Latest `GET /api/projects?page=1&limit=20` result: 2171.62 ms average latency, 2043 ms p50, 2938 ms p99, 17.45 req/sec, 0 errors, and 0 non-2xx responses.
 
-- Security checks are still kept: revoked/expired session, session user match, disabled account revocation, active user status, tenant match, and role drift detection.
+- Profiler confirms the endpoint still performs about 7 MongoDB operations per request after the auth optimization.
 
-- Backend tests passed.
+- Next optimization target should be reducing per-request MongoDB round trips, especially repeated auth/session/user/tenant lookups and project-list companion reads.
+

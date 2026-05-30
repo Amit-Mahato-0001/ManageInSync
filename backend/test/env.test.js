@@ -6,7 +6,9 @@ const { validateEnvironment } = require("../src/config/env")
 const createValidEnv = () =>
     buildTestEnv({
         NODE_ENV: "production",
+        ALLOW_REDIS_DISABLED: "",
         FRONTEND_URL: "https://app.manageinsync.com",
+        REDIS_URL: "redis://localhost:6379",
         EMAIL_HOST: "smtp.manageinsync.dev",
         EMAIL_PORT: "587",
         EMAIL_USER: "ops@manageinsync.dev",
@@ -26,6 +28,24 @@ assert.throws(
             MONGO_URI: ""
         }),
     /MONGO_URI is required/
+)
+
+assert.throws(
+    () =>
+        validateEnvironment({
+            ...createValidEnv(),
+            REDIS_URL: ""
+        }),
+    /REDIS_URL is required in production/
+)
+
+assert.throws(
+    () =>
+        validateEnvironment({
+            ...createValidEnv(),
+            REDIS_URL: "http://localhost:6379"
+        }),
+    /REDIS_URL must start with redis/
 )
 
 assert.throws(

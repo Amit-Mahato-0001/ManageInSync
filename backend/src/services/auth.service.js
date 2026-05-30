@@ -19,7 +19,7 @@ const {
     getUserAgent,
     hashToken
 } = require("../utils/auth")
-const { sendPasswordResetEmail } = require("../utils/email")
+const { enqueuePasswordResetEmail } = require("../queues/email.queue")
 const { buildWorkspaceLookupQuery } = require("../utils/workspace")
 
 const PASSWORD_RESET_TTL_MS = 60 * 60 * 1000
@@ -377,7 +377,7 @@ const requestPasswordReset = async ({ workspace, email }) => {
     user.passwordResetTokenExpiresAt = getPasswordResetExpiryDate()
     await user.save()
 
-    await sendPasswordResetEmail({
+    await enqueuePasswordResetEmail({
         to: user.email,
         resetToken,
         workspace: tenant.slug || tenant.name

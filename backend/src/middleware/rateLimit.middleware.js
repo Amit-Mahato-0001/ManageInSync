@@ -1,4 +1,5 @@
 const createHttpError = require("../utils/httpError")
+const { getRedisClient, shouldUseRedis } = require("../config/redis")
 
 const activeStores = new Set()
 let cleanupInterval = null
@@ -49,19 +50,63 @@ const createRateLimiter = ({
     max,
     message,
     code = "rate_limit_exceeded",
+    prefix = code,
     keyGenerator = getClientKey
 }) => {
     const store = new Map()
-    activeStores.add(store)
-    startCleanupLoop()
 
-    return (req, res, next) => {
+    if (!shouldUseRedis()) {
+        activeStores.add(store)
+        startCleanupLoop()
+    }
+
+    return async (req, res, next) => {
         const now = Date.now()
         const key = keyGenerator(req)
-        const entry = store.get(key)
+        const storeKey = `rate-limit:${prefix}:${key}`
+
+        if (shouldUseRedis()) {
+            try {
+                const redis = getRedisClient()
+                const count = await redis.incr(storeKey)
+
+                if (count === 1) {
+                    await redis.pexpire(storeKey, windowMs)
+                }
+
+                let ttl = await redis.pttl(storeKey)
+
+                if (ttl < 0) {
+                    ttl = windowMs
+                    await redis.pexpire(storeKey, windowMs)
+                }
+
+                const resetAt = Date.now() + ttl
+
+                setRateLimitHeaders({
+                    res,
+                    limit: max,
+                    remaining: Math.max(max - count, 0),
+                    resetAt
+                })
+
+                if (count > max) {
+                    next(createHttpError(message, 429, code))
+                    return
+                }
+
+                next()
+                return
+            } catch (error) {
+                next(error)
+                return
+            }
+        }
+
+        const entry = store.get(storeKey)
 
         if (!entry || entry.resetAt <= now) {
-            store.set(key, {
+            store.set(storeKey, {
                 count: 1,
                 resetAt: now + windowMs
             })

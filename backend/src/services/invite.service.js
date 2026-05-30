@@ -1,7 +1,7 @@
 const crypto = require('crypto')
 const User = require('../models/user.model')
 const Tenant = require("../models/tenant.model")
-const { sendInviteEmail } = require('../utils/email')
+const { enqueueInviteEmail } = require("../queues/email.queue")
 const { normalizeWorkspaceInput } = require("../utils/workspace")
 const createHttpError = require("../utils/httpError")
 
@@ -80,7 +80,7 @@ const inviteUser = async ({email, tenantId, role, invitedByRole}) => {
             user.inviteTokenExpires = inviteTokenExpires
             await user.save()
 
-            await sendInviteEmail({
+            await enqueueInviteEmail({
                 to: safeEmail,
                 inviteToken,
                 workspace: tenant.slug || normalizeWorkspaceInput(tenant.name)
@@ -118,7 +118,7 @@ const inviteUser = async ({email, tenantId, role, invitedByRole}) => {
         throw error
     }
 
-    await sendInviteEmail({
+    await enqueueInviteEmail({
         to: safeEmail,
         inviteToken,
         workspace: tenant.slug || normalizeWorkspaceInput(tenant.name)

@@ -5,6 +5,8 @@ services:
     depends_on:
       mongo:
         condition: service_healthy
+      redis:
+        condition: service_healthy
     env_file:
       # Loads backend credentials such as EMAIL_*, RAZORPAY_*, JWT_*, and Mongo config.
       # Keep real values in backend/.env, not in docker-compose.yml.
@@ -13,17 +15,35 @@ services:
       NODE_ENV: production
       PORT: 3000
       FRONTEND_URL: http://localhost:3000
-      MONGO_URI: mongodb://mongo:27017/manageinsync
+      MONGO_URI: mongodb://mongo:27017/manageinsync?replicaSet=rs0
+      REDIS_URL: redis://redis:6379
     ports:
       - "3000:3000"
     restart: unless-stopped
 
+  email-worker:
+    build:
+      context: .
+    depends_on:
+      redis:
+        condition: service_healthy
+    env_file:
+      - backend/.env
+    environment:
+      NODE_ENV: production
+      FRONTEND_URL: http://localhost:3000
+      MONGO_URI: mongodb://mongo:27017/manageinsync?replicaSet=rs0
+      REDIS_URL: redis://redis:6379
+    command: ["node", "backend/src/workers/email.worker.js"]
+    restart: unless-stopped
+
   mongo:
     image: mongo:7
+    command: ["mongod", "--replSet", "rs0", "--bind_ip_all"]
     environment:
       MONGO_INITDB_DATABASE: manageinsync
     healthcheck:
-      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+      test: ["CMD", "mongosh", "--quiet", "--eval", "try { rs.status().ok } catch (error) { rs.initiate({ _id: 'rs0', members: [{ _id: 0, host: 'mongo:27017' }] }).ok }"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -32,5 +52,18 @@ services:
     volumes:
       - mongo-data:/data/db
 
+  redis:
+    image: redis:7-alpine
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+    restart: unless-stopped
+    volumes:
+      - redis-data:/data
+
 volumes:
   mongo-data:
+  redis-data:

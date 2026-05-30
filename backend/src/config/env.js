@@ -185,6 +185,7 @@ const validateEnvironment = (env = process.env) => {
     }
 
     const mongoUri = readTrimmedValue(env, "MONGO_URI")
+    const redisUrl = readTrimmedValue(env, "REDIS_URL")
 
     if (!mongoUri) {
         issues.push("MONGO_URI is required")
@@ -193,6 +194,16 @@ const validateEnvironment = (env = process.env) => {
         !mongoUri.startsWith("mongodb+srv://")
     ) {
         issues.push("MONGO_URI must start with mongodb:// or mongodb+srv://")
+    }
+
+    if (
+        !redisUrl &&
+        nodeEnv === "production" &&
+        readTrimmedValue(env, "ALLOW_REDIS_DISABLED") !== "true"
+    ) {
+        issues.push("REDIS_URL is required in production")
+    } else if (redisUrl && !redisUrl.startsWith("redis://") && !redisUrl.startsWith("rediss://")) {
+        issues.push("REDIS_URL must start with redis:// or rediss://")
     }
 
     validateOriginUrl({

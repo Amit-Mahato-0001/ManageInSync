@@ -6,6 +6,8 @@ const buildTestEnv = (overrides = {}) => ({
     NODE_ENV: "test",
     PORT: "3000",
     MONGO_URI: "mongodb://localhost:27017/manageinsync-test",
+    REDIS_URL: "",
+    ALLOW_REDIS_DISABLED: "true",
     FRONTEND_URL: "https://app.manageinsync.test",
     ACCESS_TOKEN_SECRET: "a".repeat(32),
     JWT_SECRET: "b".repeat(32),

@@ -5,6 +5,7 @@
   "scripts": {
     "test": "node test/health.test.js && node test/env.test.js && node test/security.test.js && node test/auth-utils.test.js && node test/email.test.js && node test/access-control.test.js && node test/razorpay.test.js && node test/auth-controller.test.js",
     "start": "node server.js",
+    "worker:email": "node src/workers/email.worker.js",
     "dev": "nodemon server.js",
     "db:create-indexes": "node scripts/createIndexes.js"
   },
@@ -14,9 +15,11 @@
   "description": "",
   "dependencies": {
     "bcrypt": "^6.0.0",
+    "bullmq": "^5.65.0",
     "cors": "^2.8.6",
     "dotenv": "^17.3.1",
     "express": "^5.2.1",
+    "ioredis": "^5.8.2",
     "jsonwebtoken": "^9.0.3",
     "mongoose": "^9.1.2",
     "nodemailer": "^8.0.0",

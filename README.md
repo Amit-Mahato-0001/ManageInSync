@@ -20,6 +20,7 @@
   <img src="https://img.shields.io/badge/Node.js-20+-339933?style=flat-square&logo=node.js&logoColor=white" />
   <img src="https://img.shields.io/badge/React-19-61DAFB?style=flat-square&logo=react&logoColor=black" />
   <img src="https://img.shields.io/badge/MongoDB-Mongoose_9-47A248?style=flat-square&logo=mongodb&logoColor=white" />
+  <img src="https://img.shields.io/badge/Redis-BullMQ_DC382D?style=flat-square&logo=redis&logoColor=white" />
   <img src="https://img.shields.io/badge/Docker-Ready-2496ED?style=flat-square&logo=docker&logoColor=white" />
   <img src="https://img.shields.io/badge/License-MIT-orange?style=flat-square" />
 </p>
@@ -112,12 +113,13 @@ No one sees a dashboard full of noise that doesn't apply to them.
 
 # Getting Started
 
-ManageInSync has two pieces: a **React frontend** served via Vite and a **Node.js/Express backend** connected to MongoDB.
+ManageInSync has a **React frontend**, a **Node.js/Express backend**, **MongoDB** for application data, and **Redis** for production rate limiting and background email queues.
 
 ## Prerequisites
 
 - Node.js `>= 20`
 - MongoDB (local or Atlas)
+- Redis (required in production; optional fallback for simple local development)
 - npm
 
 ## 1 — Clone and install
@@ -142,10 +144,13 @@ Open `backend/.env` and set these at minimum:
 ```env
 NODE_ENV=development
 MONGO_URI=mongodb://localhost:27017/manageinsync
+REDIS_URL=redis://localhost:6379
 FRONTEND_URL=http://localhost:5173
 JWT_SECRET=replace-with-at-least-32-characters
 ACCESS_TOKEN_SECRET=replace-with-at-least-32-characters
 ```
+
+`REDIS_URL` powers shared API rate limiting and BullMQ email queues. For local development you can leave it empty to use the in-memory fallback, but production should always use Redis.
 
 Open `frontend/.env`:
 
@@ -171,6 +176,9 @@ npm run dev:backend
 
 # Terminal 2 — frontend
 npm run dev:frontend
+
+# Terminal 3 — email worker, required when REDIS_URL is set
+npm --prefix backend run worker:email
 ```
 
 | Surface | URL |
@@ -181,10 +189,11 @@ npm run dev:frontend
 
 ## Optional services
 
-Neither is required for local development. Add them when you need them.
+Some services have local fallbacks, but production should run all required infrastructure.
 
 | Service | Variables needed |
 |---|---|
+| Redis — rate limiting, email queues | `REDIS_URL` |
 | Email — invites, password reset | `EMAIL_HOST` `EMAIL_PORT` `EMAIL_USER` `EMAIL_PASS` |
 | Payments — Razorpay | `RAZORPAY_KEY_ID` `RAZORPAY_KEY_SECRET` |
 
@@ -204,6 +213,8 @@ The production image:
 - Exposes everything on port `3000`
 - Runs a health check against `/api/health`
 - Persists MongoDB data in a named Docker volume
+- Starts Redis for shared rate limiting and BullMQ queue storage
+- Starts a separate `email-worker` service for invite and password reset emails
 
 App available at `http://localhost:3000`.
 
@@ -221,13 +232,19 @@ Start the backend in production mode:
 npm start
 ```
 
-The backend serves the compiled frontend from `frontend/dist` and handles all API routes under `/api`.
+Start the email worker in a separate process:
+
+```bash
+npm --prefix backend run worker:email
+```
+
+The backend serves the compiled frontend from `frontend/dist` and handles all API routes under `/api`. In production, configure `REDIS_URL` for both the API process and the worker.
 
 ---
 
 # Architecture
 
-ManageInSync is a service-oriented monolith. One Express server. One React SPA. One MongoDB. Clean separation of concerns inside a single deployable runtime.
+ManageInSync is a service-oriented monolith. One Express server. One React SPA. One MongoDB. Redis backs cross-process rate limiting and background email queues. Clean separation of concerns inside a small set of deployable processes.
 
 ### Request lifecycle
 
@@ -236,7 +253,7 @@ Every protected request passes through the full stack — no shortcuts:
 ```txt
 React SPA
   └─▶  Express
-         └─▶  Security headers · CORS · Rate limiting
+         └─▶  Security headers · CORS · Redis-backed rate limiting
                └─▶  Auth — JWT access token verification
                      └─▶  Session validation — checked against MongoDB, not just token signature
                            └─▶  Tenant resolution — workspace scoped at middleware level
@@ -256,6 +273,8 @@ React SPA
 | Tenant isolation | Enforced by middleware resolver — not scattered across query conditions |
 | RBAC | Route-level, before controllers execute |
 | Input validation | Zod schemas on every mutating endpoint |
+| Rate limiting | Redis-backed counters in production, in-memory fallback for local/test runs |
+| Email delivery | BullMQ queues backed by Redis, processed by a separate worker |
 | Audit logging | Sensitive actions written to an immutable per-tenant audit log |
 
 ### API surface
@@ -305,13 +324,17 @@ All routes under `/api`.
 
 **Nodemailer** — email delivery for invites, password resets, and notifications.
 
+**BullMQ** — Redis-backed background jobs for invite and password reset emails.
+
 **Razorpay** — payment gateway for invoice checkout flows.
 
 ## Infrastructure
 
 **MongoDB** — document store. Tenant-scoped collections, indexed for the query patterns that matter.
 
-**Docker + Docker Compose** — single-command production deployment. Frontend and backend in one container, MongoDB with persistent volume alongside.
+**Redis** — shared rate limit counters and BullMQ queue storage for background work.
+
+**Docker + Docker Compose** — single-command production deployment. Frontend and backend in one container, MongoDB and Redis with persistent volumes, plus a separate email worker.
 
 **JWT + HttpOnly cookies** — stateless access tokens, server-validated refresh tokens, rotation on every use.
 
@@ -341,6 +364,7 @@ npm run build
 |---|---|
 | `docs/ARCHITECTURE_V1.md` | Full system design and infrastructure direction |
 | `docs/AUTH_ARCHITECTURE.md` | Token, session, and refresh model in depth |
+| `docs/REDIS_RATE_LIMITING_AND_QUEUEING.md` | Redis rate limiting, BullMQ queues, worker setup |
 | `docs/PROJECTS_TASKS_ARCHITECTURE.md` | Domain model — projects, tasks, members, clients |
 | `docs/PROJECT_BRIEF.md` | Product vision, personas, and KPIs |
 | `docs/BENCHMARKS.md` | Performance benchmark results |

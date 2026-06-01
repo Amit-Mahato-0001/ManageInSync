@@ -395,15 +395,24 @@ const verifyInvoiceCheckoutPayment = async ({
     })
 
     if (!isSignatureValid) {
-        pendingPayment.status = "failed"
-        pendingPayment.rawResponseJson = {
-            ...(pendingPayment.rawResponseJson || {}),
-            verification: {
-                status: "failed",
-                reason: "invalid_signature"
+        await Payment.findOneAndUpdate(
+            {
+                _id: pendingPayment._id,
+                status: "pending"
+            },
+            {
+                $set: {
+                    status: "failed",
+                    rawResponseJson: {
+                        ...(pendingPayment.rawResponseJson || {}),
+                        verification: {
+                            status: "failed",
+                            reason: "invalid_signature"
+                        }
+                    }
+                }
             }
-        }
-        await pendingPayment.save()
+        )
 
         throw createHttpError("Payment signature verification failed", 400)
     }
@@ -436,14 +445,11 @@ const verifyInvoiceCheckoutPayment = async ({
         throw createHttpError("Payment amount exceeds the current invoice due", 409)
     }
 
-    pendingPayment.transactionId = razorpayPaymentId
-    pendingPayment.status = "paid"
-    pendingPayment.paidAt = new Date()
-    pendingPayment.gateway = paymentDetails.method
+    const paidAt = new Date()
+    const paidGateway = paymentDetails.method
         ? `razorpay:${paymentDetails.method}`
         : "razorpay"
-    pendingPayment.amount = paidAmount
-    pendingPayment.rawResponseJson = {
+    const paidRawResponseJson = {
         ...(pendingPayment.rawResponseJson || {}),
         verification: {
             status: "verified",
@@ -453,16 +459,96 @@ const verifyInvoiceCheckoutPayment = async ({
         },
         payment: paymentDetails
     }
+    const session = await mongoose.startSession()
+    let paidPayment = null
 
-    await pendingPayment.save()
+    try {
+        await session.withTransaction(async () => {
+            paidPayment = await Payment.findOneAndUpdate(
+                {
+                    tenantId,
+                    invoiceId,
+                    transactionId: razorpayOrderId,
+                    gateway: "razorpay",
+                    status: "pending"
+                },
+                {
+                    $set: {
+                        transactionId: razorpayPaymentId,
+                        status: "paid",
+                        paidAt,
+                        gateway: paidGateway,
+                        amount: paidAmount,
+                        rawResponseJson: paidRawResponseJson
+                    }
+                },
+                {
+                    new: true,
+                    session
+                }
+            )
 
-    invoice.amountPaid = roundMoney(invoice.amountPaid + paidAmount)
-    invoice.amountDue = roundMoney(Math.max(invoice.total - invoice.amountPaid, 0))
-    invoice.status = getPayableStatus(invoice.dueDate, invoice.amountDue)
-    await invoice.save()
+            if (!paidPayment) {
+                return
+            }
+
+            const updatedInvoice = await Invoice.findOneAndUpdate(
+                {
+                    _id: invoiceId,
+                    tenantId,
+                    amountDue: { $gte: paidAmount }
+                },
+                {
+                    $inc: {
+                        amountPaid: paidAmount,
+                        amountDue: -paidAmount
+                    }
+                },
+                {
+                    new: true,
+                    session
+                }
+            )
+
+            if (!updatedInvoice) {
+                throw createHttpError("Payment amount exceeds the current invoice due", 409)
+            }
+
+            updatedInvoice.amountPaid = roundMoney(updatedInvoice.amountPaid)
+            updatedInvoice.amountDue = roundMoney(Math.max(updatedInvoice.amountDue, 0))
+            updatedInvoice.status = getPayableStatus(
+                updatedInvoice.dueDate,
+                updatedInvoice.amountDue
+            )
+            await updatedInvoice.save({ session })
+        })
+    } finally {
+        await session.endSession()
+    }
+
+    if (!paidPayment) {
+        const alreadyPaidPayment = await getPaidRazorpayPayment({
+            tenantId,
+            invoiceId,
+            paymentId: razorpayPaymentId
+        })
+
+        if (alreadyPaidPayment) {
+            return {
+                payment: alreadyPaidPayment,
+                invoice: await getInvoiceDetail({
+                    tenantId,
+                    invoiceId,
+                    user
+                })
+            }
+        }
+
+        throw createHttpError("Payment was already processed or is no longer pending", 409)
+    }
 
     return {
-        payment: pendingPayment.toObject(),
+        payment: paidPayment.toObject(),
         invoice: await getInvoiceDetail({
             tenantId,
             invoiceId,

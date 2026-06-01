@@ -61,10 +61,10 @@ const buildAuthResponse = ({ user, session, refreshToken, tenant }) => ({
     tenant: serializeTenant(tenant)
 })
 
-const createSessionRecord = async ({ user, req, rotatedFromSessionId }) => {
+const createSessionRecord = async ({ user, req, rotatedFromSessionId }, options = {}) => {
     const refreshToken = generateRefreshToken()
 
-    const session = await Session.create({
+    const authSession = new Session({
         userId: user._id,
         tenantId: user.tenantId,
         refreshTokenHash: hashToken(refreshToken),
@@ -76,7 +76,9 @@ const createSessionRecord = async ({ user, req, rotatedFromSessionId }) => {
         rotatedFromSessionId
     })
 
-    return { session, refreshToken }
+    await authSession.save(options.session ? { session: options.session } : undefined)
+
+    return { session: authSession, refreshToken }
 }
 
 const revokeSessionById = async (sessionId, reason) => {
@@ -118,6 +120,21 @@ const revokeAllUserSessions = async ({ userId, reason }) => {
             }
         }
     )
+}
+
+const handleRotatedRefreshTokenReuse = async (session) => {
+    await Session.findByIdAndUpdate(session._id, {
+        $set: {
+            compromisedAt: new Date()
+        }
+    })
+
+    await revokeAllUserSessions({
+        userId: session.userId,
+        reason: "refresh_token_reused"
+    })
+
+    throw createHttpError("Refresh token reuse detected", 401, "refresh_token_reused")
 }
 
 const findTenantByWorkspace = async (workspace) => {
@@ -243,18 +260,7 @@ const refreshSession = async ({ refreshToken, req }) => {
 
     if (session.revokedAt) {
         if (session.revokeReason === "rotated") {
-            await Session.findByIdAndUpdate(session._id, {
-                $set: {
-                    compromisedAt: new Date()
-                }
-            })
-
-            await revokeAllUserSessions({
-                userId: session.userId,
-                reason: "refresh_token_reused"
-            })
-
-            throw createHttpError("Refresh token reuse detected", 401, "refresh_token_reused")
+            await handleRotatedRefreshTokenReuse(session)
         }
 
         throw createHttpError("Session revoked", 401, "session_revoked")
@@ -298,21 +304,74 @@ const refreshSession = async ({ refreshToken, req }) => {
         throw createHttpError("Session revoked", 401, "session_revoked")
     }
 
-    const { session: nextSession, refreshToken: nextRefreshToken } =
-        await createSessionRecord({
-            user,
-            req,
-            rotatedFromSessionId: session._id
+    const transactionSession = await mongoose.startSession()
+    let nextSession
+    let nextRefreshToken
+    let rotationClaimed = false
+
+    try {
+        await transactionSession.withTransaction(async () => {
+            const rotatedAt = new Date()
+            const claimedSession = await Session.findOneAndUpdate(
+                {
+                    _id: session._id,
+                    refreshTokenHash: hashToken(refreshToken),
+                    revokedAt: null,
+                    expiresAt: {
+                        $gt: rotatedAt
+                    }
+                },
+                {
+                    $set: {
+                        revokedAt: rotatedAt,
+                        revokeReason: "rotated",
+                        lastUsedAt: rotatedAt,
+                        lastUsedIp: getClientIp(req),
+                        userAgent: getUserAgent(req)
+                    }
+                },
+                {
+                    new: true,
+                    session: transactionSession
+                }
+            )
+
+            if (!claimedSession) {
+                return
+            }
+
+            rotationClaimed = true
+
+            const createdSession = await createSessionRecord(
+                {
+                    user,
+                    req,
+                    rotatedFromSessionId: session._id
+                },
+                { session: transactionSession }
+            )
+
+            nextSession = createdSession.session
+            nextRefreshToken = createdSession.refreshToken
+
+            claimedSession.replacedBySessionId = nextSession._id
+            await claimedSession.save({ session: transactionSession })
         })
+    } finally {
+        await transactionSession.endSession()
+    }
 
-    session.revokedAt = new Date()
-    session.revokeReason = "rotated"
-    session.replacedBySessionId = nextSession._id
-    session.lastUsedAt = new Date()
-    session.lastUsedIp = getClientIp(req)
-    session.userAgent = getUserAgent(req)
+    if (!rotationClaimed || !nextSession || !nextRefreshToken) {
+        const latestSession = await Session.findById(session._id)
+            .select("_id userId tenantId revokedAt revokeReason")
+            .lean()
 
-    await session.save()
+        if (latestSession?.revokeReason === "rotated") {
+            await handleRotatedRefreshTokenReuse(latestSession)
+        }
+
+        throw createHttpError("Session revoked", 401, "session_revoked")
+    }
 
     const tenant = await getTenantById(user.tenantId)
 

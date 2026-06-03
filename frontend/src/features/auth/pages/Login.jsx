@@ -5,17 +5,11 @@ import authApi from "../api/auth"
 import { useAuth } from "../hooks/useAuth"
 
 const EMAIL_PATTERN = /^\S+@\S+\.\S+$/
-const DEMO_CREDENTIALS = {
-  workspace: "test",
-  email: "test@gmail.com",
-  password: "test1234",
-}
-
 const Login = () => {
   const [params] = useSearchParams()
-  const [workspace, setWorkspace] = useState(() => params.get("workspace") || DEMO_CREDENTIALS.workspace)
-  const [email, setEmail] = useState(DEMO_CREDENTIALS.email)
-  const [password, setPassword] = useState(DEMO_CREDENTIALS.password)
+  const [workspace, setWorkspace] = useState(() => params.get("workspace") || "")
+  const [email, setEmail] = useState("")
+  const [password, setPassword] = useState("")
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
 
@@ -93,7 +87,7 @@ const Login = () => {
             <label className="text-2xl text-white/60">Workspace</label>
             <input
               className="w-full rounded-md border border-white/10 px-4 py-2.5 text-2xl outline-none focus:border-blue-500/60 focus:ring-2 focus:ring-blue-500/20"
-              placeholder={DEMO_CREDENTIALS.workspace}
+              placeholder="your-workspace"
               value={workspace}
               onChange={(e) => {
                 setWorkspace(e.target.value)
@@ -110,7 +104,7 @@ const Login = () => {
             <input
               type="email"
               className="w-full rounded-md border border-white/10 px-4 py-2.5 text-2xl outline-none focus:border-blue-500/60 focus:ring-2 focus:ring-blue-500/20"
-              placeholder={DEMO_CREDENTIALS.email}
+              placeholder="you@example.com"
               value={email}
               onChange={(e) => {
                 setEmail(e.target.value)
@@ -127,7 +121,7 @@ const Login = () => {
             <input
               type="password"
               className="w-full rounded-md border border-white/10 px-4 py-2.5 text-2xl outline-none focus:border-blue-500/60 focus:ring-2 focus:ring-blue-500/20"
-              placeholder={DEMO_CREDENTIALS.password}
+              placeholder="Your password"
               value={password}
               onChange={(e) => {
                 setPassword(e.target.value)

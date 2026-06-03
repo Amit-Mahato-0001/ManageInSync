@@ -20,7 +20,11 @@ const {
     hashToken
 } = require("../utils/auth")
 const { enqueuePasswordResetEmail } = require("../queues/email.queue")
-const { buildWorkspaceLookupQuery } = require("../utils/workspace")
+const {
+    buildWorkspaceLookupQuery,
+    normalizeWorkspaceInput,
+    slugifyWorkspaceName
+} = require("../utils/workspace")
 
 const PASSWORD_RESET_TTL_MS = 60 * 60 * 1000
 
@@ -144,9 +148,27 @@ const findTenantByWorkspace = async (workspace) => {
         return null
     }
 
-    return Tenant.findOne(query)
+    const tenant = await Tenant.findOne(query)
         .select("_id name slug logoUrl plan")
         .lean()
+
+    if (tenant) {
+        return tenant
+    }
+
+    const normalizedWorkspace = normalizeWorkspaceInput(workspace)
+
+    if (!normalizedWorkspace) {
+        return null
+    }
+
+    const candidates = await Tenant.find({})
+        .select("_id name slug logoUrl plan")
+        .lean()
+
+    return candidates.find((candidate) =>
+        slugifyWorkspaceName(candidate.name) === normalizedWorkspace
+    ) || null
 }
 
 const getTenantById = async (tenantId) =>

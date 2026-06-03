@@ -15,6 +15,7 @@ import AcceptInvite from "@/features/auth/pages/AcceptInvite"
 import Members from "@/features/members/pages/Members"
 import ProjectTasks from "@/features/projects/pages/ProjectTasks"
 import ProjectConversation from "@/features/projects/pages/ProjectConversation"
+import ProjectFiles from "@/features/projects/pages/ProjectFiles"
 import Billing from "@/features/billing/pages/BillingPage"
 import CreateInvoice from "@/features/billing/pages/CreateInvoice"
 import InvoiceDetails from "@/features/billing/pages/InvoiceDetails"
@@ -71,6 +72,14 @@ const App = () => {
             element={
               <ProtectedPage allowedRoles={["owner", "admin", "member", "client"]}>
                 <ProjectConversation />
+              </ProtectedPage>
+            }
+          />
+          <Route
+            path="/projects/:projectId/files"
+            element={
+              <ProtectedPage allowedRoles={["owner", "admin", "member", "client"]}>
+                <ProjectFiles />
               </ProtectedPage>
             }
           />

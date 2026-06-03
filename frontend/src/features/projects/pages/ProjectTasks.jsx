@@ -367,6 +367,14 @@ const ProjectTasks = () => {
                   </span>
                 )}
               </Link>
+
+              <Link
+                to={`/projects/${projectId}/files`}
+                state={projectRouteState}
+                className={getTabClassName(false)}
+              >
+                Files
+              </Link>
             </div>
 
             {canCreateTasks ? (

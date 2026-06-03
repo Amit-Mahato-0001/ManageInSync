@@ -29,7 +29,7 @@ export const uploadFileToS3 = ({ uploadUrl, file, headers, onUploadProgress }) =
 }
 
 export const uploadFileThroughBackend = ({ projectId, file, mimeType, onUploadProgress }) => {
-  return api.post(`/projects/${projectId}/files/upload`, file, {
+  return api.put(`/projects/${projectId}/files/upload`, file, {
     headers: {
       "Content-Type": mimeType || "application/octet-stream"
     },

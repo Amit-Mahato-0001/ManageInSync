@@ -1,11 +1,12 @@
 # Updates
 
-## 2026-06-01
+## 2026-06-03
 
-- Fixed a refresh-token rotation race condition in `backend/src/services/auth.service.js`.
-
-- Added a MongoDB transaction and atomic refresh-session claim to ensure a refresh token can only be used once.
-
-- Prevented concurrent refresh requests from generating multiple valid replacement sessions.
-
-- Requests that attempt to reuse an already-claimed refresh token are now rejected as token reuse.
+- Fixed frontend API base URL to use local /api in development.
+- Added Vite proxy for /api → http://localhost:3000.
+- Removed production VITE_API_URL override from local frontend env.
+- Resolved cross-origin cookie/auth issues using same-origin proxy setup.
+- Verified axios withCredentials: true configuration for auth requests.
+- Diagnosed and validated S3 presigned upload flow locally.
+- Identified S3 bucket CORS requirements for browser uploads.
+- Confirmed signup/login and file upload working in local setup.

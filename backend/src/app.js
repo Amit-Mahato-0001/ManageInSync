@@ -133,7 +133,7 @@ protectedApi.use("/members", memberRoutes)
 protectedApi.use("/tenants", tenantRoutes)
 protectedApi.use("/account", accountRoutes)
 protectedApi.use("/users", userRoutes)
-protectedApi.use("/files", fileRoutes)
+protectedApi.use("/", fileRoutes)
 
 app.use("/api", protectedApi)
 

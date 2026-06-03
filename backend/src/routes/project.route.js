@@ -25,6 +25,15 @@ const {
     markProjectConversationReadHandler
 } = require("../controllers/conversation.controller")
 
+const {
+    createProjectDownloadUrlHandler,
+    createProjectUploadUrlHandler,
+    completeProjectUploadHandler,
+    deleteProjectFileHandler,
+    listProjectFilesHandler,
+    uploadProjectFileHandler
+} = require("../controllers/file.controller")
+
 const requireRole = require("../middleware/rbac.middleware")
 const buildMessageRateLimit = require("../middleware/messageRateLimit.middleware")
 const validate = require("../middleware/validate.middleware")
@@ -56,8 +65,17 @@ const {
     listMessagesQuerySchema
 } = require("../validators/conversation.validator")
 
+const {
+    createUploadUrlSchema,
+    listProjectFilesQuerySchema,
+    projectFileParamsSchema,
+    uploadFileQuerySchema,
+    uploadUrlParamsSchema
+} = require("../validators/file.validator")
+
 const router = express.Router()
 const messageRateLimit = buildMessageRateLimit({ windowMs: 60000, max: 20 })
+const uploadBodyLimit = `${Number(process.env.MAX_UPLOAD_SIZE_MB) || 25}mb`
 
 router.post(
     "/",
@@ -179,6 +197,52 @@ router.post(
     requireRole(["owner", "admin", "member", "client"]),
     validate(projectConversationParamsSchema, "params"),
     markProjectConversationReadHandler
+)
+
+router.post(
+    "/:projectId/files/upload-url",
+    requireRole(["owner", "admin", "member"]),
+    validate(uploadUrlParamsSchema, "params"),
+    validate(createUploadUrlSchema, "body"),
+    createProjectUploadUrlHandler
+)
+
+router.post(
+    "/:projectId/files/upload",
+    requireRole(["owner", "admin", "member"]),
+    validate(uploadUrlParamsSchema, "params"),
+    validate(uploadFileQuerySchema, "query"),
+    express.raw({ type: "*/*", limit: uploadBodyLimit }),
+    uploadProjectFileHandler
+)
+
+router.post(
+    "/:projectId/files/:fileId/complete",
+    requireRole(["owner", "admin", "member"]),
+    validate(projectFileParamsSchema, "params"),
+    completeProjectUploadHandler
+)
+
+router.get(
+    "/:projectId/files",
+    requireRole(["owner", "admin", "member", "client"]),
+    validate(uploadUrlParamsSchema, "params"),
+    validate(listProjectFilesQuerySchema, "query"),
+    listProjectFilesHandler
+)
+
+router.get(
+    "/:projectId/files/:fileId/download-url",
+    requireRole(["owner", "admin", "member", "client"]),
+    validate(projectFileParamsSchema, "params"),
+    createProjectDownloadUrlHandler
+)
+
+router.delete(
+    "/:projectId/files/:fileId",
+    requireRole(["owner", "admin"]),
+    validate(projectFileParamsSchema, "params"),
+    deleteProjectFileHandler
 )
 
 module.exports = router

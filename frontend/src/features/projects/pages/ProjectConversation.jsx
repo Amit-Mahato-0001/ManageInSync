@@ -425,6 +425,14 @@ const ProjectConversation = () => {
           >
             Conversation
           </Link>
+
+          <Link
+            to={`/projects/${projectId}/files`}
+            state={projectRouteState}
+            className={getTabClassName(false)}
+          >
+            Files
+          </Link>
         </div>
       </div>
 

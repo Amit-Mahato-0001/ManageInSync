@@ -8,8 +8,6 @@ services:
       redis:
         condition: service_healthy
     env_file:
-      # Loads backend credentials such as EMAIL_*, RAZORPAY_*, JWT_*, and Mongo config.
-      # Keep real values in backend/.env, not in docker-compose.yml.
       - backend/.env
     environment:
       NODE_ENV: production
@@ -43,7 +41,14 @@ services:
     environment:
       MONGO_INITDB_DATABASE: manageinsync
     healthcheck:
-      test: ["CMD", "mongosh", "--quiet", "--eval", "try { rs.status().ok } catch (error) { rs.initiate({ _id: 'rs0', members: [{ _id: 0, host: 'mongo:27017' }] }).ok }"]
+      test:
+        [
+          "CMD",
+          "mongosh",
+          "--quiet",
+          "--eval",
+          "try { rs.status().ok } catch (error) { rs.initiate({ _id: 'rs0', members: [{ _id: 0, host: 'mongo:27017' }] }).ok }"
+        ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -54,6 +59,8 @@ services:
 
   redis:
     image: redis:7-alpine
+    ports:
+      - "6379:6379"
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s

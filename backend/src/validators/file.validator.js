@@ -16,6 +16,8 @@ const projectFileParamsSchema = z.object({
 const listProjectFilesQuerySchema = z.object({
     page: z.coerce.number().int().min(1).default(1),
     limit: z.coerce.number().int().min(1).max(50).default(10)
+    ,
+    folder: z.string().trim().max(250).optional()
 })
 
 const createUploadUrlSchema = z.object({
@@ -35,6 +37,12 @@ const createUploadUrlSchema = z.object({
         })
         .int("File size must be a whole number")
         .min(1, "File size must be greater than 0")
+    ,
+    folder: z
+        .string()
+        .trim()
+        .max(250, "Folder name is too long")
+        .optional()
 })
 
 const uploadFileQuerySchema = z.object({

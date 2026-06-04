@@ -7,6 +7,8 @@ const {
     uploadProjectFileThroughBackend
 } = require("../services/file.service")
 
+
+
 const createProjectUploadUrlHandler = async (req, res, next) => {
     try {
         const result = await createProjectUploadUrl({
@@ -14,6 +16,7 @@ const createProjectUploadUrlHandler = async (req, res, next) => {
             fileName: req.body.fileName,
             mimeType: req.body.mimeType,
             fileSize: req.body.fileSize,
+            folder: req.body.folder,
             user: req.user,
             tenantId: req.tenantId
         })
@@ -53,6 +56,7 @@ const uploadProjectFileHandler = async (req, res, next) => {
             fileName: req.query.fileName,
             mimeType: req.query.mimeType,
             fileBuffer: req.body,
+            folder: req.query.folder,
             user: req.user,
             tenantId: req.tenantId
         })
@@ -73,6 +77,7 @@ const listProjectFilesHandler = async (req, res, next) => {
             projectId: req.params.projectId,
             page: req.query.page,
             limit: req.query.limit,
+            folder: req.query.folder,
             user: req.user,
             tenantId: req.tenantId
         })
@@ -123,6 +128,19 @@ const deleteProjectFileHandler = async (req, res, next) => {
     }
 }
 
+const streamProjectFileHandler = async (req, res, next) => {
+    try {
+        await streamProjectFile({
+            projectId: req.params.projectId,
+            fileId: req.params.fileId,
+            user: req.user,
+            tenantId: req.tenantId,
+            res
+        })
+    } catch (error) {
+        next(error)
+    }
+}
 module.exports = {
     createProjectDownloadUrlHandler,
     createProjectUploadUrlHandler,
@@ -130,4 +148,6 @@ module.exports = {
     deleteProjectFileHandler,
     listProjectFilesHandler,
     uploadProjectFileHandler
+    ,
+}
 }

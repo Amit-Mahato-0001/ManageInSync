@@ -64,6 +64,10 @@ const ProjectFiles = () => {
   const { state } = useLocation()
   const { user } = useAuth()
   const fileInputRef = useRef(null)
+  const [currentFolder, setCurrentFolder] = useState("")
+  const [folders, setFolders] = useState([])
+  const [previewUrl, setPreviewUrl] = useState("")
+  const [previewingFile, setPreviewingFile] = useState(null)
 
   const [files, setFiles] = useState([])
   const [loading, setLoading] = useState(true)
@@ -100,11 +104,14 @@ const ProjectFiles = () => {
 
       setPageError("")
 
-      const response = await fetchProjectFiles(projectId, { page: pageToLoad, limit: 10 })
+      const response = await fetchProjectFiles(projectId, { page: pageToLoad, limit: 10, folder: currentFolder })
       const nextFiles = response.data?.files?.data || []
 
       setFiles((prev) => (append ? [...prev, ...nextFiles] : nextFiles))
       setPagination(response.data?.files?.pagination || {})
+      // derive folders from files
+      const foundFolders = Array.from(new Set((response.data?.files?.data || []).map(f => f.folder).filter(Boolean)))
+      setFolders(foundFolders)
     } catch (error) {
       setPageError(getErrorMessage(error, "Failed to load files"))
 
@@ -116,7 +123,7 @@ const ProjectFiles = () => {
         setLoading(false)
       }
     }
-  }, [projectId])
+  }, [projectId, currentFolder])
 
   useEffect(() => {
     loadFiles()
@@ -163,7 +170,8 @@ const ProjectFiles = () => {
           const uploadUrlResponse = await createUploadUrl(projectId, {
             fileName: file.name,
             mimeType: file.type || MIME_TYPE_BY_EXTENSION[getFileExtension(file.name)],
-            fileSize: file.size
+            fileSize: file.size,
+            folder: currentFolder
           })
           const uploadData = uploadUrlResponse.data
 
@@ -197,6 +205,7 @@ const ProjectFiles = () => {
                 projectId,
                 file,
                 mimeType,
+                folder: currentFolder,
                 onUploadProgress: (progressEvent) => {
                   const total = progressEvent.total || file.size
                   setUploadProgress(Math.round((progressEvent.loaded * 100) / total))
@@ -335,6 +344,30 @@ const ProjectFiles = () => {
             </Link>
           </div>
 
+          <div className="flex items-center gap-3">
+            <select
+              value={currentFolder}
+              onChange={(e) => setCurrentFolder(e.target.value)}
+              className="rounded-lg border border-white/10 bg-[#0b0b0c] px-3 py-2 text-2xl text-white"
+            >
+              <option value="">All folders</option>
+              {folders.map((f) => (
+                <option key={f} value={f}>{f}</option>
+              ))}
+            </select>
+
+            <button
+              type="button"
+              onClick={() => {
+                const name = prompt("New folder name")
+                if (name) setCurrentFolder(name.trim())
+              }}
+              className="rounded-lg border border-white/10 px-3 py-2 text-2xl text-white"
+            >
+              New Folder
+            </button>
+          </div>
+
           {canUploadFiles && (
             <>
               <input
@@ -365,42 +398,66 @@ const ProjectFiles = () => {
       <div className="space-y-3">
         {loading && <PageLoader />}
 
-        {!loading && files.map((file) => (
-          <div
-            key={file.id}
-            className="flex flex-col gap-4 rounded-xl border border-white/10 bg-gradient-to-br from-[#18181B] to-[#09090B] p-5 md:flex-row md:items-center md:justify-between"
-          >
-            <div className="min-w-0 flex-1 space-y-2">
-              <h2 className="truncate text-2xl font-medium text-white">{file.originalFileName}</h2>
-              <p className="text-2xl text-white/50">
-                {formatFileSize(file.fileSize)} | {file.mimeType} | {formatDate(file.createdAt)}
-              </p>
-            </div>
+        {!loading && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            {files.map((file) => (
+              <div key={file.id} className="rounded-lg border border-white/10 bg-gradient-to-br from-[#18181B] to-[#09090B] p-4">
+                <div className="h-40 w-full mb-3 flex items-center justify-center bg-[#0b0b0c] rounded">
+                  {file.mimeType?.startsWith("image/") ? (
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        try {
+                          setPreviewingFile(file)
+                          const resp = await getDownloadUrl(projectId, file.id)
+                          setPreviewUrl(resp.data.downloadUrl)
+                        } catch (e) {
+                          setPageError(getErrorMessage(e, "Failed to load preview"))
+                        }
+                      }}
+                      className="h-full w-full"
+                      aria-label="Preview image"
+                      >
+                      <img src="/assets/placeholder-image.png" alt={file.originalFileName} className="h-full w-full object-cover rounded" />
+                    </button>
+                  ) : (
+                    <div className="text-3xl text-white/60">{file.originalFileName.split('.').pop()}</div>
+                  )}
+                </div>
 
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => handleDownload(file.id)}
-                className="p-2 rounded-lg border border-white/10 bg-gradient-to-br from-[#18181B] to-blue-500"
-                aria-label="Download file"
-              >
-                <Download className="h-6 w-6" />
-              </button>
+                <div className="flex items-center justify-between">
+                  <div className="min-w-0">
+                    <h3 className="truncate text-xl font-medium text-white">{file.originalFileName}</h3>
+                    <p className="text-sm text-white/50">{formatFileSize(file.fileSize)}</p>
+                  </div>
 
-              {canDeleteFiles && (
-                <button
-                  type="button"
-                  disabled={deletingFileId === file.id}
-                  onClick={() => handleDelete(file.id)}
-                  className="p-2 rounded-lg border border-white/10 bg-gradient-to-br from-[#18181B] to-red-500 disabled:cursor-not-allowed disabled:opacity-60"
-                  aria-label="Delete file"
-                >
-                  <Trash2 className="h-6 w-6" />
-                </button>
-              )}
-            </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => handleDownload(file.id)}
+                      className="p-2 rounded-lg border border-white/10 bg-gradient-to-br from-[#18181B] to-blue-500"
+                      aria-label="Download file"
+                    >
+                      <Download className="h-5 w-5" />
+                    </button>
+
+                    {canDeleteFiles && (
+                      <button
+                        type="button"
+                        disabled={deletingFileId === file.id}
+                        onClick={() => handleDelete(file.id)}
+                        className="p-2 rounded-lg border border-white/10 bg-gradient-to-br from-[#18181B] to-red-500 disabled:cursor-not-allowed disabled:opacity-60"
+                        aria-label="Delete file"
+                      >
+                        <Trash2 className="h-5 w-5" />
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
-        ))}
+        )}
 
         {!loading && files.length === 0 && (
           <p className="text-2xl text-white/40">No files uploaded yet</p>
@@ -412,6 +469,23 @@ const ProjectFiles = () => {
           onLoadMore={handleLoadMore}
         />
       </div>
+
+      {previewUrl && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80">
+          <div className="max-w-4xl w-full p-4">
+            <div className="bg-[#0b0b0c] p-4 rounded">
+              <div className="flex justify-between items-start mb-2">
+                <h3 className="text-2xl font-medium text-white">{previewingFile?.originalFileName}</h3>
+                <button onClick={() => { setPreviewUrl(""); setPreviewingFile(null) }} className="text-white">Close</button>
+              </div>
+
+              <div className="w-full">
+                <img src={previewUrl} alt={previewingFile?.originalFileName} className="w-full h-auto rounded" />
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

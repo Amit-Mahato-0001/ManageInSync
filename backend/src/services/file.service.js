@@ -48,6 +48,20 @@ const sanitizeFileName = (fileName) => {
     return safeFileName || "file"
 }
 
+const sanitizeFolderName = (folderName) => {
+    if (!folderName) return ""
+
+    return folderName
+        .trim()
+        .replace(/(^[\/\\]+|[\/\\]+$)/g, "")
+        .replace(/\.\.+/g, "")
+        .replace(/[\x00-\x1F\x7F<>:\"|?*]+/g, "-")
+        .replace(/\s+/g, "-")
+        .replace(/-+/g, "-")
+        .slice(0, 200)
+}
+
+
 const getExtension = (fileName) => path.extname(fileName).toLowerCase()
 
 const assertS3Configured = () => {
@@ -124,6 +138,8 @@ const serializeFile = (file) => ({
     projectId: file.projectId,
     uploadedByUserId: file.uploadedByUserId,
     originalFileName: file.originalFileName,
+    folder: file.folder || "",
+    objectKey: file.storedObjectKey,
     mimeType: file.mimeType,
     fileSize: file.fileSize,
     status: file.status,
@@ -131,30 +147,39 @@ const serializeFile = (file) => ({
     updatedAt: file.updatedAt
 })
 
-const createPendingProjectFile = async ({ projectId, fileName, mimeType, fileSize, tenantId, user }) => {
+const createPendingProjectFile = async ({ projectId, fileName, mimeType, fileSize, tenantId, user, folder }) => {
     const bucket = process.env.AWS_S3_BUCKET
     const safeFileName = sanitizeFileName(fileName)
+    const safeFolder = sanitizeFolderName(folder)
+
     const projectFile = await ProjectFile.create({
         projectId,
         tenantId,
         uploadedByUserId: user._id,
         originalFileName: fileName.trim(),
         storedObjectKey: `pending/${new mongoose.Types.ObjectId()}/${safeFileName}`,
+        folder: safeFolder,
         bucket,
         mimeType,
         fileSize,
         status: "pending"
     })
 
-    projectFile.storedObjectKey = [
+    const parts = [
         "tenants",
         tenantId.toString(),
         "projects",
         projectId.toString(),
-        "files",
-        projectFile._id.toString(),
-        safeFileName
-    ].join("/")
+        "files"
+    ]
+
+    if (safeFolder) {
+        parts.push(safeFolder)
+    }
+
+    parts.push(projectFile._id.toString(), safeFileName)
+
+    projectFile.storedObjectKey = parts.join("/")
 
     await projectFile.save()
 
@@ -167,7 +192,8 @@ const createProjectUploadUrl = async ({
     mimeType,
     fileSize,
     user,
-    tenantId
+    tenantId,
+    folder
 }) => {
     assertS3Configured()
     assertValidFilePolicy({ fileName, mimeType, fileSize })
@@ -180,7 +206,8 @@ const createProjectUploadUrl = async ({
         mimeType,
         fileSize,
         tenantId,
-        user
+        user,
+        folder
     })
     const bucket = process.env.AWS_S3_BUCKET
 
@@ -212,7 +239,8 @@ const uploadProjectFileThroughBackend = async ({
     mimeType,
     fileBuffer,
     user,
-    tenantId
+    tenantId,
+    folder
 }) => {
     assertS3Configured()
 
@@ -228,7 +256,8 @@ const uploadProjectFileThroughBackend = async ({
         mimeType,
         fileSize,
         tenantId,
-        user
+        user,
+        folder
     })
 
     try {
@@ -286,7 +315,7 @@ const completeProjectUpload = async ({ projectId, fileId, user, tenantId }) => {
     return serializeFile(file)
 }
 
-const listProjectFiles = async ({ projectId, page = 1, limit = 10, user, tenantId }) => {
+const listProjectFiles = async ({ projectId, page = 1, limit = 10, user, tenantId, folder }) => {
     await ensureProjectAccess({ projectId, user, tenantId })
 
     const skip = (page - 1) * limit
@@ -295,6 +324,10 @@ const listProjectFiles = async ({ projectId, page = 1, limit = 10, user, tenantI
         tenantId: new mongoose.Types.ObjectId(tenantId),
         deletedAt: null,
         status: "uploaded"
+    }
+
+    if (folder) {
+        query.folder = folder
     }
 
     const [files, total] = await Promise.all([
@@ -345,6 +378,8 @@ const createProjectDownloadUrl = async ({ projectId, fileId, user, tenantId }) =
     }
 }
 
+
+
 const deleteProjectFile = async ({ projectId, fileId, user, tenantId }) => {
     assertS3Configured()
 
@@ -375,4 +410,5 @@ module.exports = {
     deleteProjectFile,
     listProjectFiles,
     uploadProjectFileThroughBackend
+}
 }

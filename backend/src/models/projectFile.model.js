@@ -34,6 +34,14 @@ const projectFileSchema = new mongoose.Schema(
             unique: true
         },
 
+        folder: {
+            type: String,
+            required: false,
+            trim: true,
+            default: "",
+            index: true
+        },
+
         bucket: {
             type: String,
             required: true

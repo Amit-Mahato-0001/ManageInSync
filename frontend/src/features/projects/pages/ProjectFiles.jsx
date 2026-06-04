@@ -4,7 +4,6 @@ import { ArrowLeft, Download, FileUp, Trash2 } from "lucide-react"
 import { useAuth } from "@/features/auth/hooks/useAuth"
 import InfiniteScrollSentinel from "@/shared/components/InfiniteScrollSentinel"
 import { PageLoader } from "@/shared/components/LoadingSpinner"
-import { formatDate } from "@/shared/utils/formatDate"
 import {
   completeUpload,
   createUploadUrl,

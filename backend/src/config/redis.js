@@ -24,7 +24,7 @@ const getRedisClient = () => {
     if (!redisClient) {
         redisClient = createRedisConnection()
         redisClient.on("error", (error) => {
-            console.error("Redis client error:", error.message)
+            console.error("Redis client error:", error)
         })
     }
 
@@ -39,7 +39,7 @@ const getQueueRedisConnection = () => {
     if (!queueRedisConnection) {
         queueRedisConnection = createRedisConnection()
         queueRedisConnection.on("error", (error) => {
-            console.error("Redis queue connection error:", error.message)
+            console.error("Redis queue connection error:", error)
         })
     }
 

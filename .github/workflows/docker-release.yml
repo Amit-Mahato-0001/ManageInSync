@@ -85,6 +85,20 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
+      - name: Upload production env example
+        uses: actions/upload-artifact@v4
+        with:
+          name: env-production-example
+          path: backend/.env.production.example
+
+      - name: Post production env to deploy webhook
+        if: github.ref == 'refs/heads/main' && env.DEPLOY_WEBHOOK_URL != ''
+        run: |
+          echo "Posting production env example to deploy webhook"
+          curl --fail --show-error --silent --request POST "$DEPLOY_WEBHOOK_URL" \
+            -H "Content-Type: text/plain" \
+            --data-binary @backend/.env.production.example
+
       - name: Trigger deployment webhook
         if: github.ref == 'refs/heads/main' && env.DEPLOY_WEBHOOK_URL != ''
         run: curl --fail --show-error --silent --request POST "$DEPLOY_WEBHOOK_URL"

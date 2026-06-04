@@ -128,19 +128,6 @@ const deleteProjectFileHandler = async (req, res, next) => {
     }
 }
 
-const streamProjectFileHandler = async (req, res, next) => {
-    try {
-        await streamProjectFile({
-            projectId: req.params.projectId,
-            fileId: req.params.fileId,
-            user: req.user,
-            tenantId: req.tenantId,
-            res
-        })
-    } catch (error) {
-        next(error)
-    }
-}
 module.exports = {
     createProjectDownloadUrlHandler,
     createProjectUploadUrlHandler,
@@ -148,6 +135,4 @@ module.exports = {
     deleteProjectFileHandler,
     listProjectFilesHandler,
     uploadProjectFileHandler
-    ,
-}
 }

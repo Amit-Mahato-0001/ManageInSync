@@ -69,22 +69,56 @@ app.use(express.urlencoded({
 }))
 app.use(projectListProfiler())
 
-app.get("/api/health", (req, res) => {
+const { getRedisClient, shouldUseRedis } = require("./config/redis")
+
+async function pingWithTimeout(client, ms = 500) {
+    return Promise.race([
+        client.ping(),
+        new Promise((_, rej) => setTimeout(() => rej(new Error("timeout")), ms))
+    ])
+}
+
+app.get("/api/health", async (req, res) => {
     const readyState = mongoose.connection.readyState
     const isDatabaseReady = readyState === 1
 
-    res.status(isDatabaseReady ? 200 : 503).json({
-        status: isDatabaseReady ? "ok" : "degraded",
-        timestamp: new Date().toISOString(),
-        uptimeSeconds: Math.round(process.uptime()),
-        services: {
-            api: "ok",
-            database: {
-                status: isDatabaseReady ? "up" : "down",
-                readyState,
-                state: databaseStates[readyState] || "unknown"
+    const services = {
+        api: "ok",
+        database: {
+            status: isDatabaseReady ? "up" : "down",
+            readyState,
+            state: databaseStates[readyState] || "unknown"
+        }
+    }
+
+    // Redis status
+    try {
+        if (!shouldUseRedis()) {
+            services.redis = { enabled: false }
+        } else {
+            const client = getRedisClient()
+            if (!client) {
+                services.redis = { enabled: true, status: "unknown" }
+            } else {
+                try {
+                    await pingWithTimeout(client, 500)
+                    services.redis = { enabled: true, status: "up" }
+                } catch (error) {
+                    services.redis = { enabled: true, status: "down", error: String(error) }
+                }
             }
         }
+    } catch (error) {
+        services.redis = { enabled: true, status: "error", error: String(error) }
+    }
+
+    const overallHealthy = isDatabaseReady && (!services.redis.enabled || services.redis.status === "up")
+
+    res.status(overallHealthy ? 200 : 503).json({
+        status: overallHealthy ? "ok" : "degraded",
+        timestamp: new Date().toISOString(),
+        uptimeSeconds: Math.round(process.uptime()),
+        services
     })
 })
 

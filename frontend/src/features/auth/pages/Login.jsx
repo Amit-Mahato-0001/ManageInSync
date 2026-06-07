@@ -5,11 +5,17 @@ import authApi from "../api/auth"
 import { useAuth } from "../hooks/useAuth"
 
 const EMAIL_PATTERN = /^\S+@\S+\.\S+$/
+
 const Login = () => {
   const [params] = useSearchParams()
-  const [workspace, setWorkspace] = useState(() => params.get("workspace") || "")
-  const [email, setEmail] = useState("")
-  const [password, setPassword] = useState("")
+
+  // Demo credentials pre-filled
+  const [workspace, setWorkspace] = useState(
+    () => params.get("workspace") || "test"
+  )
+  const [email, setEmail] = useState("test@gmail.com")
+  const [password, setPassword] = useState("test1234")
+
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
 
@@ -47,12 +53,17 @@ const Login = () => {
 
     try {
       const res = await toast.promise(
-        authApi.loginApi({ workspace: safeWorkspace, email: safeEmail, password }),
+        authApi.loginApi({
+          workspace: safeWorkspace,
+          email: safeEmail,
+          password,
+        }),
         {
           loading: "Logging in...",
           success: "Logged in successfully",
           error: (requestError) =>
-            requestError?.response?.data?.error || "Invalid workspace, email, or password",
+            requestError?.response?.data?.error ||
+            "Invalid workspace, email, or password",
         }
       )
 
@@ -66,9 +77,9 @@ const Login = () => {
   }
 
   return (
-    <div className="w-xl">
-      <div className="rounded-2xl border border-white/10 bg-gradient-to-br from-[#18181B] to-[#09090B] p-8 text-white shadow-xl">
-        <h1 className="text-5xl font-semibold mb-2">
+    <div className="w-full max-w-xl px-2 sm:px-0">
+      <div className="rounded-2xl border border-white/10 bg-gradient-to-br from-[#18181B] to-[#09090B] p-6 sm:p-8 text-white shadow-xl">
+        <h1 className="text-4xl sm:text-5xl font-semibold mb-2">
           Welcome back
         </h1>
 
@@ -84,51 +95,51 @@ const Login = () => {
           )}
 
           <div className="space-y-1.5">
-            <label className="text-2xl text-white/60">Workspace</label>
+            <label className="text-2xl text-white/60">
+              Workspace
+            </label>
+
             <input
               className="w-full rounded-md border border-white/10 px-4 py-2.5 text-2xl outline-none focus:border-blue-500/60 focus:ring-2 focus:ring-blue-500/20"
-              placeholder="your-workspace"
+              placeholder="Workspace"
               value={workspace}
               onChange={(e) => {
                 setWorkspace(e.target.value)
-
-                if (error) {
-                  setError("")
-                }
+                if (error) setError("")
               }}
             />
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-2xl text-white/60">Email</label>
+            <label className="text-2xl text-white/60">
+              Email
+            </label>
+
             <input
               type="email"
               className="w-full rounded-md border border-white/10 px-4 py-2.5 text-2xl outline-none focus:border-blue-500/60 focus:ring-2 focus:ring-blue-500/20"
-              placeholder="you@example.com"
+              placeholder="Email"
               value={email}
               onChange={(e) => {
                 setEmail(e.target.value)
-
-                if (error) {
-                  setError("")
-                }
+                if (error) setError("")
               }}
             />
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-2xl text-white/60">Password</label>
+            <label className="text-2xl text-white/60">
+              Password
+            </label>
+
             <input
               type="password"
               className="w-full rounded-md border border-white/10 px-4 py-2.5 text-2xl outline-none focus:border-blue-500/60 focus:ring-2 focus:ring-blue-500/20"
-              placeholder="Your password"
+              placeholder="Password"
               value={password}
               onChange={(e) => {
                 setPassword(e.target.value)
-
-                if (error) {
-                  setError("")
-                }
+                if (error) setError("")
               }}
             />
           </div>
@@ -143,14 +154,24 @@ const Login = () => {
         </form>
 
         <div className="mt-4 text-right">
-          <Link to={`/forgot-password${workspace.trim() ? `?workspace=${encodeURIComponent(workspace.trim())}` : ""}`} className="text-2xl text-blue-400 hover:text-blue-300">
+          <Link
+            to={`/forgot-password${
+              workspace.trim()
+                ? `?workspace=${encodeURIComponent(workspace.trim())}`
+                : ""
+            }`}
+            className="text-2xl text-blue-400 hover:text-blue-300"
+          >
             Forgot password?
           </Link>
         </div>
 
         <p className="text-2xl text-white/50 mt-6 text-center">
           Don&apos;t have an account?{" "}
-          <Link to="/signup" className="text-blue-400 hover:text-blue-300">
+          <Link
+            to="/signup"
+            className="text-blue-400 hover:text-blue-300"
+          >
             Create one
           </Link>
         </p>

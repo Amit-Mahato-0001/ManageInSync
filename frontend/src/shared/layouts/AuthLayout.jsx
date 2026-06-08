@@ -21,11 +21,16 @@ const authVideos = [
 const AuthLayout = ({ children }) => {
   return (
     <div className="auth-shell flex min-h-screen overflow-hidden bg-black text-white">
-      <main className="flex min-h-screen flex-1 items-center justify-center px-6 py-10 lg:pr-[34rem] xl:pr-[38rem]">
-        <div className="w-full max-w-[300px]">{children}</div>
+      
+      {/* FORM SIDE */}
+      <main className="flex min-h-screen flex-1 items-center justify-center px-6 py-10 lg:pl-[34rem] xl:pl-[38rem]">
+        <div className="w-full max-w-[300px]">
+          {children}
+        </div>
       </main>
 
-      <aside className="fixed bottom-0 right-0 top-0 hidden w-[504px] overflow-y-auto bg-black lg:block">
+      {/* VIDEO GRID LEFT */}
+      <aside className="fixed bottom-0 left-0 top-0 hidden w-[504px] overflow-y-auto bg-black lg:block">
         <div className="grid grid-cols-[repeat(2,243px)] auto-rows-[243px] gap-2 p-2">
           {authVideos.map((videoSrc, index) => (
             <div
@@ -46,6 +51,7 @@ const AuthLayout = ({ children }) => {
           ))}
         </div>
       </aside>
+
     </div>
   )
 }

@@ -1,6 +1,9 @@
 import { useState } from "react"
 import { Link, useNavigate } from "react-router-dom"
 import toast from "react-hot-toast"
+import { AlertCircle, Eye, EyeOff } from "lucide-react"
+import { FcGoogle } from "react-icons/fc"
+import manageInSyncLogo from "@/shared/assets/M-logo.png"
 import authApi from "../api/auth"
 import { useAuth } from "../hooks/useAuth"
 
@@ -14,8 +17,23 @@ const Signup = () => {
   const [agencyName, setAgencyName] = useState("")
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
+  const [showPassword, setShowPassword] = useState(false)
+
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
+  const [fieldErrors, setFieldErrors] = useState({})
+
+  const clearFieldError = (fieldName) => {
+    if (fieldErrors[fieldName]) {
+      setFieldErrors((current) => {
+        const next = { ...current }
+        delete next[fieldName]
+        return next
+      })
+    }
+
+    if (error) setError("")
+  }
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -23,35 +41,34 @@ const Signup = () => {
     const safeAgencyName = agencyName.trim()
     const safeEmail = email.trim()
 
-    if (!safeAgencyName) {
-      setError("Agency name is required")
+    const nextFieldErrors = {}
+
+    if (!safeAgencyName) nextFieldErrors.agencyName = true
+
+    if (!safeEmail || !EMAIL_PATTERN.test(safeEmail)) {
+      nextFieldErrors.email = true
+    }
+
+    if (!password || password.length < MIN_PASSWORD_LENGTH) {
+      nextFieldErrors.password = true
+    }
+
+    if (Object.keys(nextFieldErrors).length) {
+      setFieldErrors(nextFieldErrors)
+      setError("")
       return
     }
 
-    if (!safeEmail) {
-      setError("Work email is required")
-      return
-    }
-
-    if (!EMAIL_PATTERN.test(safeEmail)) {
-      setError("Enter a valid work email")
-      return
-    }
-
-    if (password.length < MIN_PASSWORD_LENGTH) {
-      setError("Password must be at least 8 characters")
-      return
-    }
-
-    setLoading(true)
     setError("")
+    setFieldErrors({})
+    setLoading(true)
 
     try {
       const res = await toast.promise(
         authApi.signupApi({
           agencyName: safeAgencyName,
           email: safeEmail,
-          password
+          password,
         }),
         {
           loading: "Creating account...",
@@ -64,97 +81,160 @@ const Signup = () => {
       login(res.data)
       navigate("/")
     } catch {
-      return
+      setFieldErrors({
+        agencyName: true,
+        email: true,
+        password: true,
+      })
     } finally {
       setLoading(false)
     }
   }
 
+  const inputClassName = (hasError) =>
+    [
+      "h-11 w-full rounded-[8px] border px-4 text-[14px] font-medium text-white outline-none transition placeholder:text-[#8b8b8b]",
+      hasError
+        ? "border-rose-500 bg-rose-950/45 pr-11 text-rose-300 placeholder:text-rose-300/65 focus:border-rose-400 focus:bg-rose-950/55"
+        : "border-transparent bg-[#2b2b2b] focus:border-white/25 focus:bg-[#303030]",
+    ].join(" ")
+
+  const passwordInputClassName = (hasError) =>
+    [
+      "h-11 w-full rounded-[8px] border px-4 text-[14px] font-medium text-white outline-none transition placeholder:text-[#8b8b8b]",
+      hasError
+        ? "border-rose-500 bg-rose-950/45 pr-20 text-rose-300 placeholder:text-rose-300/65 focus:border-rose-400 focus:bg-rose-950/55"
+        : "border-transparent bg-[#2b2b2b] pr-11 focus:border-white/25 focus:bg-[#303030]",
+    ].join(" ")
+
   return (
-    <div className="w-xl">
-      <div className="rounded-2xl border border-white/10 bg-gradient-to-br from-[#18181B] to-[#09090B] p-8 text-white shadow-xl">
-        <h1 className="text-5xl font-semibold mb-2">
-          Create your workspace
+    <form className="w-full" onSubmit={handleSubmit} noValidate>
+      <div className="mb-2 flex justify-center">
+        <img
+          src={manageInSyncLogo}
+          alt="ManageInSync"
+          className="h-20 w-20 object-contain"
+        />
+      </div>
+
+      <div className="mb-8 text-center">
+        <h1 className="text-[24px] font-extrabold leading-none text-white">
+          Welcome to ManageInSync
         </h1>
 
-        <p className="text-2xl text-white/60 mb-7">
-          Start your agency workspace and invite your team in minutes.
+        <p className="mt-1 text-[23px] font-extrabold leading-none text-[#787878]">
+          Create Your Workspace.
         </p>
+      </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4" noValidate>
-          {error && (
-            <p className="text-2xl text-red-400 bg-red-500/10 border border-red-500/20 rounded-md px-3 py-2">
-              {error}
-            </p>
+      <button
+        type="button"
+        className="flex h-11 w-full items-center justify-center gap-3 rounded-[8px] bg-white px-4 text-[14px] font-semibold text-[#111] transition hover:bg-zinc-200"
+      >
+        <FcGoogle className="text-[18px]" />
+        Continue with Google
+      </button>
+
+      <div className="my-6 flex items-center gap-4">
+        <span className="h-px flex-1 bg-white/15" />
+        <span className="text-[12px] font-medium text-[#5b5b5b]">OR</span>
+        <span className="h-px flex-1 bg-white/15" />
+      </div>
+
+      <div className="space-y-3">
+        {error && (
+          <p className="rounded-[8px] border border-red-500/25 bg-red-500/10 px-3 py-2 text-[13px] leading-5 text-red-200">
+            {error}
+          </p>
+        )}
+
+        <div className="relative">
+          <input
+            className={inputClassName(fieldErrors.agencyName)}
+            placeholder="Enter workspace name"
+            value={agencyName}
+            onChange={(e) => {
+              setAgencyName(e.target.value)
+              clearFieldError("agencyName")
+            }}
+          />
+
+          {fieldErrors.agencyName && (
+            <AlertCircle className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-rose-300" />
           )}
+        </div>
 
-          <div className="space-y-1.5">
-            <label className="text-2xl text-white/60">Agency Name</label>
-            <input
-              className="w-full rounded-md border border-white/10 px-4 py-2.5 text-2xl outline-none focus:border-blue-500/60 focus:ring-2 focus:ring-blue-500/20"
-              placeholder="Xyz Studio"
-              value={agencyName}
-              onChange={(e) => {
-                setAgencyName(e.target.value)
+        <div className="relative">
+          <input
+            type="email"
+            className={inputClassName(fieldErrors.email)}
+            placeholder="Enter your email"
+            value={email}
+            onChange={(e) => {
+              setEmail(e.target.value)
+              clearFieldError("email")
+            }}
+          />
 
-                if (error) {
-                  setError("")
-                }
-              }}
-            />
-          </div>
+          {fieldErrors.email && (
+            <AlertCircle className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-rose-300" />
+          )}
+        </div>
 
-          <div className="space-y-1.5">
-            <label className="text-2xl text-white/60">Work Email</label>
-            <input
-              type="email"
-              className="w-full rounded-md border border-white/10 px-4 py-2.5 text-2xl outline-none focus:border-blue-500/60 focus:ring-2 focus:ring-blue-500/20"
-              placeholder="your@gmail.com"
-              value={email}
-              onChange={(e) => {
-                setEmail(e.target.value)
-
-                if (error) {
-                  setError("")
-                }
-              }}
-            />
-          </div>
-
-          <div className="space-y-1.5">
-            <label className="text-2xl text-white/60">Password</label>
-            <input
-              type="password"
-              className="w-full rounded-md border border-white/10 px-4 py-2.5 text-2xl outline-none focus:border-blue-500/60 focus:ring-2 focus:ring-blue-500/20"
-              placeholder="Minimum 8 characters"
-              value={password}
-              onChange={(e) => {
-                setPassword(e.target.value)
-
-                if (error) {
-                  setError("")
-                }
-              }}
-            />
-          </div>
+        <div className="relative">
+          <input
+            type={showPassword ? "text" : "password"}
+            className={passwordInputClassName(fieldErrors.password)}
+            placeholder="Minimum 8 characters"
+            value={password}
+            onChange={(e) => {
+              setPassword(e.target.value)
+              clearFieldError("password")
+            }}
+          />
 
           <button
-            type="submit"
-            disabled={loading}
-            className="w-full rounded-lg border border-white/10 bg-gradient-to-br from-[#18181B] to-blue-500 transition-colors text-2xl font-medium py-2.5 disabled:opacity-60 disabled:cursor-not-allowed"
+            type="button"
+            className={`absolute top-1/2 -translate-y-1/2 rounded p-1 transition ${
+              fieldErrors.password
+                ? "right-9 text-rose-300/75 hover:text-rose-200"
+                : "right-3 text-white/35 hover:text-white/70"
+            }`}
+            onClick={() => setShowPassword((prev) => !prev)}
           >
-            {loading ? "Creating account..." : "Create Account"}
+            {showPassword ? (
+              <EyeOff className="h-4 w-4" />
+            ) : (
+              <Eye className="h-4 w-4" />
+            )}
           </button>
-        </form>
 
-        <p className="text-2xl text-white/50 mt-6 text-center">
+          {fieldErrors.password && (
+            <AlertCircle className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-rose-300" />
+          )}
+        </div>
+
+        <button
+          type="submit"
+          disabled={loading}
+          className="h-11 w-full rounded-[8px] bg-[#2b2b2b] px-4 text-[14px] font-bold text-white transition hover:bg-[#383838] disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          {loading ? "Creating..." : "Create"}
+        </button>
+      </div>
+
+      <div className="mt-5 flex items-center justify-center text-[13px] font-medium">
+        <p className="text-white/45">
           Already have an account?{" "}
-          <Link to="/login" className="text-blue-400 hover:text-blue-300">
+          <Link
+            to="/login"
+            className="text-white transition hover:text-white/80"
+          >
             Login
           </Link>
         </p>
       </div>
-    </div>
+    </form>
   )
 }
 

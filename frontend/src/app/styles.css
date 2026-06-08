@@ -17,6 +17,11 @@
     background-color: #09090B;
     color: #ffffff;
   }
+
+  input.no-password-reveal::-ms-reveal,
+  input.no-password-reveal::-ms-clear {
+    display: none;
+  }
 }
 
 /* Global font apply */

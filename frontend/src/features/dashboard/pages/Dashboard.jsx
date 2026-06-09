@@ -35,7 +35,7 @@ const capitalizeFirstCharacter = (value) => {
 }
 
 
-function Stat({ label, value, color, sub }) {
+function Stat({ label, value, sub }) {
   return (
     <div className="relative min-h-[132px] rounded-[8px] border border-white/10 bg-[#151515] p-4 transition hover:border-white/20">
       <p className="text-[13px] font-semibold text-[#8b8b8b]">{label}</p>

@@ -89,7 +89,6 @@ export default function AppLayout({ children }) {
   };
 
   const handleNavClick = () => setIsSidebarOpen(false);
-  const workspaceName = tenant?.name || tenant?.slug || "ManageInSync";
 
   // Mobile menu icons
   const MenuIcon = ({ className }) => (

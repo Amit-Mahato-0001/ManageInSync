@@ -133,7 +133,7 @@ export default function AppLayout({ children }) {
               className="h-9 w-9 rounded-full object-cover md:h-12 md:w-12"
             />
           ) : (
-            <img src="/Union.png" alt="ManageInSync" className="h-8 md:h-12" />
+            <img src="/ManageInSync-Logo.png" alt="ManageInSync" className="h-20 md:h-26" />
           )}
         </div>
 

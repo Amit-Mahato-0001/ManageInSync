@@ -1,59 +1,72 @@
-const jwt = require("jsonwebtoken")
+const jwt = require("jsonwebtoken");
+const NodeCache = require("node-cache");
 
-const User = require("../models/user.model")
-const Session = require("../models/session.model")
-const createHttpError = require("../utils/httpError")
-const { getAccessTokenSecret, getClientIp, getUserAgent } = require("../utils/auth")
-const { timeProfileStep } = require("../utils/requestProfiler")
+const User = require("../models/user.model");
+const Session = require("../models/session.model");
+const Tenant = require("../models/tenant.model");
+const createHttpError = require("../utils/httpError");
+const { getAccessTokenSecret, getClientIp, getUserAgent } = require("../utils/auth");
+const { timeProfileStep } = require("../utils/requestProfiler");
 
-const SESSION_ACTIVITY_UPDATE_INTERVAL_MS = 60 * 1000
+const SESSION_ACTIVITY_UPDATE_INTERVAL_MS = 60 * 1000;
+const AUTH_CACHE_TTL_SEC = 10;
+
+const authCache = new NodeCache({ stdTTL: AUTH_CACHE_TTL_SEC });
 
 const shouldRefreshSessionActivity = ({ session, nextIp, nextUserAgent }) => {
-    if (!session) {
-        return false
-    }
-
-    if (!session.lastUsedAt) {
-        return true
-    }
-
-    if (session.lastUsedIp !== nextIp || session.userAgent !== nextUserAgent) {
-        return true
-    }
-
-    return Date.now() - session.lastUsedAt.getTime() >= SESSION_ACTIVITY_UPDATE_INTERVAL_MS
-}
+    if (!session) return false;
+    if (!session.lastUsedAt) return true;
+    if (session.lastUsedIp !== nextIp || session.userAgent !== nextUserAgent) return true;
+    return Date.now() - session.lastUsedAt.getTime() >= SESSION_ACTIVITY_UPDATE_INTERVAL_MS;
+};
 
 const authenticate = async (req, res, next) => {
-    const authHeader = req.headers.authorization
+    const authHeader = req.headers.authorization;
 
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
-        return next(createHttpError("Authentication required", 401, "auth_required"))
+        return next(createHttpError("Authentication required", 401, "auth_required"));
     }
 
-    const token = authHeader.split(" ")[1]?.trim()
-
+    const token = authHeader.split(" ")[1]?.trim();
     if (!token) {
-        return next(createHttpError("Authentication required", 401, "auth_required"))
+        return next(createHttpError("Authentication required", 401, "auth_required"));
     }
 
-    let decoded
-
+    let decoded;
     try {
-        decoded = jwt.verify(token, getAccessTokenSecret())
+        decoded = jwt.verify(token, getAccessTokenSecret());
     } catch (error) {
         if (error.name === "TokenExpiredError") {
-            return next(createHttpError("Access token expired", 401, "access_token_expired"))
+            return next(createHttpError("Access token expired", 401, "access_token_expired"));
         }
-
-        return next(createHttpError("Invalid access token", 401, "auth_required"))
+        return next(createHttpError("Invalid access token", 401, "auth_required"));
     }
 
-    const userId = decoded.userId || decoded.sub
-    const sessionId = decoded.sid
-
+    const userId = decoded.userId || decoded.sub;
+    const sessionId = decoded.sid;
     if (!userId || !sessionId) {
-        return next(createHttpError("Invalid access token", 401, "auth_required"))
+        return next(createHttpError("Invalid access token", 401, "auth_required"));
+    }
+
+    // Check cache
+    const cacheKey = `auth:${token}`;
+    const cached = authCache.get(cacheKey);
+    if (cached) {
+        req.user = cached.user;
+        req.auth = cached.auth;
+        req.tenant = cached.tenant;
+        // Optional async session activity update
+        const nextIp = getClientIp(req);
+        const nextUserAgent = getUserAgent(req);
+        if (shouldRefreshSessionActivity({ session: cached.auth.session, nextIp, nextUserAgent })) {
+            timeProfileStep("auth.session_activity_update", () =>
+                Session.updateOne(
+                    { _id: cached.auth.session._id },
+                    { $set: { lastUsedAt: new Date(), lastUsedIp: nextIp, userAgent: nextUserAgent } }
+                )
+            ).catch(() => null);
+        }
+        return next();
     }
 
     try {
@@ -68,77 +81,62 @@ const authenticate = async (req, res, next) => {
                     .select("email name logoUrl role status tenantId")
                     .lean()
             )
-        ])
+        ]);
 
         if (!session || session.revokedAt || session.expiresAt.getTime() <= Date.now()) {
-            return next(createHttpError("Session revoked", 401, "session_revoked"))
+            return next(createHttpError("Session revoked", 401, "session_revoked"));
         }
-
         if (session.userId.toString() !== userId.toString()) {
-            return next(createHttpError("Session revoked", 401, "session_revoked"))
+            return next(createHttpError("Session revoked", 401, "session_revoked"));
         }
-
         if (!user) {
-            return next(createHttpError("User not found", 401, "auth_required"))
+            return next(createHttpError("User not found", 401, "auth_required"));
         }
-
         if (user.status === "disabled") {
             await Session.updateMany(
-                {
-                    userId: user._id,
-                    revokedAt: null
-                },
-                {
-                    $set: {
-                        revokedAt: new Date(),
-                        revokeReason: "account_disabled"
-                    }
-                }
-            )
-
-            return next(createHttpError("Account disabled. Contact agency.", 401, "account_disabled"))
+                { userId: user._id, revokedAt: null },
+                { $set: { revokedAt: new Date(), revokeReason: "account_disabled" } }
+            );
+            return next(createHttpError("Account disabled. Contact agency.", 401, "account_disabled"));
         }
-
         if (user.status !== "active") {
-            return next(createHttpError("Authentication required", 401, "auth_required"))
+            return next(createHttpError("Authentication required", 401, "auth_required"));
         }
-
         if (decoded.tenantId?.toString() !== user.tenantId.toString()) {
-            return next(createHttpError("Session revoked", 401, "session_revoked"))
+            return next(createHttpError("Session revoked", 401, "session_revoked"));
         }
-
         if (decoded.role && decoded.role !== user.role) {
-            return next(createHttpError("Access token expired", 401, "access_token_expired"))
+            return next(createHttpError("Access token expired", 401, "access_token_expired"));
         }
 
-        req.user = user
-        req.auth = {
-            token: decoded,
-            session
-        }
+        // Fetch tenant details
+        const tenant = await Tenant.findById(user.tenantId).select("_id name settings").lean();
 
-        const nextIp = getClientIp(req)
-        const nextUserAgent = getUserAgent(req)
+        req.user = user;
+        req.auth = { token: decoded, session };
+        req.tenant = tenant || { _id: user.tenantId };
 
+        authCache.set(cacheKey, {
+            user: req.user,
+            auth: req.auth,
+            tenant: req.tenant
+        });
+
+        const nextIp = getClientIp(req);
+        const nextUserAgent = getUserAgent(req);
         if (shouldRefreshSessionActivity({ session, nextIp, nextUserAgent })) {
             timeProfileStep("auth.session_activity_update", () =>
                 Session.updateOne(
                     { _id: session._id },
-                    {
-                        $set: {
-                            lastUsedAt: new Date(),
-                            lastUsedIp: nextIp,
-                            userAgent: nextUserAgent
-                        }
-                    }
+                    { $set: { lastUsedAt: new Date(), lastUsedIp: nextIp, userAgent: nextUserAgent } }
                 )
-            ).catch(() => null)
+            ).catch(() => null);
         }
 
-        next()
+        next();
     } catch (error) {
-        next(error)
+        next(error);
     }
-}
+};
 
-module.exports = authenticate
+module.exports = authenticate;

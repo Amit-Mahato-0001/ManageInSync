@@ -40,7 +40,7 @@ const hasFrontendBuild = fs.existsSync(frontendIndexPath)
 const isProduction = process.env.NODE_ENV === "production"
 const generalApiRateLimiter = createRateLimiter({
     windowMs: Number(process.env.GENERAL_RATE_LIMIT_WINDOW_MS) || 60 * 1000,
-    max: Number(process.env.GENERAL_RATE_LIMIT_MAX) || 240,
+    max: Number(process.env.GENERAL_RATE_LIMIT_MAX) || 10000,
     message: "Too many API requests. Please try again shortly.",
     code: "rate_limit_exceeded"
 })

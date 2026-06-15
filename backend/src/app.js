@@ -40,7 +40,7 @@ const hasFrontendBuild = fs.existsSync(frontendIndexPath)
 const isProduction = process.env.NODE_ENV === "production"
 const generalApiRateLimiter = createRateLimiter({
     windowMs: Number(process.env.GENERAL_RATE_LIMIT_WINDOW_MS) || 60 * 1000,
-    max: Number(process.env.GENERAL_RATE_LIMIT_MAX) || 10000,
+    max: Number(process.env.GENERAL_RATE_LIMIT_MAX),
     message: "Too many API requests. Please try again shortly.",
     code: "rate_limit_exceeded"
 })
@@ -122,7 +122,7 @@ app.get("/api/health", async (req, res) => {
     })
 })
 
-app.use("/api", generalApiRateLimiter)
+// app.use("/api", generalApiRateLimiter)
 
 {/* PUBLIC ROUTES */}
 app.use("/api/auth", router)
